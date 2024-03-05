@@ -24,7 +24,6 @@ public class OutlookAttributeStore {
         this.store = store;
     }
 
-    @SuppressWarnings("unchecked")
     public OutlookAttributes load(String authContextId) {
         Map attributes = Constants.GSON.fromJson(String.valueOf(store.get(authContextId)), Map.class);
         return new OutlookAttributes(invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE),
@@ -33,7 +32,6 @@ public class OutlookAttributeStore {
                 (String) attributes.get(OutlookAttributes.EMAIL),
                 (Boolean) attributes.get(OutlookAttributes.ALLOW_ALERT_MAIL),
                 (String) attributes.get(OutlookAttributes.TENANT_ID),
-                invoker.getRoutingInfo().getRoutingId(),
                 (Boolean) attributes.get(OutlookAttributes.LOGIN_WITH_MICROSOFT));
     }
 

@@ -51,7 +51,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
                 String state = String.valueOf(queryParameters.get(STATE).get(0));
                 String[] parts = state.split(Constants.HASH);
                 return parts[0];
-            } else{
+            } else {
                 return null;
             }
         } catch (RuntimeException | IOException cause) {
@@ -87,7 +87,9 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
     @Override
     public AuthorizationResponse getMustAuthorizeResponse(MustAuthorizeException cause) {
         String userId = (String) cause.getDetails().get(0).getValue();
-        Optional<NamedValuedField> authContextIdField = cause.getDetails().stream().filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID)).findFirst();
+        Optional<NamedValuedField> authContextIdField = cause.getDetails().stream().filter(
+                namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID)
+        ).findFirst();
 
         OutlookAttributes effectiveOutlookAttributes;
         String state;
@@ -99,7 +101,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
             effectiveOutlookAttributes = outlookAttributes;
             state = userId;
         }
-        if (outlookAttributes.getRoutingId() != null && !outlookAttributes.getRoutingId().isBlank()) {
+        if (effectiveOutlookAttributes.isLoginWithMicrosoft()) {
             state += Constants.HASH + outlookAttributes.getForwardUrl();
         }
         OAuth20Service oAuth20Service = effectiveOutlookAttributes.getOAuth20Service();

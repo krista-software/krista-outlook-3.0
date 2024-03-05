@@ -7,6 +7,7 @@ import app.krista.extension.util.InvokerAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import com.github.scribejava.apis.MicrosoftAzureActiveDirectory20Api;
 import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.builder.ServiceBuilderOAuth20;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.gson.JsonObject;
 import org.jvnet.hk2.annotations.Service;
@@ -14,7 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,11 +37,10 @@ public class OutlookAttributes {
     public static final String SPECIFIC_CALLBACK_PATH = "/rest/outlook/callback";
     public static final Logger LOGGER = LoggerFactory.getLogger(OutlookAttributes.class);
     public static final String LOGIN_WITH_MICROSOFT = "loginWithMicrosoft";
-    private static final String CONFIG_FILE = "microsoft-config.json";
     public static final String LOCAL_EXTN_URL = "https://extension.local.eng.krista.app";
     public static final String LOCAL_EXTN_REPLACE_URL = "http://localhost:8765";
+    private static final String CONFIG_FILE = "microsoft-config.json";
     private final String routingUrl;
-    private final String routingId;
     private Boolean loginWithMicrosoft;
     private String clientId;
     private String clientSecret;
@@ -46,32 +49,29 @@ public class OutlookAttributes {
     private String tenantId;
     private OAuth20Service oAuth20Service;
 
-
     @Inject
     public OutlookAttributes(Invoker invoker) {
         this(invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE),
-                invoker.getAttributes(), invoker.getRoutingInfo().getRoutingId());
+                invoker.getAttributes());
     }
 
-    public OutlookAttributes(String routingUrl, Map<String, Object> attributes, String routingId) {
+    public OutlookAttributes(String routingUrl, Map<String, Object> attributes) {
         this(routingUrl, InvokerAttributes.getStringOrNull(attributes, CLIENT_ID),
                 InvokerAttributes.getStringOrNull(attributes, CLIENT_SECRET),
                 InvokerAttributes.getStringOrNull(attributes, EMAIL),
                 InvokerAttributes.getBooleanOrDefault(attributes, ALLOW_ALERT_MAIL, false),
                 InvokerAttributes.getStringOrNull(attributes, TENANT_ID),
-                routingId,
                 InvokerAttributes.getBooleanOrDefault(attributes, LOGIN_WITH_MICROSOFT, false));
     }
 
     public OutlookAttributes(String routingUrl, String clientId, String clientSecret, String mailId,
-                             boolean allowAlertMail, String tenantId, String routingId, boolean loginWithMicrosoft) {
+                             boolean allowAlertMail, String tenantId, boolean loginWithMicrosoft) {
         this.routingUrl = routingUrl;
         this.clientId = clientId != null ? clientId : getAttributeValueFromFile(CLIENT_ID);
         this.clientSecret = clientSecret != null ? clientSecret : getAttributeValueFromFile(CLIENT_SECRET);
         this.mailId = mailId;
         this.allowAlertMail = allowAlertMail;
         this.tenantId = tenantId;
-        this.routingId = routingId;
         this.loginWithMicrosoft = loginWithMicrosoft;
     }
 
@@ -92,8 +92,8 @@ public class OutlookAttributes {
         }
     }
 
-    public static OutlookAttributes create(String routingUrl, Map<String, Object> attributes, String routingId) {
-        return new OutlookAttributes(routingUrl, attributes, routingId);
+    public static OutlookAttributes create(String routingUrl, Map<String, Object> attributes) {
+        return new OutlookAttributes(routingUrl, attributes);
     }
 
     public static String convertToString(InputStream inputStream) throws IOException {
@@ -169,19 +169,16 @@ public class OutlookAttributes {
                 + Constants.EXTENSION_FORWARD_PATH;
     }
 
-    public String getRoutingId() {
-        return routingId;
-    }
-
     public synchronized OAuth20Service getOAuth20Service() {
-        if (oAuth20Service != null) {
-            oAuth20Service = new ServiceBuilder(clientId)
+        if (oAuth20Service == null) {
+            ServiceBuilderOAuth20 serviceBuilderOAuth20 = new ServiceBuilder(clientId)
                     .apiSecret(clientSecret)
-                    .defaultScope(Constants.REQUIRED_SCOPE)
-                    .callback(loginWithMicrosoft ? getDefaultCallbackUrl() : getSpecificCallbackUrl())
-                    .build(loginWithMicrosoft ? MicrosoftAzureActiveDirectory20Api.instance()
+                    .defaultScope(Constants.REQUIRED_SCOPE);
+            String callbackUrl = loginWithMicrosoft ? getDefaultCallbackUrl() : getSpecificCallbackUrl();
+            oAuth20Service = serviceBuilderOAuth20.callback(callbackUrl)
+                    .build(loginWithMicrosoft
+                            ? MicrosoftAzureActiveDirectory20Api.instance()
                             : MicrosoftAzureActiveDirectory20Api.custom(tenantId));
-
         }
         return oAuth20Service;
     }

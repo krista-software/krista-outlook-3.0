@@ -18,6 +18,7 @@ import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.microsoft.graph.http.GraphServiceException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,10 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.github.scribejava.core.model.OAuthConstants.CODE;
@@ -60,15 +64,28 @@ public final class AuthenticationResource {
     }
 
     @GET
-    @Path("v3/oauth/callback|callback")
-    public String getCallBack(@QueryParam(CODE) String code, @QueryParam(STATE) String state) {
-        Objects.requireNonNull(code);
+    @Path("callback")
+    public String getCallBackForV2Auth(@QueryParam(CODE) String code, @QueryParam(STATE) String state) {
+        return getAuthenticationResponseMessage(code, state);
+    }
+
+    @GET
+    @Path("v3/oauth/callback")
+    public String getCallbackForV3Auth(@QueryParam(CODE) String code, @QueryParam(STATE) String state) {
+        return getAuthenticationResponseMessage(code, state);
+    }
+
+    @NotNull
+    private String getAuthenticationResponseMessage(String code, String state) {
+        if (code == null) {
+            return "Authentication Failed.";
+        }
         String[] parts = state.split(Constants.HASH);
         if (parts[0].isBlank() || parts.length > 3) {
             throw new BadRequestException(Constants.INVALID_STATE_PARAMETERS);
         }
         String key = parts[0];
-        String authContextId = parts.length == 3 ? parts[1] : null;
+        String authContextId = (parts.length == 3 || parts.length == 2) ? parts[1] : null;
         try {
             GraphServiceClientProvider clientProvider = getGraphServiceClientProvider(authContextId);
             OAuth2AccessToken accessToken = clientProvider.getOutlookAttributes().getOAuth20Service().getAccessToken(code);
@@ -95,6 +112,7 @@ public final class AuthenticationResource {
             }
         }
     }
+
 
     private GraphServiceClientProvider getGraphServiceClientProvider(String authContextId) {
         GraphServiceClientProvider clientProvider;

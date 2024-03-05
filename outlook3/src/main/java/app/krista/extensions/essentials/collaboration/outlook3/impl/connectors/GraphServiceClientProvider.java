@@ -92,7 +92,6 @@ public class GraphServiceClientProvider {
             }
             ConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplication.builder
                     (outlookAttributes.getClientId(), clientCredential).authority(authority).build();
-
             IAuthenticationResult authenticationResult = confidentialClientApplication.acquireToken(refreshTokenParameters).get();
             final String cachedTokenContent = confidentialClientApplication.tokenCache().serialize();
             updateRefreshToken(userId, Constants.GSON.fromJson(cachedTokenContent, JsonObject.class));

@@ -12,8 +12,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscrip
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
-import com.microsoft.graph.models.MailFolder;
-import com.microsoft.graph.requests.MailFolderCollectionPage;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -29,7 +27,6 @@ import java.util.Map;
 public class OutlookExtension {
 
     private final String routingUrl;
-    private final String routingId;
     private final OutlookAttributes outlookAttributes;
     private final GraphServiceClientProviderFactory clientProviderFactory;
     private final OutlookRequestAuthenticator requestAuthenticator;
@@ -46,19 +43,6 @@ public class OutlookExtension {
         this.outlookAttributes = outlookAttributes;
         this.clientProviderFactory = clientProviderFactory;
         this.requestAuthenticator = requestAuthenticator;
-        this.routingId = invoker.getRoutingInfo().getRoutingId();
-    }
-
-    private static boolean areAllCredentialsBlank(OutlookAttributes attributes) {
-        return Validators.isStringNullOrBlank(attributes.getClientId()) &&
-                Validators.isStringNullOrBlank(attributes.getClientSecret()) &&
-                Validators.isStringNullOrBlank(attributes.getTenantId());
-    }
-
-    private static boolean isAnyParameterValueBlank(OutlookAttributes attributes) {
-        return Validators.isStringNullOrBlank(attributes.getClientId()) ||
-                Validators.isStringNullOrBlank(attributes.getClientSecret()) ||
-                Validators.isStringNullOrBlank(attributes.getTenantId());
     }
 
     @InvokerRequest(InvokerRequest.Type.AUTHENTICATOR)
@@ -73,12 +57,12 @@ public class OutlookExtension {
 
     @InvokerRequest(InvokerRequest.Type.VALIDATE_ATTRIBUTES)
     public void validateConnection(Map<String, Object> connectionAttributes) {
-        OutlookAttributes attributes = OutlookAttributes.create(routingUrl, connectionAttributes, routingId);
+        OutlookAttributes attributes = OutlookAttributes.create(routingUrl, connectionAttributes);
         if (Boolean.FALSE.equals(attributes.isLoginWithMicrosoft())) {
-            if (areAllCredentialsBlank(attributes)) {
+            if (Validators.areAllCredentialsBlank(attributes)) {
                 throw new IllegalArgumentException("Please provide all the parameter values.");
             }
-        } else if (!isAnyParameterValueBlank(attributes)) {
+        } else if (!Validators.isAnyParameterValueBlank(attributes)) {
             throw new IllegalArgumentException("Only Mail id is required to login with Microsoft.");
         }
         testConnection(attributes);
@@ -101,14 +85,8 @@ public class OutlookExtension {
 
     private void testConnection(OutlookAttributes attributes) {
         if (attributes.getMailId() != null && !attributes.getMailId().isBlank()) {
-            final MailFolderCollectionPage mailFolderCollectionPage = clientProviderFactory.create(attributes)
-                    .getGraphServiceClientForAdmin()
-                    .me().mailFolders().buildRequest().get();
-            if (mailFolderCollectionPage != null) {
-                for (MailFolder mailFolder : mailFolderCollectionPage.getCurrentPage()) {
-                    System.out.println("Mail Folder: " + mailFolder.displayName);
-                }
-            }
+            clientProviderFactory.create(attributes).getGraphServiceClientForAdmin().me().mailFolders().buildRequest()
+                    .get();
         }
     }
 
