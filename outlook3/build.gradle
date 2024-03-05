@@ -1,0 +1,146 @@
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+jar.archiveBaseName = "outlookV3-extension"
+group 'app.krista.extensions.essentials.collaboration'
+version(System.getenv('BRANCH') == null ? "local" : System.getenv('BRANCH').replace("/", "_").replace("outlookV3-", ""))
+
+if (rootProject.file('buildnr.txt').canRead()) {
+    ext.buildnr = rootProject.file('buildnr.txt').text.trim()
+} else {
+    ext.buildnr = "0";
+}
+
+compileJava.dependsOn clean
+
+System.setProperty("extensionVersion", version.toString())
+
+sourceCompatibility = '11'
+targetCompatibility = '11'
+
+repositories {
+    maven {
+        url "https://packages.cicd.in.antbrains.com/artifactory/libs-release"
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:all,-serial'
+}
+
+task compile() {
+    dependsOn compileJava
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            afterEvaluate {
+                artifactId = jar.archiveBaseName.get()
+                groupId = rootProject.group
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+        maven {
+            credentials {
+                username = rootProject.properties['MAVEN_USERNAME']
+                password = rootProject.properties['MAVEN_PASSWORD']
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+            url rootProject.properties['MAVEN_UPLOAD_URL']
+        }
+    }
+}
+
+configurations {
+    implementation {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+
+    annotationProcessor 'app.krista:extension-impl-anno-processors:1.0.92'
+    compileOnly 'app.krista:krista-apis:1.0.92'
+    compileOnly 'org.glassfish.hk2:hk2-api:3.0.3'
+    compileOnly 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
+
+    implementation 'com.microsoft.graph:microsoft-graph:5.76.0'
+    implementation 'com.microsoft.graph:microsoft-graph-auth:0.3.0'
+    implementation 'com.azure:azure-identity:1.11.0'
+    implementation 'com.github.scribejava:scribejava-apis:8.3.3'
+    implementation 'org.glassfish.jersey.media:jersey-media-multipart:2.35'
+    implementation 'org.jsoup:jsoup:1.16.1'
+    implementation group: 'commons-validator', name: 'commons-validator', version: '1.7'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+
+    testImplementation 'com.kristasoft.common:common-test:1.0.39'
+    testImplementation 'app.krista:krista-apis:1.0.91'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+    testImplementation 'org.mockito:mockito-inline:3.12.4'
+}
+
+task createSourceDir(type: Exec) {
+    dependsOn processResources
+    commandLine "mkdir", "-p", "$projectDir/build/classes/java/main/META-INF/project"
+}
+
+task copyGradleFile(type: Exec) {
+    dependsOn createSourceDir
+    commandLine "cp", "$projectDir/build.gradle", "$projectDir/build/classes/java/main/META-INF/project/build.gradle"
+}
+
+task includeSources(type: Exec) {
+    dependsOn copyGradleFile
+    commandLine "cp", "-r", "$projectDir/src", "$projectDir/build/classes/java/main/META-INF/project/src"
+}
+
+task candidate(type: Exec) {
+    commandLine "env",
+            "DOCKER_UPLOAD_REPO=" + rootProject.properties['DOCKER_UPLOAD_REPO'],
+            "MAVEN_URL=" + System.properties['MAVEN_URL'],
+            "MAVEN_UPLOAD_URL=" + rootProject.properties['MAVEN_UPLOAD_URL'],
+            "MAVEN_USERNAME=" + rootProject.properties['MAVEN_USERNAME'],
+            "MAVEN_PASSWORD=" + rootProject.properties['MAVEN_PASSWORD'],
+            "bash", "candidate.sh"
+    standardOutput = new ByteArrayOutputStream()
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+
+task release(type: Exec) {
+    commandLine "env",
+            "DOCKER_UPLOAD_REPO=" + rootProject.properties['DOCKER_UPLOAD_REPO'],
+            "MAVEN_URL=" + System.properties['MAVEN_URL'],
+            "MAVEN_UPLOAD_URL=" + rootProject.properties['MAVEN_UPLOAD_URL'],
+            "MAVEN_USERNAME=" + rootProject.properties['MAVEN_USERNAME'],
+            "MAVEN_PASSWORD=" + rootProject.properties['MAVEN_PASSWORD'],
+            "bash", "release.sh"
+    standardOutput = new ByteArrayOutputStream()
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+
+jar {
+    manifest {
+    }
+    from {
+        configurations.implementation.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    duplicatesStrategy = "exclude"
+}
