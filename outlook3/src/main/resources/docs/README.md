@@ -7,7 +7,7 @@ This extension connects to **Outlook** and performs various operations.
 * ### Overview
     * [Overview](pages/overview.md)
 * ### Getting your own Outlook credentials
-    * [Obtaining Client ID, Tenant ID, and Client Secret](pages/obtainingClientIDClientSecret.md)
+    * [Getting your own Outlook credentials](pages/obtainingClientIDClientSecret.md)
 * ### Connecting to Outlook
     * [Connecting with Outlook Extension](pages/connectingWithOutlookExtension.md)
 * ### Authentication

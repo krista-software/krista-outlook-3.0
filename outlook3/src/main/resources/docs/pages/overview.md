@@ -9,9 +9,12 @@
 
 ### Prerequisite
 
-* You must have the appropriate access and privileges to
-  * Obtain the Client ID and Client Secret.
-  * Grant the Admin level consent.
+* Before proceeding with the integration or setup process, ensure you have the necessary access and privileges. Depending on your scenario, follow one of the two options below:
+  1. Using Client ID and Client Secret
+     - Obtain the Client ID and Client Secret.
+     - Grant the Admin level consent.
+  2. Using Work or School Account
+     - Ensure you have access to your work or school email account provided by your organization
 
 
 ### Limitation

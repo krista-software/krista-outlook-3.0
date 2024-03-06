@@ -1,8 +1,13 @@
 ### Connecting with Outlook Extension
 
+To establish a connection with the Outlook Extension, follow the steps below based on your authentication method:
 
-### Steps for connection
+## Using Work or School Account
 
+* Check the "Login with Microsoft" option and provide your work or school account email ID, then click on "Validate Attributes."
+  ![Using Emial](../_media/usingEmail.png)
+
+## Using Client Id and Client Secret
 
 * To set up the connection you must provide the Client ID, Client Secret, and Tenant ID from your registered web application on the Azure portal.
 * Refer to the **Credentials** tab of your selected project on the Azure portal.

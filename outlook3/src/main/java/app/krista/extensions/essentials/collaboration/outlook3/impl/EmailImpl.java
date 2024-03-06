@@ -408,7 +408,6 @@ public class EmailImpl implements Email {
         if (categorizedMessage == null) {
             String userFacingErrorMessage = new StringBuilder().append("Failed to update category to '").append(category)
                     .append("' for messageId ").append(messageId).toString();
-
             log.error(userFacingErrorMessage + " with RequestBuilder: " + ReflectionToStringBuilder.toString(messageRequestBuilder));
             throw new IllegalStateException(userFacingErrorMessage);
         }

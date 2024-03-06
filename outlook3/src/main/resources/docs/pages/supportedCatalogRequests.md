@@ -2,8 +2,6 @@
 
 ### The Outlook Extension supports the following catalog requests
 
->**Note :** In this release, we've introduced a new parameter called bodyType for most of the request.This parameter allows specifying the format of the message body, which can be either HTML or Text. As a result, after updating the daz file, we also need to ensure that any relevant conversations are updated to accommodate this new parameter.
-
 #### Fetch All Labels
 
 - **Description**: Returns list of labels.
@@ -16,16 +14,17 @@
 
 #### Mark Message
 
-- **Description**: Accepts message ID,label & Category as input and mark mail as read/unread and returns response message.
+- **Description**: Accepts message ID,label & Category as input and mark mail as read/unread and returns response
+  message.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory**  | **Example**                                                                                                                                              |
-|--------------------|--------------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes            | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| Label              | Pick One           | Yes            | Read                                                                                                                                                     |
-| Category           | Text               | Yes            | Krista                                                                                                                                                   |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value |
+| Label              | Pick One           | Yes           | Read             |
+| Category           | Text               | Yes           | Krista           |
 
->**Note :** In the context of emails, a category refers to the tag associated with the email.
+> **Note :** In the context of emails, a category refers to the tag associated with the email.
 
 - **Output Parameters**:
 
@@ -38,9 +37,9 @@
 - **Description**: Accepts message Id as input and returns mail. In case of invalid input, this will return empty data.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory**  | **Example**                                                                                                                                              |
-|--------------------|--------------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes            | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_Id_Value |
 
 - **Output Parameters**:
 
@@ -54,10 +53,10 @@
   folder and returns response message.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory**  | **Example**                                                                                                                                              |
-|--------------------|--------------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes            | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| Folder Name        | Text               | Yes            | Inbox                                                                                                                                                    |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value |
+| Folder Name        | Text               | Yes           | Inbox            |
 
 - **Output Parameters**:
 
@@ -95,7 +94,8 @@
 |--------------------|--------------------|
 | Mail Details       | Mail               |
 
->**Note :** If you are not receiving mail Alerts Please Upgrade Outlook Extension and Validate Attributes from Setup with "Allow Alert Mail" Checked.
+> **Note :** If you are not receiving mail Alerts Please Upgrade Outlook Extension and Validate Attributes from Setup
+> with "Allow Alert Mail" Checked.
 
 #### Reply To All
 
@@ -103,12 +103,12 @@
   user 'Reply All' to, whether they're in the 'To' or 'Cc' fields.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                                                                                                                                              |
-|--------------------|--------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes           | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| Message            | Paragraph          | Yes           | Hi sir, This is a message                                                                                                                                |
-| Attachments        | File               | No            | file.xlsx                                                                                                                                                |
-| BodyType           | PickOne            | No            | Text OR HTML                                                                                                                                             |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
+|--------------------|--------------------|---------------|---------------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value          |
+| Message            | Paragraph          | Yes           | Hi sir, This is a message |
+| Attachments        | File               | No            | file.xlsx                 |
+| BodyType           | PickOne            | No            | Text OR HTML              |
 
 - **Output Parameters**:
 
@@ -118,21 +118,24 @@
 
 #### Reply To All With CC and BCC
 
-- **Description**: In this request, you can respond to everyone on a thread. Other recipients would see a message. Use 'Reply All' for all, whether they are in the 'To' or 'Cc' fields. Optional parameters 'To', 'Bcc' and 'Reply To' are provided that overwrites the old email addresses, if configured.
+- **Description**: In this request, you can respond to everyone on a thread. Other recipients would see a message. Use '
+  Reply All' for all, whether they are in the 'To' or 'Cc' fields. Optional parameters 'To', 'Bcc' and 'Reply To' are
+  provided that overwrites the old email addresses, if configured.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                                                                                                                                              |
-|--------------------|--------------------|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes                                | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| Message            | Paragraph          | Yes                                | Hi sir, This is a message                                                                                                                                |
-| To                 | List&lt;Email>     | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com, to2@xyz.com]                                                                                                                   |
-| Cc                 | List&lt;Email>     | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]                                                                                                                                |
-| Bcc                | List&lt;Email>     | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com]                                                                                                                              |
-| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com                                                                                                                                          |
-| Attachments        | File               | No                                 | file.xlsx                                                                                                                                                |
-| BodyType           | PickOne            | No                                 | Text OR HTML                                                                                                                                             |
+| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                            |
+|--------------------|--------------------|------------------------------------|----------------------------------------|
+| Message ID         | Text               | Yes                                | Message_ID_Value                       |
+| Message            | Paragraph          | Yes                                | Hi sir, This is a message              |
+| To                 | List&lt;Email>     | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com, to2@xyz.com] |
+| Cc                 | List&lt;Email>     | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]              |
+| Bcc                | List&lt;Email>     | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com]            |
+| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com                        |
+| Attachments        | File               | No                                 | file.xlsx                              |
+| BodyType           | PickOne            | No                                 | Text OR HTML                           |
 
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given then it will be skipped.
+- **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given
+  then it will be skipped.
 
 - **Output Parameters**:
 
@@ -162,12 +165,12 @@
 - **Description**: This request allows a sender to forward the received email to other recipients.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                                                                                                                                              |
-|--------------------|--------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes           | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| To                 | Text               | Yes           | to@xyz.com. to1@xyz.com                                                                                                                                  |
-| Message            | Paragraph          | Yes           | Hi sir, This is a message                                                                                                                                |
-| BodyType           | PickOne            | No            | Text OR HTML                                                                                                                                             |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
+|--------------------|--------------------|---------------|---------------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value          |
+| To                 | Text               | Yes           | to@xyz.com. to1@xyz.com   |
+| Message            | Paragraph          | Yes           | Hi sir, This is a message |
+| BodyType           | PickOne            | No            | Text OR HTML              |
 
 - **Note**: The parameter To is comma seperated emails and if any invalid email address given will be skipped.
 
@@ -194,7 +197,8 @@
 | ReplyTo            | Email              | No            | replyto@xyz.com             |
 | BodyType           | PickOne            | No            | Text OR HTML                |
 
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given then it will be skipped.
+- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
+  then it will be skipped.
 
 - **Output Parameters**:
 
@@ -204,7 +208,8 @@
 
 #### Send Mail With Table
 
-- **Description**: Accepts subject, message, attachments, to, bcc, cc, List of Entities, reply to as input and returns response message.
+- **Description**: Accepts subject, message, attachments, to, bcc, cc, List of Entities, reply to as input and returns
+  response message.
   Attachments, bcc, cc, reply to and Remove Table Column are optional inputs.
 - **Input Parameters**:
 
@@ -220,10 +225,13 @@
 | Entity List                    | List&lt;Entity>    | Yes           | {Name: name1, Age: 12},{Name: name2, Age: 23} |
 | Remove Entity Field From Table | List&lt;String>    | No            | ["primaryKey","Phone"]                        |
 
->**Note :** The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given then it will be skipped.
-> 
->Input key for Date Field Should contain keyword like "date". For Example -> approvedOnDate or approved_on_date or $APPROVED_ON_DATE
->Similarly, Input key for Time Field Should contain keyword like "time". For Example -> startTime or start_time or $START_TIME
+> **Note :** The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
+> then it will be skipped.
+>
+>Input key for Date Field Should contain keyword like "date". For Example -> approvedOnDate or approved_on_date or
+> $APPROVED_ON_DATE
+> Similarly, Input key for Time Field Should contain keyword like "time". For Example -> startTime or start_time or
+> $START_TIME
 
 - **Output Parameters**:
 
@@ -310,12 +318,12 @@
   optional input.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                                                                                                                                              |
-|--------------------|--------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes           | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| Message            | Rich Text          | Yes           | Hi sir, This is a message                                                                                                                                |
-| Attachments        | File               | No            | file.xlsx                                                                                                                                                |
-| BodyType           | PickOne            | No            | Text OR HTML                                                                                                                                             |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
+|--------------------|--------------------|---------------|---------------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value          |
+| Message            | Rich Text          | Yes           | Hi sir, This is a message |
+| Attachments        | File               | No            | file.xlsx                 |
+| BodyType           | PickOne            | No            | Text OR HTML              |
 
 - **Output Parameters**:
 
@@ -327,21 +335,24 @@
 
 #### Reply To Mail With CC and BCC
 
-- **Description**: In this request, you can respond to sender on a thread. Accepts Message ID, and Message as mandatory parameters and returns response message. Optional parameters 'To', 'Bcc', and 'Reply To' are provided that overwrites the old email addresses, if configured.
+- **Description**: In this request, you can respond to sender on a thread. Accepts Message ID, and Message as mandatory
+  parameters and returns response message. Optional parameters 'To', 'Bcc', and 'Reply To' are provided that overwrites
+  the old email addresses, if configured.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                                                                                                                                              |
-|--------------------|--------------------|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Message ID         | Text               | Yes                                | AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0LTQwMTJhZWQ2N2VmZgAARgAAAwsf5V2sG3FDpxbDAdRPaTsHAAamihh_dDdEhqYgdF-pBngAAAIBDAAAAAamihh_dDdEhqYgdF-pBngAAAIJSQAAAA== |
-| Message            | Rich Text          | Yes                                | Hi sir, This is a message                                                                                                                                |
-| To                 | List&lt;Email>     | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com]                                                                                                                                |
-| Cc                 | List&lt;Email>     | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]                                                                                                                                |
-| Bcc                | List&lt;Email>     | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com]                                                                                                                              |
-| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com                                                                                                                                          |
-| Attachments        | File               | No                                 | file.xlsx                                                                                                                                                |
-| BodyType           | PickOne            | No                                 | Text OR HTML                                                                                                                                             |
+| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                 |
+|--------------------|--------------------|------------------------------------|-----------------------------|
+| Message ID         | Text               | Yes                                | Message_ID_Value            |
+| Message            | Rich Text          | Yes                                | Hi sir, This is a message   |
+| To                 | List&lt;Email>     | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com]   |
+| Cc                 | List&lt;Email>     | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]   |
+| Bcc                | List&lt;Email>     | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com] |
+| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com             |
+| Attachments        | File               | No                                 | file.xlsx                   |
+| BodyType           | PickOne            | No                                 | Text OR HTML                |
 
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given then it will be skipped.
+- **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given
+  then it will be skipped.
 
 - **Output Parameters**:
 
@@ -357,10 +368,9 @@
 
 - **Output Parameters**:
 
-| **Parameter Name**   | **Parameter Type**   | **Example**                          |
-|----------------------|----------------------|--------------------------------------|
-| Category Names       | List&lt;Text>        | [Red category, Orange category, ...] |
-
+| **Parameter Name** | **Parameter Type** | **Example**                          |
+|--------------------|--------------------|--------------------------------------|
+| Category Names     | List&lt;Text>      | [Red category, Orange category, ...] |
 
 ## Entity Requests
 
