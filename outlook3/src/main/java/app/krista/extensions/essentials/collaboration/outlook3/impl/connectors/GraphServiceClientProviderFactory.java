@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl.connectors;
 
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
+import app.krista.extensions.essentials.collaboration.outlook3.OutlookExtension;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
 import app.krista.ksdk.context.AuthorizationContext;
@@ -16,29 +17,26 @@ public class GraphServiceClientProviderFactory {
     private final OutlookAttributeStore outlookAttributeStore;
     private final RequestContext requestContext;
     private final AuthorizationContext authorizationContext;
-    private final GraphServiceClientProvider defaultClientProvider;
 
     @Inject
-    public GraphServiceClientProviderFactory(RefreshTokenStore refreshTokenStore, OutlookAttributeStore outlookAttributeStore, OutlookAttributes outlookAttributes, RequestContext requestContext, AuthorizationContext authorizationContext) {
-        this(refreshTokenStore, outlookAttributeStore, requestContext, authorizationContext,
-                new GraphServiceClientProvider(refreshTokenStore, outlookAttributes, requestContext, authorizationContext, null));
-    }
-
-    public GraphServiceClientProviderFactory(RefreshTokenStore refreshTokenStore, OutlookAttributeStore outlookAttributeStore, RequestContext requestContext, AuthorizationContext authorizationContext, GraphServiceClientProvider defaultClientProvider) {
+    public GraphServiceClientProviderFactory(RefreshTokenStore refreshTokenStore, OutlookAttributeStore outlookAttributeStore,
+                                             RequestContext requestContext, AuthorizationContext authorizationContext) {
         this.refreshTokenStore = refreshTokenStore;
         this.outlookAttributeStore = outlookAttributeStore;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
-        this.defaultClientProvider = defaultClientProvider;
     }
 
-    public GraphServiceClientProvider create(OutlookAttributes outlookAttributes) {
-        String authContextId = outlookAttributeStore.save(outlookAttributes);
-        return new GraphServiceClientProvider(refreshTokenStore, outlookAttributes, requestContext, authorizationContext, authContextId);
+    public GraphServiceClientProvider create(OutlookAttributes attributes) {
+        outlookAttributeStore.save(attributes, requestContext.getInvokerId());
+        return new GraphServiceClientProvider(refreshTokenStore, attributes, requestContext, authorizationContext);
     }
 
     public GraphServiceClientProvider create() {
-        return defaultClientProvider;
+        String key = requestContext.getInvokerId();
+        System.out.println("Invoker Id: " + key);
+        OutlookAttributes attributes = outlookAttributeStore.load(key);
+        return new GraphServiceClientProvider(refreshTokenStore, attributes, requestContext, authorizationContext);
     }
 
 }

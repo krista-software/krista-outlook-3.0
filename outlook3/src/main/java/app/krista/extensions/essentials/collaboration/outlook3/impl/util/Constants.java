@@ -71,7 +71,7 @@ public class Constants {
     public static final String ORG_AUTHORITY = "https://login.microsoftonline.com/organizations/";
     public static final String AUTHORITY = "https://login.microsoftonline.com/";
     public static final String USER_ID = "userId";
-    public static final String AUTH_CONTEXT_ID = "authContextId";
+    public static final String INVOKER_ID = "invokerId";
     public static final String REFRESH_TOKEN_EXPIRED = "Refresh Token is no longer valid. Please reauthorize yourself";
     public static final String FAILED_TO_GET_ACCOUNT = "Failed to get account";
     public static final String EXTENSION_FORWARD_PATH = "/rest/outlook/v3/oauth/callback";
@@ -117,6 +117,18 @@ public class Constants {
     public static final String CLOSE_TABLE_TAG = "</table><br/>";
     public static final String CLOSE_BODY_TAG = "</body></html>";
     public static final String AUTHORIZATION_PROMPT = "Authorize yourself and click Validate Attributes before saving changes to proceed further";
+    public static final String LOCAL_EXTN_URL = "https://extension.local.eng.krista.app";
+    public static final String DEFAULT_CALLBACK_PATH = "/extension/api/rest/v3/oauth/callback";
+
+    public static final String LOCAL_EXTN_REPLACE_URL = "http://localhost:8765";
+    public static final String PUBLIC = "Public";
+    public static final String PRIVATE = "Private";
+    public static final String TENANT_ID = "tenantId";
+    public static final String CLIENT_ID = "clientId";
+    public static final String CLIENT_SECRET = "clientSecret";
+    public static final String ALLOW_MAIL_ALERT = "allowMailAlert";
+    public static final String AUTH_TYPE = "authType";
+    public static final String EMAIL = "email";
 
     private Constants() {
     }

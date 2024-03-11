@@ -31,26 +31,25 @@ public class GraphServiceClientProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphServiceClientProvider.class);
     private final RefreshTokenStore refreshTokenStore;
-    private final OutlookAttributes outlookAttributes;
+    private final OutlookAttributes attributes;
     private final RequestContext requestContext;
     private final AuthorizationContext authorizationContext;
-    private final String authContextId;
+
+//    @Inject
+//    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes attributes, RequestContext requestContext, AuthorizationContext authorizationContext) {
+//        this(refreshTokenStore, attributes, requestContext, authorizationContext);
+//    }
 
     @Inject
-    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes outlookAttributes, RequestContext requestContext, AuthorizationContext authorizationContext) {
-        this(refreshTokenStore, outlookAttributes, requestContext, authorizationContext, null);
-    }
-
-    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes outlookAttributes, RequestContext requestContext, AuthorizationContext authorizationContext, String authContextId) {
+    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes attributes, RequestContext requestContext, AuthorizationContext authorizationContext) {
         this.refreshTokenStore = refreshTokenStore;
-        this.outlookAttributes = outlookAttributes;
+        this.attributes = attributes;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
-        this.authContextId = authContextId;
     }
 
     public OutlookAttributes getOutlookAttributes() {
-        return outlookAttributes;
+        return attributes;
     }
 
     public GraphServiceClient<Request> getGraphServiceClientForUser(Boolean useEmail, String accountID) throws IOException {
@@ -83,15 +82,15 @@ public class GraphServiceClientProvider {
             String[] scopes = Constants.REQUIRED_SCOPE.split(Constants.SCOPE_SEPARATOR);
             Set<String> scopeSet = Arrays.stream(scopes).collect(Collectors.toSet());
             RefreshTokenParameters refreshTokenParameters = RefreshTokenParameters.builder(scopeSet, refreshToken).build();
-            IClientCredential clientCredential = ClientCredentialFactory.createFromSecret(outlookAttributes.getClientSecret());
+            IClientCredential clientCredential = ClientCredentialFactory.createFromSecret(attributes.getClientSecret());
             String authority;
-            if (outlookAttributes.getTenantId() != null) {
-                authority = Constants.AUTHORITY + outlookAttributes.getTenantId();
+            if (attributes.getTenantId() != null) {
+                authority = Constants.AUTHORITY + attributes.getTenantId();
             } else {
                 authority = Constants.ORG_AUTHORITY;
             }
             ConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplication.builder
-                    (outlookAttributes.getClientId(), clientCredential).authority(authority).build();
+                    (attributes.getClientId(), clientCredential).authority(authority).build();
             IAuthenticationResult authenticationResult = confidentialClientApplication.acquireToken(refreshTokenParameters).get();
             final String cachedTokenContent = confidentialClientApplication.tokenCache().serialize();
             updateRefreshToken(userId, Constants.GSON.fromJson(cachedTokenContent, JsonObject.class));
@@ -124,13 +123,13 @@ public class GraphServiceClientProvider {
     public UserRequestBuilder getUserRequestBuilder(Boolean useEmail, String accountID) {
         try {
             if (useEmail != null) {
-                return !useEmail
-                        ? getGraphServiceClientForUser(useEmail, null).me()
-                        : getGraphServiceClientForUser(useEmail, accountID).users(outlookAttributes.getMailId());
+                return useEmail
+                        ? getGraphServiceClientForUser(useEmail, accountID).users(attributes.getEmail())
+                        : getGraphServiceClientForUser(useEmail, null).me();
             }
             return requestContext.invokeAsUser()
                     ? getGraphServiceClientForUser(null, null).me()
-                    : getGraphServiceClientForUser(null, null).users(outlookAttributes.getMailId());
+                    : getGraphServiceClientForUser(null, null).users(attributes.getEmail());
         } catch (IOException cause) {
             throw new IllegalStateException(cause);
         }
@@ -141,24 +140,27 @@ public class GraphServiceClientProvider {
         List<NamedValuedField> details = new ArrayList<>();
         NamedValuedField userIdField = new NamedValuedField(Constants.USER_ID, Constants.TEXT, userId, new HashMap<>(), new HashMap<>());
         details.add(userIdField);
-        if (authContextId != null) {
-            NamedValuedField contextIdField = new NamedValuedField(Constants.AUTH_CONTEXT_ID, Constants.TEXT, authContextId, new HashMap<>(), new HashMap<>());
-            details.add(contextIdField);
-        }
+        NamedValuedField invokerId = new NamedValuedField(Constants.INVOKER_ID, Constants.TEXT, requestContext.getInvokerId(), new HashMap<>(), new HashMap<>());
+        details.add(invokerId);
         return new MustAuthorizeException(reAuthentication ? Constants.REFRESH_TOKEN_EXPIRED : Constants.AUTHORIZATION_PROMPT, details);
     }
 
     private String getUserId(boolean calledFromValidateAttributes, String accountID) {
         String userId;
         if (calledFromValidateAttributes) {
-            userId = outlookAttributes.getMailId();
+            userId = attributes.getEmail();
         } else {
             userId = (accountID != null) ? accountID : authorizationContext.getAuthorizedAccount().getAccountId();
         }
         if (userId == null) {
             throw new IllegalStateException(Constants.FAILED_TO_GET_ACCOUNT);
         }
-        return userId;
+        return createStoreKey(userId);
+    }
+
+    @NotNull
+    private String createStoreKey(String userId) {
+        return userId + "_" + attributes.getClientId() + "_" + attributes.getAuthType();
     }
 
     public static class GraphServiceClientAuthenticationProvider implements IAuthenticationProvider {

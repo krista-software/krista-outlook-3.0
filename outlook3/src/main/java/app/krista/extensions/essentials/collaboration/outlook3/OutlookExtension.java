@@ -8,7 +8,7 @@ import app.krista.extension.impl.anno.InvokerRequest;
 import app.krista.extension.impl.anno.StaticResource;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
+//import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
@@ -16,34 +16,39 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validat
 import javax.inject.Inject;
 import java.util.Map;
 
-@Field.Boolean(value = OutlookAttributes.LOGIN_WITH_MICROSOFT, required = false)
-@Field.Text(value = OutlookAttributes.EMAIL)
-@Field.Text(value = OutlookAttributes.CLIENT_ID, required = false)
-@Field.Text(value = OutlookAttributes.CLIENT_SECRET, isSecured = true, required = false)
-@Field.Text(value = OutlookAttributes.TENANT_ID, required = false)
-@Field.Boolean(value = OutlookAttributes.ALLOW_ALERT_MAIL, required = false)
+//@Field.Boolean(value = Attributes.LOGIN_WITH_MICROSOFT, required = false)
+//@Field.Text(value = Attributes.EMAIL)
+//@Field.Text(value = Attributes.CLIENT_ID, required = false)
+//@Field.Text(value = Attributes.CLIENT_SECRET, isSecured = true, required = false)
+//@Field.Text(value = Attributes.TENANT_ID, required = false)
+//@Field.Boolean(value = Attributes.ALLOW_ALERT_MAIL, required = false)
 @Extension(version = "3.0.0-rc1")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
-    private final String routingUrl;
-    private final OutlookAttributes outlookAttributes;
-    private final GraphServiceClientProviderFactory clientProviderFactory;
+//    private final String routingUrl;
+//    private final Attributes attributes;
+//    private final GraphServiceClientProviderFactory clientProviderFactory;
     private final OutlookRequestAuthenticator requestAuthenticator;
 
+//    @Inject
+//    public OutlookExtension(Invoker invoker, Attributes attributes, GraphServiceClientProviderFactory clientProviderFactory, OutlookAttributeStore outlookAttributeStore) {
+//        this(invoker, attributes,
+//                clientProviderFactory,
+//                new OutlookRequestAuthenticator(outlookAttributeStore, attributes));
+//    }
+
+//    public OutlookExtension(Invoker invoker, Attributes attributes, GraphServiceClientProviderFactory clientProviderFactory, OutlookRequestAuthenticator requestAuthenticator) {
+//        this.routingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+//        this.attributes = attributes;
+//        this.clientProviderFactory = clientProviderFactory;
+//        this.requestAuthenticator = requestAuthenticator;
+//    }
     @Inject
-    public OutlookExtension(Invoker invoker, OutlookAttributes outlookAttributes, GraphServiceClientProviderFactory clientProviderFactory, OutlookAttributeStore outlookAttributeStore) {
-        this(invoker, outlookAttributes,
-                clientProviderFactory,
-                new OutlookRequestAuthenticator(outlookAttributeStore, outlookAttributes));
+    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore) {
+        this.requestAuthenticator = new OutlookRequestAuthenticator(attributeStore);
     }
 
-    public OutlookExtension(Invoker invoker, OutlookAttributes outlookAttributes, GraphServiceClientProviderFactory clientProviderFactory, OutlookRequestAuthenticator requestAuthenticator) {
-        this.routingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
-        this.outlookAttributes = outlookAttributes;
-        this.clientProviderFactory = clientProviderFactory;
-        this.requestAuthenticator = requestAuthenticator;
-    }
 
     @InvokerRequest(InvokerRequest.Type.AUTHENTICATOR)
     public RequestAuthenticator getRequestAuthenticator() {
@@ -52,52 +57,55 @@ public class OutlookExtension {
 
     @InvokerRequest(InvokerRequest.Type.CUSTOM_TABS)
     public Map<String, String> customTabs() {
-        return Map.of("Documentation", "static/docs");
+        return Map.of("Authentication", "rest/outlook/docs/", "Documentation", "static/docs");
     }
 
-    @InvokerRequest(InvokerRequest.Type.VALIDATE_ATTRIBUTES)
-    public void validateConnection(Map<String, Object> connectionAttributes) {
-        OutlookAttributes attributes = OutlookAttributes.create(routingUrl, connectionAttributes);
-        if (Boolean.FALSE.equals(attributes.isLoginWithMicrosoft())) {
-            if (Validators.areAllCredentialsBlank(attributes)) {
-                throw new IllegalArgumentException("Please provide all the parameter values.");
-            }
-        } else if (!Validators.isAnyParameterValueBlank(attributes)) {
-            throw new IllegalArgumentException("Only Mail id is required to login with Microsoft.");
-        }
-        testConnection(attributes);
-        if (attributes.isAllowAlertMail()) {
-            MailSubscription.createSubscription(routingUrl, clientProviderFactory.create(attributes));
-        } else {
-            MailSubscription.deleteSubscription(clientProviderFactory.create(attributes), routingUrl);
-        }
-    }
+//    @InvokerRequest(InvokerRequest.Type.VALIDATE_ATTRIBUTES)
+//    public void validateConnection(Map<String, Object> connectionAttributes) {
+//        Attributes attributes = Attributes.create(routingUrl, connectionAttributes);
+//        if (attributes.isLoginWithMicrosoft()) {
+//            if (Validators.isAnyParameterValuePresent(connectionAttributes)) {
+//                throw new IllegalArgumentException("Only Mail id is required to login with Microsoft.");
+//            }
+//        } else {
+//            if (Validators.areAllCredentialsBlank(connectionAttributes)) {
+//                throw new IllegalArgumentException("Please provide all the parameter values.");
+//            }
+//        }
+//        testConnection(attributes);
+//        if (attributes.isAllowAlertMail()) {
+//            MailSubscription.createSubscription(routingUrl, clientProviderFactory.create(attributes));
+//        } else {
+//            MailSubscription.deleteSubscription(clientProviderFactory.create(attributes), routingUrl);
+//        }
+//    }
 
-    @InvokerRequest(InvokerRequest.Type.TEST_CONNECTION)
-    public void testConnection() {
-        testConnection(outlookAttributes);
-        if (outlookAttributes.isAllowAlertMail()) {
-            MailSubscription.createSubscription(routingUrl, clientProviderFactory.create());
-        } else {
-            MailSubscription.deleteSubscription(clientProviderFactory.create(), routingUrl);
-        }
-    }
+//    @InvokerRequest(InvokerRequest.Type.TEST_CONNECTION)
+//    public void testConnection() {
+//        return;
+//        testConnection(attributes);
+//        if (attributes.isAllowAlertMail()) {
+//            MailSubscription.createSubscription(routingUrl, clientProviderFactory.create());
+//        } else {
+//            MailSubscription.deleteSubscription(clientProviderFactory.create(), routingUrl);
+//        }
+//    }
 
-    private void testConnection(OutlookAttributes attributes) {
-        if (attributes.getMailId() != null && !attributes.getMailId().isBlank()) {
-            clientProviderFactory.create(attributes).getGraphServiceClientForAdmin().me().mailFolders().buildRequest()
-                    .get();
-        }
-    }
+//    private void testConnection(Attributes attributes) {
+//        if (attributes.getMailId() != null && !attributes.getMailId().isBlank()) {
+//            clientProviderFactory.create(attributes).getGraphServiceClientForAdmin().me().mailFolders().buildRequest()
+//                    .get();
+//        }
+//    }
 
-    @InvokerRequest(InvokerRequest.Type.INVOKER_UPDATED)
-    public void attributesUpdated(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
-        outlookAttributes.update(newAttributes);
-    }
+//    @InvokerRequest(InvokerRequest.Type.INVOKER_UPDATED)
+//    public void attributesUpdated(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
+//        attributes.update(newAttributes);
+//    }
 
-    @InvokerRequest(InvokerRequest.Type.INVOKER_REMOVED)
-    public void invokerRemoved() {
-        MailSubscription.deleteSubscription(clientProviderFactory.create(), routingUrl);
-    }
+//    @InvokerRequest(InvokerRequest.Type.INVOKER_REMOVED)
+//    public void invokerRemoved() {
+//        MailSubscription.deleteSubscription(clientProviderFactory.create(), routingUrl);
+//    }
 
 }

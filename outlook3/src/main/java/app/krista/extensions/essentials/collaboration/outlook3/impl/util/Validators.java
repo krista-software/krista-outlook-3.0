@@ -1,7 +1,8 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
 
-import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import org.apache.commons.validator.routines.EmailValidator;
+
+import java.util.Map;
 
 public class Validators {
 
@@ -17,15 +18,10 @@ public class Validators {
         return (input == null || input.isBlank());
     }
 
-    public static boolean areAllCredentialsBlank(OutlookAttributes attributes) {
-        return Validators.isStringNullOrBlank(attributes.getClientId()) &&
-                Validators.isStringNullOrBlank(attributes.getClientSecret()) &&
-                Validators.isStringNullOrBlank(attributes.getTenantId());
-    }
-
-    public static boolean isAnyParameterValueBlank(OutlookAttributes attributes) {
-        return Validators.isStringNullOrBlank(attributes.getClientId()) ||
-                Validators.isStringNullOrBlank(attributes.getClientSecret()) ||
-                Validators.isStringNullOrBlank(attributes.getTenantId());
+    public static void addAttributeIfNotNull(Map<String, Object> attributeMap, String attributeName,
+                                             Object attributeValue) {
+        if (attributeValue != null) {
+            attributeMap.put(attributeName, attributeValue);
+        }
     }
 }

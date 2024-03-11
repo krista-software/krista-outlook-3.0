@@ -14,7 +14,7 @@ public class OutlookApplication extends Application {
 
     @Override
     public Set<Class<?>> getClasses() {
-        return Set.of(AuthenticationResource.class);
+        return Set.of(OutlookApiResource.class);
     }
 
 }

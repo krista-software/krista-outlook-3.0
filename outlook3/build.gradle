@@ -1,16 +1,23 @@
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
+plugins {
+    id 'java'
+    id "com.github.node-gradle.node" version "3.1.0"
+    id 'maven-publish'
+}
+
+node {
+    version = '16.14.0'
+    npmVersion = '7.0.8'
+    yarnVersion = '1.22.17'
+    download = true
+    workDir = file("${project.projectDir}/src/main/ui/outlookoauth/nodejs")
+    npmWorkDir = file("${project.projectDir}/src/main/ui/outlookoauth/npm")
+    yarnWorkDir = file("${project.projectDir}/src/main/ui/outlookoauth/yarn")
+    nodeModulesDir = file("${project.projectDir}/src/main/ui/outlookoauth/")
+}
+
 jar.archiveBaseName = "outlookV3-extension"
 group 'app.krista.extensions.essentials.collaboration'
 version(System.getenv('BRANCH') == null ? "local" : System.getenv('BRANCH').replace("/", "_").replace("outlookV3-", ""))
-
-if (rootProject.file('buildnr.txt').canRead()) {
-    ext.buildnr = rootProject.file('buildnr.txt').text.trim()
-} else {
-    ext.buildnr = "0";
-}
-
-compileJava.dependsOn clean
 
 System.setProperty("extensionVersion", version.toString())
 
@@ -32,6 +39,10 @@ tasks.withType(JavaCompile) {
 
 task compile() {
     dependsOn compileJava
+}
+
+tasks.compileTestJava {
+    dependsOn 'buildAndCopyUI'
 }
 
 publishing {
@@ -64,6 +75,10 @@ configurations {
         canBeConsumed = false
         canBeResolved = true
     }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 dependencies {
@@ -133,7 +148,40 @@ task release(type: Exec) {
     }
 }
 
+task bundleUI(type: YarnTask) {
+    dependsOn 'nodeSetup'
+    dependsOn 'yarnSetup'
+    dependsOn 'yarn'
+    execOverrides {
+        it.workingDir = "src/main/ui/outlookoauth"
+    }
+    args = ['build']
+}
+
+task filepermission(type: Exec) {
+    commandLine 'chmod', '-R', '755', "${project.projectDir}/src/main/ui/outlookoauth"
+}
+
+task buildAndCopyUI(type: Copy) {
+    dependsOn "bundleUI"
+    from "${project.projectDir}/src/main/ui/outlookoauth/build"
+    into "${project.buildDir}/resources/main/ui/outlookoauth"
+}
+
+task buildUI() {
+    dependsOn 'buildAndCopyUI'
+    dependsOn 'filepermission'
+}
+
+task cleanDir(type: Delete) {
+    delete "${project.projectDir}/main/ui/outlookoauth/build"
+    delete "${project.buildDir}/resources/ui/outlookoauth"
+}
+
 jar {
+    duplicatesStrategy = "exclude"
+    dependsOn 'buildUI'
+
     manifest {
     }
     from {

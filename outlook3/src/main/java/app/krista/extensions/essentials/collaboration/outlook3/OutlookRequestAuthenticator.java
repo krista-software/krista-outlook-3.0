@@ -6,28 +6,31 @@ import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.request.ProtoRequest;
 import app.krista.extension.request.ProtoResponse;
 import app.krista.extension.request.protos.http.HttpRequest;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.model.field.NamedField;
 import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
+import org.jvnet.hk2.annotations.Service;
 
+import javax.inject.Inject;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.util.*;
 
 import static com.github.scribejava.core.model.OAuthConstants.STATE;
 
+@Service
 public class OutlookRequestAuthenticator implements RequestAuthenticator {
 
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V3 = "/outlook/v3/oauth/callback";
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V2 = "/outlook/callback";
-    private final OutlookAttributeStore outlookAttributeStore;
-    private final OutlookAttributes outlookAttributes;
+    private final OutlookAttributeStore attributeStore;
 
-    public OutlookRequestAuthenticator(OutlookAttributeStore outlookAttributeStore, OutlookAttributes outlookAttributes) {
-        this.outlookAttributeStore = outlookAttributeStore;
-        this.outlookAttributes = outlookAttributes;
+    @Inject
+    public OutlookRequestAuthenticator(OutlookAttributeStore attributeStore) {
+        this.attributeStore = attributeStore;
     }
 
     @Override
@@ -87,24 +90,21 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
     @Override
     public AuthorizationResponse getMustAuthorizeResponse(MustAuthorizeException cause) {
         String userId = (String) cause.getDetails().get(0).getValue();
-        Optional<NamedValuedField> authContextIdField = cause.getDetails().stream().filter(
-                namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID)
+        Optional<NamedValuedField> invokerId = cause.getDetails().stream().filter(
+                namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.INVOKER_ID)
         ).findFirst();
-
-        OutlookAttributes effectiveOutlookAttributes;
-        String state;
-        if (authContextIdField.isPresent()) {
-            String authContextId = (String) authContextIdField.get().getValue();
-            effectiveOutlookAttributes = outlookAttributeStore.load(authContextId);
-            state = userId + Constants.HASH + authContextId;
-        } else {
-            effectiveOutlookAttributes = outlookAttributes;
-            state = userId;
+        String state = userId;
+        OutlookAttributes attributes = null;
+        if (invokerId.isPresent()) {
+            String invokerIdValue = (String) invokerId.get().getValue();
+            attributes = attributeStore.load(invokerIdValue);
+            System.out.println(attributes.getClientId());
+            state += Constants.HASH + invokerIdValue;
         }
-        if (effectiveOutlookAttributes.isLoginWithMicrosoft()) {
-            state += Constants.HASH + outlookAttributes.getForwardUrl();
+        if (Constants.PUBLIC.equals(attributes.getAuthType())) {
+            state += Constants.HASH + attributes.getForwardPath();
         }
-        OAuth20Service oAuth20Service = effectiveOutlookAttributes.getOAuth20Service();
+        OAuth20Service oAuth20Service = new OAuthService(attributes).getOAuth20Service();
         String url = oAuth20Service.getAuthorizationUrl(state);
         return new AuthorizationResponse(url + Constants.AUTH_URL_QUERY_PARAMS, Collections.emptyList());
     }

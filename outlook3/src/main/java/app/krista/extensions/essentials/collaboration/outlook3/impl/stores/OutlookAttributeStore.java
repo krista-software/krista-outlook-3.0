@@ -12,6 +12,8 @@ import javax.inject.Inject;
 import java.util.Map;
 import java.util.UUID;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
+
 @Service
 public class OutlookAttributeStore {
 
@@ -26,24 +28,37 @@ public class OutlookAttributeStore {
 
     public OutlookAttributes load(String authContextId) {
         Map attributes = Constants.GSON.fromJson(String.valueOf(store.get(authContextId)), Map.class);
-        return new OutlookAttributes(invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE),
-                (String) attributes.get(OutlookAttributes.CLIENT_ID),
-                (String) attributes.get(OutlookAttributes.CLIENT_SECRET),
-                (String) attributes.get(OutlookAttributes.EMAIL),
-                (Boolean) attributes.get(OutlookAttributes.ALLOW_ALERT_MAIL),
-                (String) attributes.get(OutlookAttributes.TENANT_ID),
-                (Boolean) attributes.get(OutlookAttributes.LOGIN_WITH_MICROSOFT));
+        String authType = attributes.get(AUTH_TYPE).toString();
+        String baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        if (Constants.PUBLIC.equals(authType)) {
+            return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
+                    null, (String) attributes.get(EMAIL),
+                    (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl);
+        } else {
+            return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
+                    (String) attributes.get(Constants.TENANT_ID), (String) attributes.get(EMAIL),
+                    (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl);
+        }
     }
 
-    public String save(OutlookAttributes outlookAttributes) {
-        if (outlookAttributes == null) {
+    public String save(OutlookAttributes attributes) {
+        if (attributes == null) {
             throw new IllegalArgumentException("Outlook Attributes cannot be null");
         }
 
         String authContextId = UUID.randomUUID().toString();
-        Map<String, Object> attributeMap = OutlookAttributes.getAttributesMap(outlookAttributes);
+        Map<String, Object> attributeMap = attributes.toMap();
         store.put(authContextId, Constants.GSON.toJson(attributeMap));
         return authContextId;
+    }
+
+    public boolean save(OutlookAttributes attributes, String invokerId) {
+        if (attributes == null) {
+            throw new IllegalArgumentException("Outlook Attributes cannot be null");
+        }
+        Map<String, Object> attributeMap = attributes.toMap();
+        store.put(invokerId, Constants.GSON.toJson(attributeMap));
+        return true;
     }
 
     /**
