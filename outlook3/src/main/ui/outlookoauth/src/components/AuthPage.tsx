@@ -86,31 +86,21 @@ const AuthPage = () => {
         if (response.url) {
             const popup = window.open(response.url, "_blank", "width=600,height=400");
             if (popup) {
-                const interval = setInterval(() => {
-                    try {
-                        if (popup.closed) {
-                            clearInterval(interval);
-                            return;
-                        }
-                        if (authPayload) {
-                            testConnection(authPayload).then(response => {
-                                if (response.isSuccess) {
-                                    popup.close();
-                                    setIsConnectionSuccess(true);
-                                    setToastMessage("Connection tested successfully. Please save the changes!");
-                                    setToastType("success");
-                                    const saveButton = document.getElementById("save-button") as HTMLButtonElement;
-                                    if (saveButton) {
-                                        saveButton.click();
-                                    }
-
+                popup.addEventListener('beforeunload', () => {
+                    if (authPayload) {
+                        testConnection(authPayload).then(response => {
+                            if (response.isSuccess) {
+                                setIsConnectionSuccess(true);
+                                setToastMessage("Connection tested successfully. Please save the changes.");
+                                setToastType("success");
+                                const saveButton = document.getElementById("save-button") as HTMLButtonElement;
+                                if (saveButton) {
+                                    saveButton.click();
                                 }
-                            })
-                        }
-                    } catch (error) {
-                        console.error("Error checking popup content:", error);
+                            }
+                        });
                     }
-                }, 2000);
+                });
             }
         }
         setLoading(false);

@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 import static com.github.scribejava.core.model.OAuthConstants.CODE;
 import static com.github.scribejava.core.model.OAuthConstants.STATE;
 
@@ -56,7 +57,9 @@ public final class OutlookApiResource {
     private final String invokerId;
 
     @Inject
-    public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore, GraphServiceClientProviderFactory providerFactory, EventHandler eventHandler, Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener) {
+    public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
+                              GraphServiceClientProviderFactory providerFactory, EventHandler eventHandler,
+                              Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener) {
         this.outlookAttributeStore = outlookAttributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.providerFactory = providerFactory;
@@ -66,6 +69,25 @@ public final class OutlookApiResource {
         this.notificationProcessQueue = new NotificationProcessQueue(providerFactory, invoker);
         this.baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
+    }
+
+    private static String getAuthContextId(String state) {
+        int authContextIdIndex = state.indexOf(AUTH_CONTEXT_ID);
+        if (authContextIdIndex == -1) {
+            LOGGER.debug("AuthContextId not found in state parameter");
+            return null;
+        }
+        String authContextIdToEnd = state.substring(authContextIdIndex);
+        int hashIndex = authContextIdToEnd.indexOf("#");
+        String authContextId;
+        if (hashIndex != -1) {
+            // If there is a "#", end the extraction at this index
+            authContextId = authContextIdToEnd.substring(0, hashIndex);
+        } else {
+            // If there is no "#", use the entire substring
+            authContextId = authContextIdToEnd;
+        }
+        return authContextId;
     }
 
     @GET
@@ -86,22 +108,21 @@ public final class OutlookApiResource {
             return "Authentication Failed. Please re-authorize.";
         }
         String[] parts = state.split(Constants.HASH);
-        if (parts[0].isBlank() || parts.length > 3) {
+        if (parts[0].isBlank()) {
             throw new BadRequestException(Constants.INVALID_STATE_PARAMETERS);
         }
-        String key = parts[0];
-        String invokerIdValue = (parts.length == 3 || parts.length == 2) ? parts[1] : invokerId;
+        String key = parts[0]; // Assuming parts[0] is always the key.
+        String authContextId = getAuthContextId(state);
         try {
-            GraphServiceClientProvider clientProvider = getGraphServiceClientProvider(invokerIdValue);
+            GraphServiceClientProvider clientProvider = getGraphServiceClientProvider(authContextId);
             OutlookAttributes outlookAttributes = clientProvider.getOutlookAttributes();
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             OAuth2AccessToken accessToken = oAuth20Service.getAccessToken(code);
             refreshTokenStore.put(key, accessToken.getRefreshToken());
             if (!key.startsWith(Constants.WS_CONTACT) && !hasUserAccess(clientProvider)) {
                 refreshTokenStore.remove(key);
-                return Constants.UNAUTHORISED_USER + " User email '" + key + "' configured in the setup does not match with authenticated user.";
+                return Constants.UNAUTHORISED_USER + " User email '" + key.split(HASH)[0] + "' configured in the setup does not match with authenticated user.";
             }
-            System.out.println("context is authenticated..." + context.isAuthenticated());
             if (context.isAuthenticated()) {
                 authorizationListener.authorized();
                 return USER_AUTHENTICATED_SUCCESSFULLY_PLEASE_PROCEED_WITH_REQUEST;
@@ -114,19 +135,15 @@ public final class OutlookApiResource {
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(Constants.ERROR_OCCURRED_DURING_AUTHORIZATION, interruptedException.getCause());
+        } finally {
+            outlookAttributeStore.remove(authContextId);
         }
     }
 
-
     private GraphServiceClientProvider getGraphServiceClientProvider(String authContextId) {
-        GraphServiceClientProvider clientProvider;
-        if (authContextId == null) {
-            clientProvider = providerFactory.create();
-        } else {
-            OutlookAttributes effectiveAttributes = outlookAttributeStore.load(authContextId);
-            clientProvider = providerFactory.create(effectiveAttributes);
-        }
-        return clientProvider;
+        return authContextId == null
+                ? providerFactory.create()
+                : providerFactory.create(authContextId);
     }
 
     private String getErrorDescription(OAuthException cause) {
@@ -145,7 +162,7 @@ public final class OutlookApiResource {
             clientProvider.getUserRequestBuilder(null, null).mailFolders().buildRequest().get();
             return true;
         } catch (GraphServiceException cause) {
-            LOGGER.debug(cause.getMessage());
+            LOGGER.debug(cause.getMessage(), cause);
             return false;
         }
     }
@@ -230,15 +247,15 @@ public final class OutlookApiResource {
         if (save) {
             try {
                 providerFactory.create().getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
-                final SaveCredentialsResponse response = new SaveCredentialsResponse(true, false);
-                return Constants.GSON.toJson(response);
+                return Constants.GSON.toJson(new SaveCredentialsResponse(true, false));
             } catch (GraphServiceException cause) {
+                outlookAttributeStore.remove(invokerId);
                 LOGGER.debug("failed to save attributes");
+                return Constants.GSON.toJson(new SaveCredentialsResponse(false, true));
             }
         } else {
             return Constants.GSON.toJson("Failed to save attributes");
         }
-        return "";
     }
 
     @POST
@@ -246,20 +263,25 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseUrl);
+        String authContextId = providerFactory.createAttributes(outlookAttributes);
+        TestConnectionResponse testConnectionResponse = null;
         try {
-            providerFactory.create(outlookAttributes).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
-            final TestConnectionResponse testConnectionResponse = new TestConnectionResponse(true, null, null);
+            providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+            outlookAttributeStore.save(outlookAttributes, invokerId);
+            testConnectionResponse = new TestConnectionResponse(true, null, null);
             return Constants.GSON.toJson(testConnectionResponse);
         } catch (GraphServiceException cause) {
             LOGGER.info("failed to get data from graph service client.");
-            TestConnectionResponse testConnectionResponse = new TestConnectionResponse(false, "graph service client error", null);
+            testConnectionResponse = new TestConnectionResponse(false, "graph service client error", null);
             return Constants.GSON.toJson(testConnectionResponse);
         } catch (MustAuthorizeException cause) {
             String userId = (String) cause.getDetails().get(0).getValue();
-            Optional<NamedValuedField> authContextIdField = cause.getDetails().stream().filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.INVOKER_ID)).findFirst();
+            Optional<NamedValuedField> authContextIdField = cause.getDetails().stream()
+                    .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
+                    .findFirst();
             String state = userId;
             if (authContextIdField.isPresent()) {
-                String authContextId = (String) authContextIdField.get().getValue();
+                authContextId = (String) authContextIdField.get().getValue();
                 state += Constants.HASH + authContextId;
             }
             if (Constants.PUBLIC.equals(outlookAttributes.getAuthType())) {
@@ -267,18 +289,23 @@ public final class OutlookApiResource {
             }
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             String url = oAuth20Service.getAuthorizationUrl(state);
-            final TestConnectionResponse refreshTokenNotAvailable = new TestConnectionResponse(false, "Refresh token not available", url + Constants.AUTH_URL_QUERY_PARAMS);
-            return Constants.GSON.toJson(refreshTokenNotAvailable);
+            testConnectionResponse = new TestConnectionResponse(false,
+                    AUTHORIZATION_PROMPT, url + Constants.AUTH_URL_QUERY_PARAMS);
+            return Constants.GSON.toJson(testConnectionResponse);
+        } finally {
+            if (testConnectionResponse != null && testConnectionResponse.getUrl() == null) {
+                outlookAttributeStore.remove(authContextId);
+            }
         }
     }
 
     @GET
     @javax.ws.rs.Path("/getCredentials")
     @Produces("text/plain")
-    public String getCredentials(@QueryParam("authType") String authType) {
+    public String getCredentials(@QueryParam(AUTH_TYPE) String authType) {
 
-        OutlookAttributes attributes = outlookAttributeStore.load(invokerId);
-        if (authType.equals(attributes.getAuthType())) {
+        Map<String, Object> attributes = outlookAttributeStore.load(invokerId).toMap();
+        if (authType.equals(attributes.get(AUTH_TYPE))) {
             return Constants.GSON.toJson(attributes);
         }
         return "";

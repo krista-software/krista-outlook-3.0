@@ -27,10 +27,12 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V3 = "/outlook/v3/oauth/callback";
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V2 = "/outlook/callback";
     private final OutlookAttributeStore attributeStore;
+    private final String invokerId;
 
     @Inject
-    public OutlookRequestAuthenticator(OutlookAttributeStore attributeStore) {
+    public OutlookRequestAuthenticator(OutlookAttributeStore attributeStore, String invokerId) {
         this.attributeStore = attributeStore;
+        this.invokerId = invokerId;
     }
 
     @Override
@@ -63,7 +65,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
     }
 
     @Override
-    public boolean setServiceAuthorization(String s) {
+    public boolean setServiceAuthorization(String key) {
         return false;
     }
 
@@ -90,23 +92,25 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
     @Override
     public AuthorizationResponse getMustAuthorizeResponse(MustAuthorizeException cause) {
         String userId = (String) cause.getDetails().get(0).getValue();
-        Optional<NamedValuedField> invokerId = cause.getDetails().stream().filter(
-                namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.INVOKER_ID)
-        ).findFirst();
+        Optional<NamedValuedField> authContext = cause.getDetails().stream()
+                .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
+                .findFirst();
         String state = userId;
-        OutlookAttributes attributes = null;
-        if (invokerId.isPresent()) {
-            String invokerIdValue = (String) invokerId.get().getValue();
-            attributes = attributeStore.load(invokerIdValue);
-            System.out.println(attributes.getClientId());
-            state += Constants.HASH + invokerIdValue;
+        OutlookAttributes attributes;
+        if (authContext.isPresent()) {
+            String authContextId = (String) authContext.get().getValue();
+            attributes = attributeStore.load(authContextId);
+            System.out.println(authContextId);
+            state += Constants.HASH + authContextId;
+        } else {
+            attributes = attributeStore.load(invokerId);
         }
         if (Constants.PUBLIC.equals(attributes.getAuthType())) {
             state += Constants.HASH + attributes.getForwardPath();
         }
         OAuth20Service oAuth20Service = new OAuthService(attributes).getOAuth20Service();
-        String url = oAuth20Service.getAuthorizationUrl(state);
-        return new AuthorizationResponse(url + Constants.AUTH_URL_QUERY_PARAMS, Collections.emptyList());
+        String url = oAuth20Service.getAuthorizationUrl(state) + Constants.AUTH_URL_QUERY_PARAMS;
+        return new AuthorizationResponse(url, Collections.emptyList());
     }
 
 }

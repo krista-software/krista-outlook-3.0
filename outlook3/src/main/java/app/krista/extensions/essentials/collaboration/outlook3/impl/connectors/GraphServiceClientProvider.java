@@ -34,18 +34,24 @@ public class GraphServiceClientProvider {
     private final OutlookAttributes attributes;
     private final RequestContext requestContext;
     private final AuthorizationContext authorizationContext;
+    private final String authContextId;
 
-//    @Inject
-//    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes attributes, RequestContext requestContext, AuthorizationContext authorizationContext) {
-//        this(refreshTokenStore, attributes, requestContext, authorizationContext);
-//    }
 
     @Inject
-    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes attributes, RequestContext requestContext, AuthorizationContext authorizationContext) {
+    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes attributes,
+                                      RequestContext requestContext, AuthorizationContext authorizationContext) {
+        this(refreshTokenStore, attributes, requestContext, authorizationContext, null);
+    }
+
+    @Inject
+    public GraphServiceClientProvider(RefreshTokenStore refreshTokenStore, OutlookAttributes attributes,
+                                      RequestContext requestContext, AuthorizationContext authorizationContext,
+                                      String authContextId) {
         this.refreshTokenStore = refreshTokenStore;
         this.attributes = attributes;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
+        this.authContextId = authContextId;
     }
 
     public OutlookAttributes getOutlookAttributes() {
@@ -67,11 +73,13 @@ public class GraphServiceClientProvider {
     private GraphServiceClient<Request> getGraphServiceClient(boolean useEmail, String accountID) {
         try {
             String userId = getUserId(useEmail, accountID);
-            String refreshToken = refreshTokenStore.get(userId);
+            String refreshTokenStoreKey = getRefTokenStoreKey(userId);
+            System.out.println("Refresh token store key: " + refreshTokenStoreKey);
+            String refreshToken = refreshTokenStore.get(refreshTokenStoreKey);
             if (refreshToken == null) {
-                throw createMustAuthorizationException(userId, false);
+                throw createMustAuthorizationException(refreshTokenStoreKey, false);
             }
-            return getGraphServiceClient(userId, refreshToken);
+            return getGraphServiceClient(refreshTokenStoreKey, refreshToken);
         } catch (RuntimeException cause) {
             throw cause;
         }
@@ -140,8 +148,11 @@ public class GraphServiceClientProvider {
         List<NamedValuedField> details = new ArrayList<>();
         NamedValuedField userIdField = new NamedValuedField(Constants.USER_ID, Constants.TEXT, userId, new HashMap<>(), new HashMap<>());
         details.add(userIdField);
-        NamedValuedField invokerId = new NamedValuedField(Constants.INVOKER_ID, Constants.TEXT, requestContext.getInvokerId(), new HashMap<>(), new HashMap<>());
-        details.add(invokerId);
+        if (authContextId != null) {
+            NamedValuedField contextIdField = new NamedValuedField(Constants.AUTH_CONTEXT_ID, Constants.TEXT, authContextId, new HashMap<>(), new HashMap<>());
+            details.add(contextIdField);
+            System.out.println("added auth context id.");
+        }
         return new MustAuthorizeException(reAuthentication ? Constants.REFRESH_TOKEN_EXPIRED : Constants.AUTHORIZATION_PROMPT, details);
     }
 
@@ -155,12 +166,16 @@ public class GraphServiceClientProvider {
         if (userId == null) {
             throw new IllegalStateException(Constants.FAILED_TO_GET_ACCOUNT);
         }
-        return createStoreKey(userId);
+        return userId;
     }
 
     @NotNull
-    private String createStoreKey(String userId) {
-        return userId + "_" + attributes.getClientId() + "_" + attributes.getAuthType();
+    private String getRefTokenStoreKey(String userId) {
+        if (userId.startsWith(Constants.WS_CONTACT)) {
+            return userId;
+        } else {
+            return userId + Constants.UNDER_SCORE + attributes.getClientId() + Constants.UNDER_SCORE + attributes.getAuthType();
+        }
     }
 
     public static class GraphServiceClientAuthenticationProvider implements IAuthenticationProvider {

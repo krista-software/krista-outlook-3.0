@@ -11,6 +11,10 @@ public class TestConnectionResponse {
         this.url = url;
     }
 
+    public String getUrl() {
+        return this.url;
+    }
+
     public boolean isSuccess() {
         return isSuccess;
     }

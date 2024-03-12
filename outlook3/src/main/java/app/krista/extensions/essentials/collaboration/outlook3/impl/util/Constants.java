@@ -72,6 +72,8 @@ public class Constants {
     public static final String AUTHORITY = "https://login.microsoftonline.com/";
     public static final String USER_ID = "userId";
     public static final String INVOKER_ID = "invokerId";
+    public static final String AUTH_CONTEXT_ID = "authContextId";
+    public static final String UNSUPPORTED_AUTH = "Unsupported authentication type provided. Please select either Public or Private.";
     public static final String REFRESH_TOKEN_EXPIRED = "Refresh Token is no longer valid. Please reauthorize yourself";
     public static final String FAILED_TO_GET_ACCOUNT = "Failed to get account";
     public static final String EXTENSION_FORWARD_PATH = "/rest/outlook/v3/oauth/callback";
@@ -129,6 +131,7 @@ public class Constants {
     public static final String ALLOW_MAIL_ALERT = "allowMailAlert";
     public static final String AUTH_TYPE = "authType";
     public static final String EMAIL = "email";
+    public static final String UNDER_SCORE = "_";
 
     private Constants() {
     }

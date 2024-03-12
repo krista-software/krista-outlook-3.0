@@ -20,19 +20,17 @@ public final class OutlookAttributes {
 
     @SerializedName(EMAIL)
     private final String email;
-
     @SerializedName(ALLOW_MAIL_ALERT)
     private final boolean allowMailAlert;
-
     @SerializedName(CLIENT_ID)
     private final String clientId;
-
     @SerializedName(CLIENT_SECRET)
     private final String clientSecret;
-
+    @SerializedName(AUTH_TYPE)
     private final String authType;
     @SerializedName(TENANT_ID)
     private final String tenantId;
+
     private final String baseUrl;
     private String publicClientId;
     private String publicClientSecret;
@@ -61,7 +59,7 @@ public final class OutlookAttributes {
                     authPayload.get(TENANT_ID).getAsString(), authPayload.get(EMAIL).getAsString(), authPayload.get(ALLOW_MAIL_ALERT).getAsBoolean(),
                     authType, baseurl);
         } else {
-            throw new IllegalArgumentException("Unsupported authentication type provided. Please select either Public or Private.");
+            throw new IllegalArgumentException(UNSUPPORTED_AUTH);
         }
     }
 

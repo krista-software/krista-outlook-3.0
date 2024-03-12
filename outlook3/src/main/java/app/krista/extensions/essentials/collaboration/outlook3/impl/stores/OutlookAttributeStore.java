@@ -26,14 +26,15 @@ public class OutlookAttributeStore {
         this.store = store;
     }
 
-    public OutlookAttributes load(String authContextId) {
-        Map attributes = Constants.GSON.fromJson(String.valueOf(store.get(authContextId)), Map.class);
+
+    public OutlookAttributes load(String key) {
+        Map<String, Object> attributes = Constants.GSON.fromJson(String.valueOf(store.get(key)), Map.class);
         String authType = attributes.get(AUTH_TYPE).toString();
         String baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         if (Constants.PUBLIC.equals(authType)) {
             return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
-                    null, (String) attributes.get(EMAIL),
-                    (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl);
+                    null, (String) attributes.get(EMAIL), (boolean) attributes.get(ALLOW_MAIL_ALERT), authType,
+                    baseUrl);
         } else {
             return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
                     (String) attributes.get(Constants.TENANT_ID), (String) attributes.get(EMAIL),
@@ -45,8 +46,7 @@ public class OutlookAttributeStore {
         if (attributes == null) {
             throw new IllegalArgumentException("Outlook Attributes cannot be null");
         }
-
-        String authContextId = UUID.randomUUID().toString();
+        String authContextId = Constants.AUTH_CONTEXT_ID + Constants.UNDER_SCORE + UUID.randomUUID();
         Map<String, Object> attributeMap = attributes.toMap();
         store.put(authContextId, Constants.GSON.toJson(attributeMap));
         return authContextId;
@@ -62,7 +62,7 @@ public class OutlookAttributeStore {
     }
 
     /**
-     * Removes given authContext id from KeyValueStore
+     * Removes the outlook attributes for given authContext id from KeyValueStore
      *
      * @param authContextId authContext id
      */
