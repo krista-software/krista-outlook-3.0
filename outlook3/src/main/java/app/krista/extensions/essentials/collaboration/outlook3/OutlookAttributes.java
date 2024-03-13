@@ -31,14 +31,14 @@ public final class OutlookAttributes {
     @SerializedName(TENANT_ID)
     private final String tenantId;
 
-    private final String baseUrl;
+    private final String routingUrl;
     private String publicClientId;
     private String publicClientSecret;
 
 
     @Inject
     public OutlookAttributes(String clientId, String clientSecret, String tenantId, String email, boolean allowMailAlert,
-                             String authType, String baseUrl) {
+                             String authType, String routingUrl) {
         loadPublicConfig();
         this.clientId = clientId == null ? publicClientId : clientId;
         this.clientSecret = clientSecret == null ? publicClientSecret : clientSecret;
@@ -46,7 +46,7 @@ public final class OutlookAttributes {
         this.email = email;
         this.allowMailAlert = allowMailAlert;
         this.authType = authType;
-        this.baseUrl = baseUrl.replace(LOCAL_EXTN_URL, LOCAL_EXTN_REPLACE_URL);
+        this.routingUrl = routingUrl.replace(LOCAL_EXTN_URL, LOCAL_EXTN_REPLACE_URL);
     }
 
     public static OutlookAttributes create(JsonObject authPayload, String baseurl) {
@@ -88,9 +88,9 @@ public final class OutlookAttributes {
 
     public String getCallbackEndPoint() {
         if (Constants.PUBLIC.equals(authType)) {
-            return baseUrl.replaceAll("/extension/api/.*", DEFAULT_CALLBACK_PATH);
+            return routingUrl.replaceAll("/extension/api/.*", DEFAULT_CALLBACK_PATH);
         } else if (Constants.PRIVATE.equals(authType)) {
-            return baseUrl + "/rest/outlook/callback";
+            return routingUrl + "/rest/outlook/callback";
         } else {
             return EMPTY_STRING;
         }
@@ -98,7 +98,7 @@ public final class OutlookAttributes {
 
     public String getForwardPath() {
         if (Constants.PUBLIC.equals(authType)) {
-            return baseUrl + EXTENSION_FORWARD_PATH;
+            return routingUrl + EXTENSION_FORWARD_PATH;
         } else {
             return EMPTY_STRING;
         }

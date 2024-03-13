@@ -5,6 +5,7 @@ import app.krista.extension.executor.Invoker;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
@@ -53,7 +54,7 @@ public final class OutlookApiResource {
     private final NotificationProcessQueue notificationProcessQueue;
     private final AuthorizationContext context;
     private final AuthorizationListener authorizationListener;
-    private final String baseUrl;
+    private final String baseRoutingUrl;
     private final String invokerId;
 
     @Inject
@@ -67,7 +68,7 @@ public final class OutlookApiResource {
         this.context = context;
         this.authorizationListener = authorizationListener;
         this.notificationProcessQueue = new NotificationProcessQueue(providerFactory, invoker);
-        this.baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
     }
 
@@ -242,8 +243,13 @@ public final class OutlookApiResource {
     @Path("/saveCredentials")
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
-        OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseUrl);
+        OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         final boolean save = outlookAttributeStore.save(attributes, invokerId);
+        if (attributes.isAllowMailAlert()) {
+            MailSubscription.createSubscription(baseRoutingUrl, providerFactory.create());
+        } else {
+            MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
+        }
         if (save) {
             try {
                 providerFactory.create().getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
@@ -262,7 +268,7 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
-        OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseUrl);
+        OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(outlookAttributes);
         TestConnectionResponse testConnectionResponse = null;
         try {

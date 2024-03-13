@@ -5,6 +5,10 @@ import app.krista.extension.executor.Invoker;
 import app.krista.extension.impl.anno.Extension;
 import app.krista.extension.impl.anno.InvokerRequest;
 import app.krista.extension.impl.anno.StaticResource;
+import app.krista.extension.request.RoutingInfo;
+import app.krista.extension.request.protos.http.HttpProtocol;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 
 import javax.inject.Inject;
@@ -15,10 +19,14 @@ import java.util.Map;
 public class OutlookExtension {
 
     private final OutlookRequestAuthenticator requestAuthenticator;
+    private final GraphServiceClientProviderFactory providerFactory;
+    private final String routingUrl;
 
     @Inject
-    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore) {
+    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore, GraphServiceClientProviderFactory providerFactory) {
         this.requestAuthenticator = new OutlookRequestAuthenticator(attributeStore, invoker.getInvokerId());
+        this.providerFactory = providerFactory;
+        this.routingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
     }
 
     @InvokerRequest(InvokerRequest.Type.AUTHENTICATOR)
@@ -36,10 +44,9 @@ public class OutlookExtension {
         throw new IllegalArgumentException("Please authorize in authentication tab.");
     }
 
-    // TODO: 12/03/24 Need to implement delete subscription here.
     @InvokerRequest(InvokerRequest.Type.INVOKER_REMOVED)
     public void invokerRemoved() {
-//        MailSubscription.deleteSubscription(clientProviderFactory.create(), routingUrl);
+        MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
     }
 
 }
