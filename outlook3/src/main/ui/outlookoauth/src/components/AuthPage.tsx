@@ -29,7 +29,7 @@ const AuthPage = () => {
     const [toastType, setToastType] = useState<string>("error");
     const [authPayload, setAuthPayload] = useState<AuthPayload | null>(null);
     const [isConnectionSuccess, setIsConnectionSuccess] = useState<boolean>(false);
-    const [isSaved, setSaved] = useState<boolean>(false);
+    const [isSaved, setIsSaved] = useState<boolean>(false);
 
     useEffect(() => {
         getAuth().catch(error => console.log(error));
@@ -59,7 +59,7 @@ const AuthPage = () => {
                 saveButton.click();
             }
             setIsConnectionSuccess(false);
-            setSaved(true)
+            setIsSaved(true)
         } else if (response.errorWhileSaving) {
             setToastMessage("Test connection failed");
             setToastType("error");

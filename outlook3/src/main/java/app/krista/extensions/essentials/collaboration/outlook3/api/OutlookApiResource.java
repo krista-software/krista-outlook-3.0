@@ -121,7 +121,7 @@ public final class OutlookApiResource {
             refreshTokenStore.put(key, accessToken.getRefreshToken());
             if (!key.startsWith(Constants.WS_CONTACT) && !hasUserAccess(clientProvider)) {
                 refreshTokenStore.remove(key);
-                return Constants.UNAUTHORISED_USER + " User email '" + key.split(HASH)[0] + "' configured in the setup does not match with authenticated user.";
+                return Constants.UNAUTHORISED_USER + " User email '" + key.split(UNDER_SCORE)[0] + "' configured in the setup does not match with authenticated user.";
             }
             if (context.isAuthenticated()) {
                 authorizationListener.authorized();
@@ -248,7 +248,7 @@ public final class OutlookApiResource {
             try {
                 providerFactory.create().getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
                 return Constants.GSON.toJson(new SaveCredentialsResponse(true, false));
-            } catch (GraphServiceException cause) {
+            } catch (GraphServiceException | NullPointerException cause) {
                 outlookAttributeStore.remove(invokerId);
                 LOGGER.debug("failed to save attributes");
                 return Constants.GSON.toJson(new SaveCredentialsResponse(false, true));

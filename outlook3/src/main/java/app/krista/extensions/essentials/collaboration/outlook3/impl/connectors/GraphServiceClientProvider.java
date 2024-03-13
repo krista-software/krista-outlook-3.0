@@ -58,9 +58,9 @@ public class GraphServiceClientProvider {
         return attributes;
     }
 
-    public GraphServiceClient<Request> getGraphServiceClientForUser(Boolean useEmail, String accountID) throws IOException {
-        if (useEmail != null) {
-            return getGraphServiceClient(useEmail, useEmail ? null : accountID);
+    public GraphServiceClient<Request> getGraphServiceClientForUser(Boolean useSetupEmail, String accountID) throws IOException {
+        if (useSetupEmail != null) {
+            return getGraphServiceClient(useSetupEmail, useSetupEmail ? null : accountID);
         } else {
             return getGraphServiceClient(!requestContext.invokeAsUser(), null);
         }
@@ -70,9 +70,9 @@ public class GraphServiceClientProvider {
         return getGraphServiceClient(true, null);
     }
 
-    private GraphServiceClient<Request> getGraphServiceClient(boolean useEmail, String accountID) {
+    private GraphServiceClient<Request> getGraphServiceClient(boolean useSetupEmail, String accountID) {
         try {
-            String userId = getUserId(useEmail, accountID);
+            String userId = getUserId(useSetupEmail, accountID);
             String refreshTokenStoreKey = getRefTokenStoreKey(userId);
             System.out.println("Refresh token store key: " + refreshTokenStoreKey);
             String refreshToken = refreshTokenStore.get(refreshTokenStoreKey);
@@ -128,12 +128,12 @@ public class GraphServiceClientProvider {
      * @return userRequestBuilder
      */
 
-    public UserRequestBuilder getUserRequestBuilder(Boolean useEmail, String accountID) {
+    public UserRequestBuilder getUserRequestBuilder(Boolean useSetupEmail, String accountID) {
         try {
-            if (useEmail != null) {
-                return useEmail
-                        ? getGraphServiceClientForUser(useEmail, accountID).users(attributes.getEmail())
-                        : getGraphServiceClientForUser(useEmail, null).me();
+            if (useSetupEmail != null) {
+                return useSetupEmail
+                        ? getGraphServiceClientForUser(true, accountID).users(attributes.getEmail())
+                        : getGraphServiceClientForUser(false, null).me();
             }
             return requestContext.invokeAsUser()
                     ? getGraphServiceClientForUser(null, null).me()
