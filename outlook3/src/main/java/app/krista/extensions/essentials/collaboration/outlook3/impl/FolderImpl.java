@@ -242,7 +242,7 @@ public class FolderImpl implements Folder {
         if (pageNumber == null) {
             return 1;
         } else if (pageNumber < 1) {
-            throw new IllegalArgumentException(Constants.INCORRECT_PAGE_NUMBER_VALUE_FOR_FETCHING_MAILS);
+            throw new IllegalArgumentException(Constants.INCORRECT_PAGE_NUMBER);
         } else {
             return pageNumber.intValue();
         }

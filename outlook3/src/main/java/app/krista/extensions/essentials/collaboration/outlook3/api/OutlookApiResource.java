@@ -248,14 +248,11 @@ public final class OutlookApiResource {
     public String saveCredentials(JsonObject authPayload) {
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         final boolean save = outlookAttributeStore.save(attributes, invokerId);
-        if (attributes.isAllowMailAlert()) {
-            MailSubscription.createSubscription(baseRoutingUrl, providerFactory.create());
-        } else {
-            MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
-        }
         if (save) {
             try {
-                providerFactory.create().getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+                providerFactory.create().getGraphServiceClientForAdmin()
+                        .users(attributes.getEmail())
+                        .mailFolders().buildRequest().get();
                 return Constants.GSON.toJson(new SaveCredentialsResponse(true, false));
             } catch (GraphServiceException | NullPointerException cause) {
                 outlookAttributeStore.remove(invokerId);
@@ -277,6 +274,11 @@ public final class OutlookApiResource {
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
             outlookAttributeStore.save(outlookAttributes, invokerId);
+            if (outlookAttributes.isAllowMailAlert()) {
+                MailSubscription.createSubscription(baseRoutingUrl, providerFactory.create());
+            } else {
+                MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
+            }
             testConnectionResponse = new TestConnectionResponse(true, null, null);
             return Constants.GSON.toJson(testConnectionResponse);
         } catch (GraphServiceException cause) {

@@ -12,7 +12,7 @@ public class Constants {
     public static final String WS_CONTACT = "wsContact";
     public static final String COMMA = ",";
     public static final String EMPTY_STRING = "";
-    public static final String INVALID_MAIL_ADDRESS = "Mail address is not valid, please provide correct mail address.";
+    public static final String INVALID_MAIL_ADDRESS = "Please provide correct email id.";
     public static final String ONE_INVALID_MAIL = "At least one recipient is not valid";
     public static final String REPLY_TO_ALL_REQUEST_FAILED = "Reply to all request failed";
     public static final String INVALID_MESSAGE_ID = "Invalid message id";
@@ -34,7 +34,6 @@ public class Constants {
     public static final String MESSAGE_ID_IS_EMPTY_OR_NULL = "Message ID is empty or null.";
     public static final String FOLDER_ID_IS_NULL_OR_EMPTY = "Folder Id is null or empty.";
     public static final String EMAIL_ADDRESS_IS_EMPTY_OR_NULL = "Email address is empty or null.";
-    public static final String PLEASE_PROVIDE_MESSAGE_ID = "Please provide message id.";
     public static final String RECIPIENT_IS_EMPTY_OR_NULL = "Recipient is empty or null.";
     public static final String BODY_CONTENT_TYPE_HTML = "outlook.body-content-type=\"html\"";
     public static final String UNAUTHORISED_USER = "Unauthorised user.";
@@ -85,7 +84,7 @@ public class Constants {
     public static final String A_TAG = "</a>";
     public static final String FOLDER_PATH_IS_EMPTY_OR_NULL = "Folder path is empty or null.";
     public static final String CHILD_FOLDER_ID_IS_EMPTY_OR_NULL = "Child folder ID is empty or null.";
-    public static final String INCORRECT_PAGE_NUMBER_VALUE_FOR_FETCHING_MAILS = "Incorrect page number value for fetching mails.";
+    public static final String INCORRECT_PAGE_NUMBER = "Incorrect page number value for fetching mails.";
     public static final String PAGE_SIZE_UP_TO_15_MESSAGES_IS_CURRENTLY_SUPPORTED_FOR_FETCH_MAIL_BY_LABEL_REQUEST = "Page size up to 15 messages is currently supported for fetch mail by label request.";
     public static final String INCORRECT_PAGE_SIZE_VALUE_FOR_FETCHING_MAILS = "Incorrect page size value for fetching mails.";
     public static final String CHILD_FOLDER_NAME_IS_EMPTY_OR_NULL = "Child folder name is empty or null.";
@@ -121,7 +120,6 @@ public class Constants {
     public static final String AUTHORIZATION_PROMPT = "Authorize yourself and click Validate Attributes before saving changes to proceed further";
     public static final String LOCAL_EXTN_URL = "https://extension.local.eng.krista.app";
     public static final String DEFAULT_CALLBACK_PATH = "/extension/api/rest/v3/oauth/callback";
-
     public static final String LOCAL_EXTN_REPLACE_URL = "http://localhost:8765";
     public static final String PUBLIC = "Public";
     public static final String PRIVATE = "Private";

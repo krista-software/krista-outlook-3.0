@@ -41,7 +41,7 @@ public class OutlookExtension {
 
     @InvokerRequest(InvokerRequest.Type.TEST_CONNECTION)
     public void testConnection() {
-        throw new IllegalArgumentException("Please authorize in authentication tab.");
+        throw new IllegalArgumentException("Please use Authentication tab for test connection.");
     }
 
     @InvokerRequest(InvokerRequest.Type.INVOKER_REMOVED)

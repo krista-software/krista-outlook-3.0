@@ -90,8 +90,10 @@ const AuthPage = () => {
                     if (popup.closed) {
                         clearInterval(interval);
                         if (authPayload) {
+                            setLoading(true);
                             testConnection(authPayload).then(response => {
                                 if (response.isSuccess) {
+                                    setLoading(false);
                                     setIsConnectionSuccess(true);
                                     setToastMessage("Connection tested successfully. Please save the changes.");
                                     setToastType("success");
