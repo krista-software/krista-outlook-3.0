@@ -67,7 +67,7 @@ const AuthPage = () => {
         setShowToast(true);
         setTimeout(() => {
             setShowToast(false);
-        }, 2500);
+        }, 3000);
     }
 
     const handleResponse = (response: any) => {
@@ -86,21 +86,39 @@ const AuthPage = () => {
         if (response.url) {
             const popup = window.open(response.url, "_blank", "width=600,height=400");
             if (popup) {
-                popup.addEventListener('beforeunload', () => {
-                    if (authPayload) {
-                        testConnection(authPayload).then(response => {
-                            if (response.isSuccess) {
-                                setIsConnectionSuccess(true);
-                                setToastMessage("Connection tested successfully. Please save the changes.");
-                                setToastType("success");
-                                const saveButton = document.getElementById("save-button") as HTMLButtonElement;
-                                if (saveButton) {
-                                    saveButton.click();
+                const interval = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(interval);
+                        if (authPayload) {
+                            testConnection(authPayload).then(response => {
+                                if (response.isSuccess) {
+                                    setIsConnectionSuccess(true);
+                                    setToastMessage("Connection tested successfully. Please save the changes.");
+                                    setToastType("success");
+                                    const saveButton = document.getElementById("save-button") as HTMLButtonElement;
+                                    if (saveButton) {
+                                        saveButton.click();
+                                    }
+                                    setShowToast(true);
+                                    setTimeout(() => {
+                                        setLoading(false);
+                                        setShowToast(false);
+                                    }, 3000);
+                                } else if (response.errorMessage) {
+                                    setIsConnectionSuccess(false);
+                                    setToastMessage("Test Connection failed. Please authenticate again.");
+                                    setToastType("error");
+                                    setShowToast(true);
+                                    setTimeout(()=> {
+                                        setLoading(false);
+                                        setShowToast(false);
+                                    }, 3000);
                                 }
-                            }
-                        });
+
+                            });
+                        }
                     }
-                });
+                }, 1000); // Check every second if the popup is closed
             }
         }
         setLoading(false);
@@ -108,7 +126,7 @@ const AuthPage = () => {
         setTimeout(() => {
             setLoading(false);
             setShowToast(false);
-        }, 2500);
+        }, 3000);
     }
 
     const testApiConnection = (/* parameters */) => {
