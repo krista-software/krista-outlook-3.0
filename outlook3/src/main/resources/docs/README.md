@@ -1,15 +1,17 @@
-[comment]: <> (Home page)
+[comment]: <> (Home Page)
+
+# Krista Outlook Extension
 
 ### Home Page
 
-This extension connects to **Outlook** and performs various operations.
+This extension connects to **Microsoft Outlook** and performs various operations.
 
 * ### Overview
     * [Overview](pages/overview.md)
-* ### Getting your own Outlook credentials
-    * [Getting your own Outlook credentials](pages/obtainingClientIDClientSecret.md)
-* ### Connecting to Outlook
-    * [Connecting with Outlook Extension](pages/connectingWithOutlookExtension.md)
+* ### Connecting With Krista Outlook Extension
+    * [Connecting with Krista Outlook Extension](pages/connectingWithOutlookExtension.md)
+* ### Obtaining Credentials For Private Authentication
+    * [Obtaining Credentials For Private Authentication](pages/obtainingClientIDClientSecret.md)
 * ### Authentication
     * [Authentication](pages/authentication.md)
 * ### Supported Requests

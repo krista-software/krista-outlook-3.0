@@ -2,12 +2,11 @@
 
 * [Home](/)
 
-
 * [Overview](pages/overview.md)
 
-* [Obtaining Client ID, Tenant ID, and Client Secret](pages/obtainingClientIDClientSecret.md)
+* [Connecting with Krista Outlook Extension](pages/connectingWithOutlookExtension.md)
 
-* [Connecting with Outlook Extension](pages/connectingWithOutlookExtension.md)
+* [Obtaining Credentials For Private Authentication](pages/obtainingClientIDClientSecret.md)
 
 * [Authentication](pages/authentication.md)
 
