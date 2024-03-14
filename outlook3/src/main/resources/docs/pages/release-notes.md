@@ -1,4 +1,4 @@
-### Release Notes - Krista Outlook Extension
+# Release Notes - Krista Outlook Extension
 
 ## Version 3.0.0
 

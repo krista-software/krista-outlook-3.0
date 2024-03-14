@@ -217,6 +217,7 @@ public final class OutlookApiResource {
             freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, messageId);
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
         }
+        MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
         return Response.status(200).build();
     }
 
@@ -275,7 +276,7 @@ public final class OutlookApiResource {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
             outlookAttributeStore.save(outlookAttributes, invokerId);
             if (outlookAttributes.isAllowMailAlert()) {
-                MailSubscription.createSubscription(baseRoutingUrl, providerFactory.create());
+                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
             } else {
                 MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
             }

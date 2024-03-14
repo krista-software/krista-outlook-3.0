@@ -1,4 +1,4 @@
-### Authentication
+# Authentication
 
 ### Authentication as service account
 

@@ -1,8 +1,10 @@
+# Supported Requests
+
 ## Catalog Requests
 
-### The Outlook Extension supports the following catalog requests
+The Outlook Extension supports the following catalog requests.
 
-#### Fetch All Labels
+### Fetch All Labels
 
 - **Description**: Returns list of labels.
 - **Input Parameters**: NA
@@ -12,7 +14,7 @@
 |--------------------|--------------------|-------------|
 | Labels             | List&lt;Label>     | Inbox, Sent |
 
-#### Mark Message
+### Mark Message
 
 - **Description**: Accepts message ID,label & Category as input and mark mail as read/unread and returns response
   message.
@@ -32,7 +34,7 @@
 |--------------------|--------------------|-------------|
 | Response           | Text               | Success     |
 
-#### Fetch Mail By Message Id
+### Fetch Mail By Message Id
 
 - **Description**: Accepts message Id as input and returns mail. In case of invalid input, this will return empty data.
 - **Input Parameters**:
@@ -47,7 +49,7 @@
 |--------------------|--------------------|
 | Mail               | Mail               |
 
-#### Move Message
+### Move Message
 
 - **Description**: Accepts message ID, and folder name as input and move one message from source folder to another
   folder and returns response message.
@@ -64,7 +66,7 @@
 |--------------------|--------------------|-------------|
 | Response           | Text               | Success     |
 
-#### Fetch Mails By Label
+### Fetch Mails By Label
 
 - **Description**: Accepts label, page number, and page size as input and returns list of mail. Page number, and page
   size are optional input.
@@ -84,7 +86,7 @@
 |--------------------|--------------------|
 | Mails              | List&lt;Mails>     |
 
-#### Mail Received Alert
+### Mail Received Alert
 
 - **Description**: This request returns an email when the user receives a new email.
 - **Input Parameters**: NA
@@ -97,7 +99,7 @@
 > **Note :** If you are not receiving mail Alerts Please Upgrade Outlook Extension and Validate Attributes from Setup
 > with "Allow Alert Mail" Checked.
 
-#### Reply To All
+### Reply To All
 
 - **Description**: In this request, the user can respond to everyone on the thread. Other recipients will see a message
   user 'Reply All' to, whether they're in the 'To' or 'Cc' fields.
@@ -116,7 +118,7 @@
 |--------------------|--------------------|-------------|
 | Is Successful      | Boolean            | true        |
 
-#### Reply To All With CC and BCC
+### Reply To All With CC and BCC
 
 - **Description**: In this request, you can respond to everyone on a thread. Other recipients would see a message. Use '
   Reply All' for all, whether they are in the 'To' or 'Cc' fields. Optional parameters 'To', 'Bcc' and 'Reply To' are
@@ -143,7 +145,7 @@
 |--------------------|--------------------|-------------|
 | Is Successful      | Boolean            | true        |
 
-#### Fetch Sent
+### Fetch Sent
 
 - **Description**: Accepts page number, and page size as input and returns list of mails from sent folder.
 - **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
@@ -160,7 +162,7 @@
 |--------------------|--------------------|
 | Sent Mails         | List&lt;Mails>     |
 
-#### Forward Mail
+### Forward Mail
 
 - **Description**: This request allows a sender to forward the received email to other recipients.
 - **Input Parameters**:
@@ -180,7 +182,7 @@
 |--------------------|--------------------|-------------|
 | Is Forwarded       | Boolean            | true        |
 
-#### Send Mail
+### Send Mail
 
 - **Description**: Accepts subject, message, attachments, to, bcc, cc, reply to as input and returns response message.
   Attachments, bcc, cc, and reply to are optional inputs.
@@ -206,7 +208,7 @@
 |--------------------|--------------------|----------------------------------------|
 | Message            | Text               | Mail Sent Successfully To: abc@xyz.com |
 
-#### Send Mail With Table
+### Send Mail With Table
 
 - **Description**: Accepts subject, message, attachments, to, bcc, cc, List of Entities, reply to as input and returns
   response message.
@@ -239,7 +241,7 @@
 |--------------------|--------------------|----------------------------------------|
 | Message            | Text               | Mail Sent Successfully To: abc@xyz.com |
 
-#### Fetch Inbox Asynch
+### Fetch Inbox Asynch
 
 - **Description**: Fetches inbox mails asynchronously and returns task ID. The task ID will get used in getResult
   request to get mails. Maximum limit is 500 mails.
@@ -251,7 +253,7 @@
 |--------------------|--------------------|--------------------------------------|
 | Task ID            | Text               | ffd01b50-cfd7-424b-91d5-e31afe121909 |
 
-#### Get Result
+### Get Result
 
 - **Description**: Accept task ID as input and return mails. Get this task ID from fetchInboxAsynch request.
 - **Input Parameters**:
@@ -266,7 +268,7 @@
 |--------------------|--------------------|
 | Mails              | List&lt;Mails>     |
 
-#### Fetch Mail Details By Query
+### Fetch Mail Details By Query
 
 - **Description**: Accepts search query as input and returns list of mails. Returns at most 15 mails.
 - **Input Parameters**:
@@ -283,7 +285,7 @@
 |--------------------|--------------------|
 | Mails              | List&lt;Mails>     |
 
-#### Fetch Inbox
+### Fetch Inbox
 
 - **Description**: Accepts page number, and page size as input and returns list of mail. Page number, and page size are
   optional parameters.
@@ -301,7 +303,7 @@
 |--------------------|--------------------|
 | Inbox Mails        | List&lt;Mails>     |
 
-#### Fetch Latest Mail
+### Fetch Latest Mail
 
 - **Description**: Returns the latest email received, in the last two minutes
 - **Input Parameters**: NA
@@ -312,7 +314,7 @@
 |--------------------|--------------------|
 | New Email          | Mails              |
 
-#### Reply To Mail
+### Reply To Mail
 
 - **Description**: Accepts message ID, message, and attachments as input and returns response message. Attachment is
   optional input.
@@ -333,7 +335,7 @@
 
 - If given message does not contain replyTo mail then message will get sent to sender.
 
-#### Reply To Mail With CC and BCC
+### Reply To Mail With CC and BCC
 
 - **Description**: In this request, you can respond to sender on a thread. Accepts Message ID, and Message as mandatory
   parameters and returns response message. Optional parameters 'To', 'Bcc', and 'Reply To' are provided that overwrites
@@ -362,7 +364,7 @@
 
 - If given message does not contain replyTo mail then message will get sent to sender.
 
-#### List Categories
+### List Categories
 
 - **Description**: In this request, you can Get a list of the supported Outlook categories.
 
@@ -374,9 +376,9 @@
 
 ## Entity Requests
 
-### The Outlook Extension supports the following entity requests
+The Outlook Extension supports the following entity requests.
 
-#### Search Labels
+### Search Labels
 
 - **Description**: Returns list of labels.
 - **Input Parameters**: NA
@@ -386,7 +388,7 @@
 |--------------------|--------------------|-------------|
 | Labels             | List&lt;Label>     | Inbox, Sent |
 
-#### Get Label
+### Get Label
 
 - **Description**: Selects label from searched result.
 - **Input Parameters**: NA

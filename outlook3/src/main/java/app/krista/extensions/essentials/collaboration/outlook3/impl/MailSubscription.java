@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
 
@@ -23,7 +24,8 @@ import java.util.Objects;
  */
 public class MailSubscription {
 
-    public static final long THREE_DAYS_IN_MILLIS = 3 * 24 * 60 * 60 * (long) 1000;
+    public static final long MAIL_ALERT_SUBSCRIPTION_VALIDITY = 3 * 24 * 60 * 60 * (long) 1000;
+    public static final long TWO_FIVE_HOURS_IN_MILLIS = 25 * 60 * 60 * (long) 1000;
     private static final Logger LOGGER = LoggerFactory.getLogger(MailSubscription.class);
 
     private MailSubscription() {
@@ -35,8 +37,7 @@ public class MailSubscription {
      * @param routingUrl routing url to get the mail alert
      * @param provider   {@link GraphServiceClientProvider} object to get the subscriptions from microsoft
      */
-    public static void createSubscription(String routingUrl, GraphServiceClientProvider provider) {
-        LOGGER.info("Managing subscriptions...");
+    public static void createOrUpdateSubscription(String routingUrl, GraphServiceClientProvider provider) {
         try {
             Subscription subscription = setSubscriptionParameters(routingUrl, provider.getOutlookAttributes().getEmail());
 
@@ -44,7 +45,17 @@ public class MailSubscription {
             while (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
                 for (Subscription oldSubscription : collectionPage.getCurrentPage()) {
                     if (Objects.requireNonNull(oldSubscription.notificationUrl).equals(subscription.notificationUrl)) {
-                        LOGGER.info("Subscription found returning...");
+                        final long expirationEpoch = oldSubscription.expirationDateTime.toEpochSecond() * 1000;
+                        final long currentTimeInMillis = Instant.now().toEpochMilli();
+                        final long remainingTime = expirationEpoch - currentTimeInMillis;
+                        LOGGER.info("Requires microsoft Renewal after {} hours", (((remainingTime / 1000) / 60) / 60));
+                        final long elapsedTime = MAIL_ALERT_SUBSCRIPTION_VALIDITY - remainingTime;
+                        LOGGER.info("Requires interval renewal after {} minutes", (((elapsedTime - TWO_FIVE_HOURS_IN_MILLIS) / 1000) / 60));
+                        final boolean requireRenew = elapsedTime > TWO_FIVE_HOURS_IN_MILLIS;
+                        if (requireRenew) {
+                            LOGGER.info("Renewing subscription Mail alert subscription for id: {}", oldSubscription.id);
+                            renewSubscription(provider, oldSubscription.id);
+                        }
                         return;
                     }
                 }
@@ -76,7 +87,7 @@ public class MailSubscription {
         subscription.notificationUrl = routingUrl + Constants.REST_OUTLOOK_MAIL_NOTIFICATION;
         subscription.lifecycleNotificationUrl = routingUrl + Constants.REST_OUTLOOK_LIFECYCLE_NOTIFICATION;
         subscription.resource = "/users/" + alertUserMailId + Constants.ME_MAIL_FOLDERS_INBOX_MESSAGES;
-        long threeDaysInMillis = System.currentTimeMillis() + THREE_DAYS_IN_MILLIS;
+        long threeDaysInMillis = System.currentTimeMillis() + MAIL_ALERT_SUBSCRIPTION_VALIDITY;
         Date date = new Date(threeDaysInMillis);
         DateFormat dateFormat = new SimpleDateFormat(Constants.YYYY_MM_DD_T_HH_MM_SS_SSSSSSS_Z);
         subscription.expirationDateTime = OffsetDateTimeSerializer.deserialize(dateFormat.format(date));
@@ -94,7 +105,7 @@ public class MailSubscription {
                 provider.getOutlookAttributes().getEmail());
         try {
             Subscription subscription = new Subscription();
-            long threeDaysInMillis = System.currentTimeMillis() + THREE_DAYS_IN_MILLIS;
+            long threeDaysInMillis = System.currentTimeMillis() + MAIL_ALERT_SUBSCRIPTION_VALIDITY;
             Date date = new Date(threeDaysInMillis);
             DateFormat dateFormat = new SimpleDateFormat(Constants.YYYY_MM_DD_T_HH_MM_SS_SSSSSSS_Z);
             subscription.expirationDateTime = OffsetDateTimeSerializer.deserialize(dateFormat.format(date));

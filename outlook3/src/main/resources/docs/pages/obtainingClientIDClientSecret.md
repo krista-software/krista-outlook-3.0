@@ -1,4 +1,4 @@
-### Obtaining Credentials For Private Authentication
+# Obtaining Credentials For Private Authentication
 
 * For the Outlook Extension, you would need to obtain Client ID, Tenant ID, and Client Secret from the Azure Portal.
 

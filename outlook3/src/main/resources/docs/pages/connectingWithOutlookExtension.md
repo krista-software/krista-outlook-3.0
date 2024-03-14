@@ -1,4 +1,4 @@
-### Connecting with Krista Outlook Extension
+# Connecting with Krista Outlook Extension
 
 To establish a connection with the Outlook Extension, follow the steps below based on your authentication method:
 
