@@ -50,9 +50,22 @@ const AuthPage = () => {
         setSelectedOption(e.target.value as AuthType);
     };
 
+    const showNotification = (message: string, type: string) => {
+        setToastMessage(message);
+        setToastType(type);
+        setShowToast(true);
+        setTimeout(() => {
+            setShowToast(false);
+        }, 3000);
+    };
+
     const handleResponseForSavedCred = (response: any) => {
+        let responseMessage = "Test connection failed";
+        let responseType = "error";
+
         if (response.isSaved) {
-            setToastMessage("Connection tested successfully. Changes saved!");
+            responseMessage = "Connection tested successfully. Changes saved!";
+            responseType = "success";
             setToastType("success");
             const saveButton = document.getElementById("save-button") as HTMLButtonElement;
             if (saveButton) {
@@ -60,34 +73,28 @@ const AuthPage = () => {
             }
             setIsConnectionSuccess(false);
             setIsSaved(true)
-        } else if (response.errorWhileSaving) {
-            setToastMessage("Test connection failed");
-            setToastType("error");
         }
-        setShowToast(true);
-        setTimeout(() => {
-            setShowToast(false);
-        }, 3000);
+        showNotification(responseMessage, responseType);
     }
 
     const handleResponse = (response: any) => {
+        let message = "Test connection failed";
+        let type = "error";
+
         if (response.isSuccess) {
-            setToastMessage("Connection tested successfully. Please save the changes!");
-            setToastType("success");
-            const saveButton = document.getElementById("save-button") as HTMLButtonElement;
-            if (saveButton) {
-                saveButton.click();
-            }
+            message = "Connection tested successfully. Please save the changes!";
+            type = "success";
             setIsConnectionSuccess(true);
         } else if (response.errorMessage) {
-            setToastMessage(response.errorMessage);
-            setToastType("error");
+            message = response.errorMessage;
         }
+
         if (response.url) {
             const popup = window.open(response.url, "_blank", "width=600,height=400");
             if (popup) {
                 const interval = setInterval(() => {
                     if (popup.closed) {
+                        console.log("Pop up window open.")
                         clearInterval(interval);
                         if (authPayload) {
                             setLoading(true);
@@ -95,26 +102,14 @@ const AuthPage = () => {
                                 if (response.isSuccess) {
                                     setLoading(false);
                                     setIsConnectionSuccess(true);
-                                    setToastMessage("Connection tested successfully. Please save the changes.");
-                                    setToastType("success");
                                     const saveButton = document.getElementById("save-button") as HTMLButtonElement;
                                     if (saveButton) {
                                         saveButton.click();
                                     }
-                                    setShowToast(true);
-                                    setTimeout(() => {
-                                        setLoading(false);
-                                        setShowToast(false);
-                                    }, 3000);
+                                    showNotification("Connection tested successfully. Please save the changes.", "success");
                                 } else if (response.errorMessage) {
                                     setIsConnectionSuccess(false);
-                                    setToastMessage("Test Connection failed. Please authenticate again.");
-                                    setToastType("error");
-                                    setShowToast(true);
-                                    setTimeout(()=> {
-                                        setLoading(false);
-                                        setShowToast(false);
-                                    }, 3000);
+                                    showNotification("Test Connection failed. Please authenticate again.", "error");
                                 }
 
                             });
@@ -123,12 +118,13 @@ const AuthPage = () => {
                 }, 1000); // Check every second if the popup is closed
             }
         }
+        console.log("waiting for pop window close..")
+        const saveButton = document.getElementById("save-button") as HTMLButtonElement;
+        if (saveButton) {
+            saveButton.click();
+        }
         setLoading(false);
-        setShowToast(true);
-        setTimeout(() => {
-            setLoading(false);
-            setShowToast(false);
-        }, 3000);
+        showNotification(message, type);
     }
 
     const testApiConnection = (/* parameters */) => {
@@ -148,6 +144,7 @@ const AuthPage = () => {
     const handleAuthChange = useCallback((authPayload: AuthPayload) => {
         setAuthPayload(authPayload);
     }, []);
+
     const handleTestConnectionClick = () => {
         setLoading(true);
         testApiConnection();

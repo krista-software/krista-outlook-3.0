@@ -10,6 +10,7 @@ To establish a connection with the Outlook Extension, follow the steps below bas
 
 * You need to provide you school or work account mail id, then click on **Test Connection**.
 
+  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft login window.
 
 * Once the Authentication is successful, click on **Save Changes**.
 
@@ -37,6 +38,8 @@ To establish a connection with the Outlook Extension, follow the steps below bas
 
 
 * Provide Email, Client ID, Client Secret and Tenant ID and click on **Test Connection**
+
+  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft login window.
 
 
 * Once the Authentication is successful, click on **Save Changes**.

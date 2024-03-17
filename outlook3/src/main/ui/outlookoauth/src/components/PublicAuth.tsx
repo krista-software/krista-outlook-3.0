@@ -45,34 +45,36 @@ const PublicAuth = ({onAuthChange}: { onAuthChange: (authPayload: AuthPayload) =
     }
 
     return (
-        <div>
-            <div
-                className="auth-form">
-                <div className="form-group">
-                    <label htmlFor="email">Email<span className="mandatory-asterisk">*</span></label>
-                    <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter Work or School Account Id"
-                    />
-                </div>
-
-                <div className="form-group">
-                    <div className="checkbox-label-container">
+        <form>
+            <div>
+                <div
+                    className="auth-form">
+                    <div className="form-group">
+                        <label htmlFor="email">Email<span className="mandatory-asterisk">*</span></label>
                         <input
-                            type="checkbox"
-                            id="allowMailAlert"
-                            checked={allowMailAlert}
-                            onChange={(e) => setAllowMailAlert(e.target.checked)}
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Enter Work or School Account Id"
                         />
-                        <label htmlFor="allowMailAlert">Allow Mail Alert</label>
                     </div>
 
+                    <div className="form-group">
+                        <div className="checkbox-label-container">
+                            <input
+                                type="checkbox"
+                                id="allowMailAlert"
+                                checked={allowMailAlert}
+                                onChange={(e) => setAllowMailAlert(e.target.checked)}
+                            />
+                            <label htmlFor="allowMailAlert">Allow Mail Alert</label>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-        </div>
+        </form>
     );
 };
 

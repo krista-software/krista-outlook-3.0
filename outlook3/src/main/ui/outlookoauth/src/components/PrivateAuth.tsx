@@ -57,61 +57,66 @@ const PrivateAuth = ({onAuthChange}: {
     }
 
     return (
-        <div>
-            <div className="auth-form">
-                <div className="form-group">
-                    <label htmlFor="email">Email<span className="mandatory-asterisk">*</span></label>
-                    <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter School or Work Account Id"
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="client-id">Client ID<span className="mandatory-asterisk">*</span></label>
-                    <input
-                        type="text"
-                        id="client-id"
-                        value={clientId}
-                        onChange={(e) => setClientId(e.target.value)}
-                        placeholder="Enter Client ID"
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="client-secret">Client Secret<span className="mandatory-asterisk">*</span></label>
-                    <input
-                        type="password"
-                        id="client-secret"
-                        value={clientSecret}
-                        onChange={(e) => setClientSecret(e.target.value)}
-                        placeholder="Enter Client Secret"
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="tenant-id">Tenant ID<span className="mandatory-asterisk">*</span></label>
-                    <input
-                        type="text"
-                        id="tenant-id"
-                        value={tenantId}
-                        onChange={(e) => setTenantId(e.target.value)}
-                        placeholder="Enter Tenant ID"
-                    />
-                </div>
-                <div className="form-group">
-                    <div className="checkbox-label-container">
+        <form>
+            <div>
+                <div className="auth-form">
+                    <div className="form-group">
+                        <label htmlFor="email">Email<span className="mandatory-asterisk">*</span></label>
                         <input
-                            type="checkbox"
-                            id="allowMailAlert"
-                            checked={allowMailAlert}
-                            onChange={(e) => setAllowMailAlert(e.target.checked)}
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Enter School or Work Account Id"
+                            autoComplete="username"
                         />
-                        <label htmlFor="allowMailAlert">Allow Mail Alert</label>
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="client-id">Client ID<span className="mandatory-asterisk">*</span></label>
+                        <input
+                            type="text"
+                            id="client-id"
+                            value={clientId}
+                            onChange={(e) => setClientId(e.target.value)}
+                            placeholder="Enter Client ID"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="client-secret">Client Secret<span
+                            className="mandatory-asterisk">*</span></label>
+                        <input
+                            type="password"
+                            id="client-secret"
+                            value={clientSecret}
+                            onChange={(e) => setClientSecret(e.target.value)}
+                            placeholder="Enter Client Secret"
+                            autoComplete="current-password"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="tenant-id">Tenant ID<span className="mandatory-asterisk">*</span></label>
+                        <input
+                            type="text"
+                            id="tenant-id"
+                            value={tenantId}
+                            onChange={(e) => setTenantId(e.target.value)}
+                            placeholder="Enter Tenant ID"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <div className="checkbox-label-container">
+                            <input
+                                type="checkbox"
+                                id="allowMailAlert"
+                                checked={allowMailAlert}
+                                onChange={(e) => setAllowMailAlert(e.target.checked)}
+                            />
+                            <label htmlFor="allowMailAlert">Allow Mail Alert</label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
     );
 };
 
