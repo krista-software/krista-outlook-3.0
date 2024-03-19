@@ -11,8 +11,6 @@ import com.microsoft.graph.models.*;
 import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.requests.AttachmentCollectionPage;
 import com.microsoft.graph.requests.MessageRequestBuilder;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsoup.Jsoup;
@@ -156,9 +154,7 @@ public class EmailImpl implements Email {
 
         MessageMoveParameterSet parameterSet = new MessageMoveParameterSet();
         parameterSet.destinationId = folder.getFolderId();
-        Message movedMessage = messageRequestBuilder.move(parameterSet)
-                .buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML))
-                .post();
+        Message movedMessage = messageRequestBuilder.move(parameterSet).buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML)).post();
         if (movedMessage == null) {
             throw new IllegalStateException(Constants.FAILED_TO_MOVE_MESSAGE);
         } else {
@@ -180,30 +176,19 @@ public class EmailImpl implements Email {
         }
 
         Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
-        messageRequestBuilder.reply(MessageReplyParameterSet
-                        .newBuilder()
-                        .withMessage(replyMessage)
-                        .build())
-                .buildRequest()
-                .post();
+        messageRequestBuilder.reply(MessageReplyParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
         return new EmailImpl(provider, replyMessage);
     }
 
     @Override
-    public Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, List<EmailAddress> toRecipients,
-                            List<EmailAddress> ccRecipients, List<EmailAddress> bccRecipients, List<EmailAddress> replyTo, String bodyType) {
+    public Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, List<EmailAddress> toRecipients, List<EmailAddress> ccRecipients, List<EmailAddress> bccRecipients, List<EmailAddress> replyTo, String bodyType) {
         MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
         if (messageRequestBuilder == null) {
             throw new IllegalStateException(Constants.REPLY_TO_ALL_REQUEST_FAILED);
         }
 
         Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
-        messageRequestBuilder.replyAll(MessageReplyAllParameterSet
-                        .newBuilder()
-                        .withMessage(replyMessage)
-                        .build())
-                .buildRequest()
-                .post();
+        messageRequestBuilder.replyAll(MessageReplyAllParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
         return new EmailImpl(provider, replyMessage);
     }
 
@@ -247,38 +232,38 @@ public class EmailImpl implements Email {
 
     @Override
     public void forward(String message, List<EmailAddress> to, String bodyType) {
-        log.info("forwarding email to " + ReflectionToStringBuilder.toString(to) + "; with message: " + message);
+        log.info("forwarding email to {} with message {}", to, message);
         MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
         if (messageRequestBuilder == null) {
             throw new IllegalStateException(Constants.FORWARD_MAIL_REQUEST_FAILED);
         }
 
-        if (message == null || message.isBlank()) {
-            log.info("Message is empty or null.");
-        }
         if (to == null || to.isEmpty()) {
             log.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
         }
-        ItemBody body = new ItemBody();
-        if (message == null || message.isBlank()) {
-            body.content = "";
-        } else {
-            body.content = message;
-        }
-        body.contentType = ("HTML".equals(bodyType)) ? BodyType.HTML : BodyType.TEXT;
+
+        ItemBody body = createItemBody(message, bodyType);
+        Message replyMessage = createReplyMessage(body);
+        List<Recipient> toRecipient = getRecipientsCollection(to);
+
+        messageRequestBuilder
+                .forward(MessageForwardParameterSet.newBuilder().withToRecipients(toRecipient)
+                        .withMessage(replyMessage).build())
+                .buildRequest().post();
+    }
+
+    private Message createReplyMessage(ItemBody body) {
         Message replyMessage = new Message();
         replyMessage.body = body;
+        return replyMessage;
+    }
 
-        log.info("replyMessage: " + ReflectionToStringBuilder.toString(replyMessage));
-        log.info("replyMessage body: " + ReflectionToStringBuilder.toString(replyMessage.body));
-        log.info("replyMessage body content: " + replyMessage.body.content);
-        log.info("replyMessage body content type: " + replyMessage.body.contentType);
-
-        List<Recipient> toRecipient = getRecipientsCollection(to);
-        messageRequestBuilder.forward(MessageForwardParameterSet.newBuilder().withToRecipients(toRecipient).withMessage(replyMessage).build())
-                .buildRequest()
-                .post();
+    private ItemBody createItemBody(String message, String bodyType) {
+        ItemBody body = new ItemBody();
+        body.content = (message == null || message.isBlank()) ? "" : message;
+        body.contentType = BodyType.HTML.equals(bodyType) ? BodyType.HTML : BodyType.TEXT;
+        return body;
     }
 
     @Override
@@ -315,8 +300,7 @@ public class EmailImpl implements Email {
 
         AttachmentCollectionPage attachments = messageRequestBuilder.attachments().buildRequest().get();
         while (attachments != null && !attachments.getCurrentPage().isEmpty()) {
-            attachments.getCurrentPage().forEach(attachment ->
-                    addAttachmentToAttachmentList(useEmail, attachmentList, attachment));
+            attachments.getCurrentPage().forEach(attachment -> addAttachmentToAttachmentList(useEmail, attachmentList, attachment));
             if (attachments.getNextPage() != null) {
                 attachments = attachments.getNextPage().buildRequest().get();
             } else {
@@ -352,10 +336,7 @@ public class EmailImpl implements Email {
             return null;
         }
 
-        return messageRequestBuilder.attachments(Objects.requireNonNull(attachment.id))
-                .buildRequest()
-                .expand(Constants.MICROSOFT_GRAPH_ITEM_ATTACHMENT_ITEM)
-                .get();
+        return messageRequestBuilder.attachments(Objects.requireNonNull(attachment.id)).buildRequest().expand(Constants.MICROSOFT_GRAPH_ITEM_ATTACHMENT_ITEM).get();
     }
 
     private MessageRequestBuilder getMessageRequestBuilder(Boolean useEmail) {
@@ -387,32 +368,46 @@ public class EmailImpl implements Email {
     }
 
     @Override
-    public void addCategory(String category) {
-        updateCategory(category, ADD_CATEGORY);
+    public boolean addCategory(String category) {
+        List<String> existingCategories = getUniqueCategories();
+        if (!existingCategories.contains(category)) {
+            existingCategories.add(category);
+        }
+        return updateCategory(existingCategories);
     }
 
     @Override
-    public void removeCategory(String category) {
-        updateCategory(category, REMOVE_CATEGORY);
+    public boolean removeCategory(String category) {
+        List<String> existingCategories = getUniqueCategories();
+        existingCategories.remove(category);
+        return updateCategory(existingCategories);
     }
 
-    private void updateCategory(String category, String type) {
-        List<String> existingCategories = message.categories;
-        if (existingCategories == null) {
-            existingCategories = new ArrayList<>();
-        }
-        if (REMOVE_CATEGORY.equals(type)) {
-            existingCategories.remove(category);
-        }
-        if (ADD_CATEGORY.equals(type) && !existingCategories.contains(category)) {
-            existingCategories.add(category);
-        }
+    private boolean updateCategory(List<String> existingCategories) {
         Message patchMessage = new Message();
         patchMessage.categories = existingCategories;
         MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
         if (messageRequestBuilder != null) {
-            messageRequestBuilder.buildRequest().patch(patchMessage);
+            try {
+                messageRequestBuilder.buildRequest().patch(patchMessage);
+                return true;
+            } catch (Exception cause) {
+                return false;
+            }
         }
+        return false;
+    }
+
+    @NotNull
+    private List<String> getUniqueCategories() {
+        List<String> existingCategories = message.categories;
+        if (existingCategories == null) {
+            existingCategories = new ArrayList<>();
+        }
+        // Remove duplicates by converting to a Set and back to a List
+        Set<String> uniqueCategories = new LinkedHashSet<>(existingCategories);
+        existingCategories = new ArrayList<>(uniqueCategories);
+        return existingCategories;
     }
 
 }

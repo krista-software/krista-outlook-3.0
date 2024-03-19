@@ -6,7 +6,7 @@ import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.request.ProtoRequest;
 import app.krista.extension.request.ProtoResponse;
 import app.krista.extension.request.protos.http.HttpRequest;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.OAuthService;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.model.field.NamedField;

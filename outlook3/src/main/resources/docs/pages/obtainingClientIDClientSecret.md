@@ -1,10 +1,12 @@
+[<span style = "color : blue ; text-decoration: none">< back<span>](connectingWithOutlookExtension.md)
+
 # Obtaining Credentials For Private Authentication
 
 * For the Outlook Extension, you would need to obtain Client ID, Tenant ID, and Client Secret from the Azure Portal.
 
 ### Steps to get Client ID, Tenant ID, and Client Secret
 
-* Log in to the Azure portal at [click here](https://portal.azure.com/).
+* Log in to the Azure portal. To see related information, [click here](https://portal.azure.com/).
   ![Home Page](../_media/homePage.png)
 
 

@@ -30,7 +30,7 @@ To establish a connection with the Outlook Extension, follow the steps below bas
 
 
 * To obtain Client ID, Client Secret and Tenant ID, navigate to the **Obtaining Credentials For Private Authentication**
-  page or [click here](obtainingClientIDClientSecret.md).
+  page or [click here](pages/obtainingClientIDClientSecret.md).
 
 
 * Navigate to the Authentication tab in the Outlook Extension and select **Private**.

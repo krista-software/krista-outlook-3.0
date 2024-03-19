@@ -65,7 +65,7 @@ public class Constants {
     public static final String DATA = "Data";
     public static final String INVALID_TASK_ID = "Invalid task ID";
     public static final String FORWARD_SLASH = "/";
-    public static final String REQUIRED_SCOPE = "openid offline_access Mail.Send Mail.ReadWrite Mail.Send.Shared Mail.ReadWrite.Shared";
+    public static final String REQUIRED_SCOPE = "openid offline_access Mail.Send Mail.ReadWrite Mail.Send.Shared Mail.ReadWrite.Shared MailboxSettings.Read";
     public static final String SCOPE_SEPARATOR = " ";
     public static final String ORG_AUTHORITY = "https://login.microsoftonline.com/organizations/";
     public static final String AUTHORITY = "https://login.microsoftonline.com/";
@@ -130,8 +130,6 @@ public class Constants {
     public static final String AUTH_TYPE = "authType";
     public static final String EMAIL = "email";
     public static final String UNDER_SCORE = "_";
-    public static final String TAGS_REPLACE = "(?<!>)\\n(?!\\s*<)";
-
 
     private Constants() {
     }

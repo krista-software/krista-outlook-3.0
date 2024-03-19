@@ -208,50 +208,24 @@ public class AccountImpl implements Account {
     }
 
 
-    /**
-     * https://learn.microsoft.com/en-us/graph/api/outlookuser-list-mastercategories?view=graph-rest-1.0&tabs=java
-     *
-     * @return
-     */
     @Override
     public List<String> getCategoryNames() {
         log.info("getCategoryNames: start");
         List<String> categoryNames = new ArrayList<>();
 
-        // TODO - test when we have MailboxSettings.Read permissions
-        // none of these approaches are working
-
-        try {
-            log.info("getCategoryNames: getUserRequestBuilder");
-            OutlookCategoryCollectionPage page = getUserRequestBuilder(null, null).outlook().masterCategories().buildRequest().get();
-            log.info("getCategoryNames: getUserRequestBuilder page {}", page);
-        } catch (Exception cause) {
-            log.error(cause.getMessage(), cause);
-        }
-
-        try {
-            log.info("getCategoryNames: provider.getGraphServiceClientForUser");
-            OutlookCategoryCollectionPage page = provider.getGraphServiceClientForUser(null, null).me().outlook().masterCategories().buildRequest().get();
-            log.info("getCategoryNames: provider.getGraphServiceClientForUser page {}", page);
-        } catch (Exception cause) {
-            log.error(cause.getMessage(), cause);
-        }
-
-        log.info("getCategoryNames: provider.getGraphServiceClientForAdmin()");
-        OutlookCategoryCollectionPage page = provider.getGraphServiceClientForAdmin().me().outlook().masterCategories().buildRequest().get();
-        log.info("getCategoryNames: provider.getGraphServiceClientForAdmin() page {}", page);
-
-        while (page != null && !page.getCurrentPage().isEmpty()) {
-            for (OutlookCategory categoryInPage : page.getCurrentPage()) {
-                categoryNames.add(categoryInPage.displayName);
+        OutlookCategoryCollectionPage categoriesPage = getUserRequestBuilder(null, null).outlook()
+                .masterCategories().buildRequest().get();
+        while (categoriesPage != null && !categoriesPage.getCurrentPage().isEmpty()) {
+            for (OutlookCategory category : categoriesPage.getCurrentPage()) {
+                categoryNames.add(category.displayName);
             }
-            if (page.getNextPage() != null) {
-                page = page.getNextPage().buildRequest().get();
+            if (categoriesPage.getNextPage() != null) {
+                categoriesPage = categoriesPage.getNextPage().buildRequest().get();
             } else {
                 break;
             }
         }
-        log.info("getCategoryNames: categoryNames {}", categoryNames);
         return categoryNames;
+
     }
 }

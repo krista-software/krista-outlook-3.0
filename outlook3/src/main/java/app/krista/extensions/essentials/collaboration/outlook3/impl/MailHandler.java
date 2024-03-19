@@ -57,6 +57,7 @@ public class MailHandler {
         mailDetails.replyTo = getCommaSeparatedEmail(email.getReplyToEmailAddresses());
         mailDetails.sendDateAndTime = email.getSendDateAndTime();
         mailDetails.receivedDateAndTime = email.getReceivedDateAndTime();
+        mailDetails.categories = email.getCategories();
         return mailDetails;
     }
 

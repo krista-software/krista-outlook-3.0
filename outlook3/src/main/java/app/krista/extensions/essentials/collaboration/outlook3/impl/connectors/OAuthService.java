@@ -1,4 +1,4 @@
-package app.krista.extensions.essentials.collaboration.outlook3.impl;
+package app.krista.extensions.essentials.collaboration.outlook3.impl.connectors;
 
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;

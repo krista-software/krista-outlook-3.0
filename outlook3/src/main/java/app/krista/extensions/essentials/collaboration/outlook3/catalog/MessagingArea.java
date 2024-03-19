@@ -631,8 +631,7 @@ public class MessagingArea {
             throw new RuntimeException("Message ID cannot be empty.");
         }
         Email email = account.getEmail(messageID);
-        email.addCategory(category);
-        return true;
+        return email.addCategory(category);
     }
 
     @CatalogRequest(
@@ -645,7 +644,14 @@ public class MessagingArea {
     public Boolean removeCategoryFromMessage(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
-        throw new UnsupportedOperationException("This method is not yet implemented! If you don't want to support this method, please remove the complete method");
+        if (Validators.isStringNullOrBlank(category)) {
+            throw new RuntimeException("Category cannot be empty.");
+        }
+        if (Validators.isStringNullOrBlank(messageID)) {
+            throw new RuntimeException("Message ID cannot be empty.");
+        }
+        Email email = account.getEmail(messageID);
+        return email.removeCategory(category);
     }
 
 }

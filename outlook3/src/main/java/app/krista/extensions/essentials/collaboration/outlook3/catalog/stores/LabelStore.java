@@ -46,8 +46,8 @@ public class LabelStore implements EntityStore<Label> {
     }
 
     @Override
-    public void delete(String s) {
-        // Delete entity feature is not supported
+    public void delete(String primaryKey) {
+        throw new IllegalArgumentException("Deleting the folder is not supported.");
     }
 
     @Override

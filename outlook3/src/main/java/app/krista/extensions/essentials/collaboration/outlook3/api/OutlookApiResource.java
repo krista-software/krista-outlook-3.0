@@ -6,7 +6,7 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.OAuthService;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
@@ -199,6 +199,15 @@ public final class OutlookApiResource {
         return Response.status(200).type(MediaType.TEXT_PLAIN).entity(validationToken.trim()).build();
     }
 
+    /**
+     * when mailNotification endpoint is called two times or more by Microsoft GraphAPI on same messageId which
+     * causes mail receive alert wait for event triggered two times or more, to avoid such case we are using
+     * isDuplicateMessageID to break the loop.
+     * Microsoft sends the notification twice when there is no acknowledgement from krista that it received the mail.
+     *
+     * @param notification
+     * @return
+     */
     @POST
     @Path("/mailNotification")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -206,10 +215,6 @@ public final class OutlookApiResource {
         JsonArray array = notification.get(Constants.VALUE).getAsJsonArray();
         for (int i = 0; i < array.size(); i++) {
             String messageId = array.get(i).getAsJsonObject().get(Constants.RESOURCE_DATA).getAsJsonObject().get(Constants.ID).getAsString();
-            //when mailNotification endpoint is called two times or more by Microsoft GraphAPI on same messageId which
-            // causes mail receive alert wait for event triggered two times or more, to avoid such case we are using
-            // isDuplicateMessageID to break the loop.
-            // Microsoft sends the notification twice when there is no acknowledgement from krista that it received the mail.
             if (isDuplicateMessageID(messageId)) {
                 break;
             }

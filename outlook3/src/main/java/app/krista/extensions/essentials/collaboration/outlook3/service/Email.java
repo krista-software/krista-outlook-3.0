@@ -188,8 +188,14 @@ public interface Email {
      *
      * @param category name of the category to be added
      */
-    void addCategory(String category);
+    boolean addCategory(String category);
 
-    void removeCategory(String category);
+    /**
+     * This method will remove category for the given message id.
+     * @param category
+     * @return
+     */
+
+    boolean removeCategory(String category);
 
 }

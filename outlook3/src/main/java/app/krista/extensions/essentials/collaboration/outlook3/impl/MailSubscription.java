@@ -15,6 +15,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.Objects;
 
@@ -25,7 +26,7 @@ import java.util.Objects;
 public class MailSubscription {
 
     public static final long MAIL_ALERT_SUBSCRIPTION_VALIDITY = 3 * 24 * 60 * 60 * (long) 1000;
-    public static final long TWO_FIVE_HOURS_IN_MILLIS = 25 * 60 * 60 * (long) 1000;
+    public static final long TWENTY_FIVE_HOURS_IN_MILLIS = 25 * 60 * 60 * (long) 1000;
     private static final Logger LOGGER = LoggerFactory.getLogger(MailSubscription.class);
 
     private MailSubscription() {
@@ -45,17 +46,7 @@ public class MailSubscription {
             while (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
                 for (Subscription oldSubscription : collectionPage.getCurrentPage()) {
                     if (Objects.requireNonNull(oldSubscription.notificationUrl).equals(subscription.notificationUrl)) {
-                        final long expirationEpoch = oldSubscription.expirationDateTime.toEpochSecond() * 1000;
-                        final long currentTimeInMillis = Instant.now().toEpochMilli();
-                        final long remainingTime = expirationEpoch - currentTimeInMillis;
-                        LOGGER.info("Requires microsoft Renewal after {} hours", (((remainingTime / 1000) / 60) / 60));
-                        final long elapsedTime = MAIL_ALERT_SUBSCRIPTION_VALIDITY - remainingTime;
-                        LOGGER.info("Requires interval renewal after {} minutes", (((elapsedTime - TWO_FIVE_HOURS_IN_MILLIS) / 1000) / 60));
-                        final boolean requireRenew = elapsedTime > TWO_FIVE_HOURS_IN_MILLIS;
-                        if (requireRenew) {
-                            LOGGER.info("Renewing subscription Mail alert subscription for id: {}", oldSubscription.id);
-                            renewSubscription(provider, oldSubscription.id);
-                        }
+                        handleSubscriptionRenewal(provider, oldSubscription);
                         return;
                     }
                 }
@@ -66,10 +57,24 @@ public class MailSubscription {
                     break;
                 }
             }
-            LOGGER.info("Creating new subscription...");
+            LOGGER.info("Creating new subscription.");
             provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().post(subscription);
         } catch (ClientException | ParseException cause) {
             throw new RuntimeException(cause);
+        }
+    }
+
+    private static void handleSubscriptionRenewal(GraphServiceClientProvider provider, Subscription oldSubscription) {
+        final long expirationEpoch = Objects.requireNonNull(oldSubscription.expirationDateTime).toEpochSecond() * 1000;
+        final long currentTimeInMillis = Instant.now().toEpochMilli();
+        final long remainingTime = expirationEpoch - currentTimeInMillis;
+        LOGGER.info("Requires microsoft Renewal after {} hours", (((remainingTime / 1000) / 60) / 60));
+        final long elapsedTime = MAIL_ALERT_SUBSCRIPTION_VALIDITY - remainingTime;
+        LOGGER.info("Requires interval renewal after {} minutes", (((elapsedTime - TWENTY_FIVE_HOURS_IN_MILLIS) / 1000) / 60));
+        final boolean requireRenew = elapsedTime > TWENTY_FIVE_HOURS_IN_MILLIS;
+        if (requireRenew) {
+            LOGGER.info("Renewing subscription Mail alert subscription for id: {}", oldSubscription.id);
+            renewSubscription(provider, oldSubscription.id);
         }
     }
 
@@ -87,10 +92,7 @@ public class MailSubscription {
         subscription.notificationUrl = routingUrl + Constants.REST_OUTLOOK_MAIL_NOTIFICATION;
         subscription.lifecycleNotificationUrl = routingUrl + Constants.REST_OUTLOOK_LIFECYCLE_NOTIFICATION;
         subscription.resource = "/users/" + alertUserMailId + Constants.ME_MAIL_FOLDERS_INBOX_MESSAGES;
-        long threeDaysInMillis = System.currentTimeMillis() + MAIL_ALERT_SUBSCRIPTION_VALIDITY;
-        Date date = new Date(threeDaysInMillis);
-        DateFormat dateFormat = new SimpleDateFormat(Constants.YYYY_MM_DD_T_HH_MM_SS_SSSSSSS_Z);
-        subscription.expirationDateTime = OffsetDateTimeSerializer.deserialize(dateFormat.format(date));
+        subscription.expirationDateTime = getExpirationDateTime();
         return subscription;
     }
 
@@ -105,14 +107,18 @@ public class MailSubscription {
                 provider.getOutlookAttributes().getEmail());
         try {
             Subscription subscription = new Subscription();
-            long threeDaysInMillis = System.currentTimeMillis() + MAIL_ALERT_SUBSCRIPTION_VALIDITY;
-            Date date = new Date(threeDaysInMillis);
-            DateFormat dateFormat = new SimpleDateFormat(Constants.YYYY_MM_DD_T_HH_MM_SS_SSSSSSS_Z);
-            subscription.expirationDateTime = OffsetDateTimeSerializer.deserialize(dateFormat.format(date));
+            subscription.expirationDateTime = getExpirationDateTime();
             provider.getGraphServiceClientForAdmin().subscriptions(subscriptionId).buildRequest().patch(subscription);
         } catch (ClientException | ParseException cause) {
             throw new RuntimeException(cause);
         }
+    }
+
+    private static OffsetDateTime getExpirationDateTime() throws ParseException {
+        long threeDaysInMillis = System.currentTimeMillis() + MAIL_ALERT_SUBSCRIPTION_VALIDITY;
+        Date date = new Date(threeDaysInMillis);
+        DateFormat dateFormat = new SimpleDateFormat(Constants.YYYY_MM_DD_T_HH_MM_SS_SSSSSSS_Z);
+        return OffsetDateTimeSerializer.deserialize(dateFormat.format(date));
     }
 
     /**
@@ -122,7 +128,7 @@ public class MailSubscription {
      * @param routingUrl url to remove the subscription alert
      */
     public static void deleteSubscription(String routingUrl, GraphServiceClientProvider provider) {
-        LOGGER.info("Deleting subscription...");
+        LOGGER.info("Deleting subscription.");
         try {
             SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().get();
             if (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
