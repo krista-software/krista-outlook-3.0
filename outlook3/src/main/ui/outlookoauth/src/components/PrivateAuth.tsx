@@ -40,7 +40,6 @@ const PrivateAuth = ({onAuthChange}: {
     const getAllCred = async () => {
         try {
             const credentials = await getCredentials(AuthType.Private);
-            console.log(credentials);
             if (credentials) {
                 setEmail(credentials["email"]);
                 setClientId(credentials["clientId"]);

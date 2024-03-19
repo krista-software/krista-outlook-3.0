@@ -1,9 +1,0 @@
-{
-  "appName": "admin-access-app",
-  "clientSecretExpiry": "12/6/2025",
-  "secretId": "ef90ace1-3287-4109-b2e1-1e993b702827",
-  "credentials": {
-    "clientId": "47495500-7157-4620-bc7e-499c2ee1873e",
-    "clientSecret": "REDACTED_SECRET"
-  }
-}

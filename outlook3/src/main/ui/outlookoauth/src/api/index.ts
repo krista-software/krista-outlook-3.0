@@ -1,42 +1,27 @@
 import {AuthPayload} from "../components/AuthPage";
 
-export const testConnection = async (formPayload: AuthPayload): Promise<any> => {
-    const url = "../testConnection";
+const fetchRequest = async (url: string, method: string, body?: any): Promise<any> => {
     const response = await fetch(url, {
-        method: "POST",
+        method,
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify(formPayload),
+        body: body ? JSON.stringify(body) : undefined,
     });
     return response.json();
+};
+export const testConnection = async (formPayload: AuthPayload): Promise<any> => {
+    return fetchRequest("../testConnection", "POST", formPayload)
 };
 
 export const saveCredentials = async (formPayload: AuthPayload): Promise<any> => {
-    const url = "../saveCredentials";
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formPayload),
-    });
-    return response.json();
+    return fetchRequest("../saveCredentials", "POST", formPayload);
 };
 
 export const getCredentials = async (authType: string): Promise<any> => {
-    const url = `../getCredentials?authType=${authType}`;
-    const response = await fetch(url, {
-        method: "GET",
-    });
-    return response.json();
+    return fetchRequest(`../getCredentials?authType=${authType}`, "GET", null);
 };
 
 export const getAuthKey = async (): Promise<any> => {
-    const url = "../getAuthKey";
-    const response = await fetch(url, {
-        method: "GET",
-    });
-    const data = await response.json();
-    return data;
+    return fetchRequest("../getAuthKey", "GET", null);
 };

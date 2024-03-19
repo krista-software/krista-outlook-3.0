@@ -1,4 +1,4 @@
-[<span style = "color : blue ; text-decoration: none">< back<span>](connectingWithOutlookExtension.md)
+[<span style = "color : blue ; text-decoration: none">< back<span>](pages/connectingWithOutlookExtension)
 
 # Obtaining Credentials For Private Authentication
 

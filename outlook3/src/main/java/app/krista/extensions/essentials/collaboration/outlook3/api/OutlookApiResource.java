@@ -72,25 +72,6 @@ public final class OutlookApiResource {
         this.invokerId = invoker.getInvokerId();
     }
 
-    private static String getAuthContextId(String state) {
-        int authContextIdIndex = state.indexOf(AUTH_CONTEXT_ID);
-        if (authContextIdIndex == -1) {
-            LOGGER.debug("AuthContextId not found in state parameter");
-            return null;
-        }
-        String authContextIdToEnd = state.substring(authContextIdIndex);
-        int hashIndex = authContextIdToEnd.indexOf("#");
-        String authContextId;
-        if (hashIndex != -1) {
-            // If there is a "#", end the extraction at this index
-            authContextId = authContextIdToEnd.substring(0, hashIndex);
-        } else {
-            // If there is no "#", use the entire substring
-            authContextId = authContextIdToEnd;
-        }
-        return authContextId;
-    }
-
     @GET
     @Path("callback")
     public String getCallBackForV2Auth(@QueryParam(CODE) String code, @QueryParam(STATE) String state) {
@@ -113,7 +94,7 @@ public final class OutlookApiResource {
             throw new BadRequestException(Constants.INVALID_STATE_PARAMETERS);
         }
         String key = parts[0]; // Assuming parts[0] is always the key.
-        String authContextId = getAuthContextId(state);
+        String authContextId = AuthHelper.getAuthContextId(state);
         try {
             GraphServiceClientProvider clientProvider = getGraphServiceClientProvider(authContextId);
             OutlookAttributes outlookAttributes = clientProvider.getOutlookAttributes();
@@ -187,8 +168,12 @@ public final class OutlookApiResource {
     }
 
     private void removeOldestMessageIds(int messageIDCount) {
-        for (String messageId : new ArrayList<>(triggeredMailIds).subList(0, messageIDCount)) {
-            triggeredMailIds.remove(messageId);
+        final Iterator<String> iterator = triggeredMailIds.iterator();
+        int i = 0;
+        while (iterator.hasNext() && i < messageIDCount) {
+            iterator.next();
+            iterator.remove();
+            i++;
         }
     }
 
@@ -274,50 +259,61 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
-        LOGGER.info("Testing Connection...");
+        LOGGER.info("Testing Connection.");
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(outlookAttributes);
-        LOGGER.info("Created auth context id for the attributes");
-        TestConnectionResponse testConnectionResponse = null;
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
             LOGGER.info("Test Connection successful. Saving attributes.");
             outlookAttributeStore.save(outlookAttributes, invokerId);
-            LOGGER.info("Saving attributes.");
             if (outlookAttributes.isAllowMailAlert()) {
                 MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
             } else {
                 MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
             }
-            testConnectionResponse = new TestConnectionResponse(true, null, null);
-            return Constants.GSON.toJson(testConnectionResponse);
+            return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
             LOGGER.info("Failed to get data from graph service client.");
-            testConnectionResponse = new TestConnectionResponse(false, "graph service client error", null);
-            return Constants.GSON.toJson(testConnectionResponse);
+            return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
-            String userId = (String) cause.getDetails().get(0).getValue();
-            Optional<NamedValuedField> authContextIdField = cause.getDetails().stream()
-                    .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
-                    .findFirst();
-            String state = userId;
-            if (authContextIdField.isPresent()) {
-                authContextId = (String) authContextIdField.get().getValue();
-                state += Constants.HASH + authContextId;
-            }
-            if (Constants.PUBLIC.equals(outlookAttributes.getAuthType())) {
-                state += Constants.HASH + outlookAttributes.getForwardPath();
-            }
+            String state = createStateParameter(cause, outlookAttributes);
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
-            String url = oAuth20Service.getAuthorizationUrl(state);
-            testConnectionResponse = new TestConnectionResponse(false,
-                    AUTHORIZATION_PROMPT, url + Constants.AUTH_URL_QUERY_PARAMS);
-            return Constants.GSON.toJson(testConnectionResponse);
-        } finally {
-            if (testConnectionResponse != null && testConnectionResponse.getUrl() == null) {
-                outlookAttributeStore.remove(authContextId);
-            }
+            String url = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
+            return createTestConnectionResponse(false, AUTHORIZATION_PROMPT, url);
         }
+//        finally {
+//        if (testConnectionResponse != null && testConnectionResponse.getUrl() == null) {
+//                outlookAttributeStore.remove(authContextId);
+//            }
+//        }
+    }
+
+    private String createTestConnectionResponse(boolean isSuccess, String errorMessage, String url) {
+        if (isSuccess) {
+            return GSON.toJson(new TestConnectionResponse(true, null, null));
+        } else if (url != null) {
+            return GSON.toJson(new TestConnectionResponse(false, errorMessage, url));
+        } else if (errorMessage != null) {
+            return GSON.toJson(new TestConnectionResponse(false, errorMessage, null));
+        } else {
+            return GSON.toJson(new TestConnectionResponse(false, "Unknown Error", null));
+        }
+    }
+
+    private String createStateParameter(MustAuthorizeException cause, OutlookAttributes outlookAttributes) {
+        String userId = (String) cause.getDetails().get(0).getValue();
+        Optional<NamedValuedField> authContextIdField = cause.getDetails().stream()
+                .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
+                .findFirst();
+        String state = userId;
+        if (authContextIdField.isPresent()) {
+            String authContextId = (String) authContextIdField.get().getValue();
+            state += Constants.HASH + authContextId;
+        }
+        if (Constants.PUBLIC.equals(outlookAttributes.getAuthType())) {
+            state += Constants.HASH + outlookAttributes.getForwardPath();
+        }
+        return state;
     }
 
     @GET
@@ -325,11 +321,12 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String getCredentials(@QueryParam(AUTH_TYPE) String authType) {
         LOGGER.info("Loading attributes for auth-type: {} for invoker {}", authType, invokerId);
-        Map<String, Object> attributes = outlookAttributeStore.load(invokerId).toMap();
-        if (authType.equals(attributes.get(AUTH_TYPE))) {
-            return Constants.GSON.toJson(attributes);
+        final OutlookAttributes loadedAttributes = outlookAttributeStore.load(invokerId);
+        if (authType.equals(loadedAttributes.getAuthType())) {
+            return Constants.GSON.toJson(loadedAttributes.toMap());
+        } else {
+            return "";
         }
-        return "";
     }
 
     @GET
@@ -337,7 +334,33 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String getAuthKey() {
         final OutlookAttributes attributes = outlookAttributeStore.load(invokerId);
-        final String authType = attributes.getAuthType();
-        return Constants.GSON.toJson(Objects.requireNonNullElse(authType, Constants.PUBLIC));
+        if (attributes != null) {
+            final String authType = attributes.getAuthType();
+            return Constants.GSON.toJson(Objects.requireNonNullElse(authType, Constants.PUBLIC));
+        } else {
+            return "";
+        }
+    }
+
+    @POST
+    @javax.ws.rs.Path("/clearCreds")
+    @Produces("text/plain")
+    public String clearCreds() {
+        final OutlookAttributes load = outlookAttributeStore.load(invokerId);
+        if (load != null) {
+            outlookAttributeStore.remove(invokerId);
+            LOGGER.info("Removed the invoker credentials data");
+        }
+        final String serviceAuto = refreshTokenStore.get("service.automation@kristasoft.com_28a7b745-58a5-4903-b13c-1c3766413ca1_Private");
+        if (serviceAuto != null && !serviceAuto.isBlank()) {
+            refreshTokenStore.remove(serviceAuto);
+            LOGGER.info("Removed service automation credentials");
+        }
+        final String varaprasad = refreshTokenStore.get("varaprasad.kolli@kristasoft.com_28a7b745-58a5-4903-b13c-1c3766413ca1_Private");
+        if (!Validators.isStringNullOrBlank(varaprasad)) {
+            refreshTokenStore.remove(varaprasad);
+            LOGGER.info("Remove varaprasad.kolli credentials");
+        }
+        return "Success";
     }
 }

@@ -65,12 +65,11 @@ public class Constants {
     public static final String DATA = "Data";
     public static final String INVALID_TASK_ID = "Invalid task ID";
     public static final String FORWARD_SLASH = "/";
-    public static final String REQUIRED_SCOPE = "openid offline_access Mail.Send Mail.ReadWrite Mail.Send.Shared Mail.ReadWrite.Shared MailboxSettings.Read";
+    public static final String REQUIRED_SCOPE = "openid offline_access Mail.Send Mail.ReadWrite Mail.Send.Shared Mail.ReadWrite.Shared MailboxSettings.ReadWrite";
     public static final String SCOPE_SEPARATOR = " ";
     public static final String ORG_AUTHORITY = "https://login.microsoftonline.com/organizations/";
     public static final String AUTHORITY = "https://login.microsoftonline.com/";
     public static final String USER_ID = "userId";
-    public static final String INVOKER_ID = "invokerId";
     public static final String AUTH_CONTEXT_ID = "authContextId";
     public static final String UNSUPPORTED_AUTH = "Unsupported authentication type provided. Please select either Public or Private.";
     public static final String REFRESH_TOKEN_EXPIRED = "Refresh Token is no longer valid. Please reauthorize yourself";

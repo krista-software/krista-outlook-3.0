@@ -85,6 +85,10 @@ const AuthPage = () => {
             message = "Connection tested successfully. Please save the changes!";
             type = "success";
             setIsConnectionSuccess(true);
+            const saveButton = document.getElementById("save-button") as HTMLButtonElement;
+            if (saveButton) {
+                saveButton.click();
+            }
         } else if (response.errorMessage) {
             message = response.errorMessage;
         }
@@ -94,7 +98,7 @@ const AuthPage = () => {
             if (popup) {
                 const interval = setInterval(() => {
                     if (popup.closed) {
-                        console.log("Pop up window open.")
+                        console.log("Pop up window closed.")
                         clearInterval(interval);
                         if (authPayload) {
                             setLoading(true);
@@ -116,13 +120,10 @@ const AuthPage = () => {
                     }
                 }, 1000); // Check every second if the popup is closed
             }
+        } else {
+            setLoading(false);
         }
         console.log("waiting for pop window close..")
-        const saveButton = document.getElementById("save-button") as HTMLButtonElement;
-        if (saveButton) {
-            saveButton.click();
-        }
-        setLoading(false);
         showNotification(message, type);
     }
 
@@ -198,23 +199,23 @@ const AuthPage = () => {
                 <div>
                     <input
                         type="radio"
-                        id="basic"
+                        id="public"
                         value={AuthType.Public}
                         checked={selectedOption === AuthType.Public}
                         onChange={handleOptionChange}
                     />
-                    <label htmlFor="basic"></label>
+                    <label htmlFor="public"></label>
                     Public
                 </div>
                 <div>
                     <input
                         type="radio"
-                        id="token"
+                        id="private"
                         value={AuthType.Private}
                         checked={selectedOption === AuthType.Private}
                         onChange={handleOptionChange}
                     />
-                    <label htmlFor="token"></label>
+                    <label htmlFor="private"></label>
                     Private
                 </div>
             </div>

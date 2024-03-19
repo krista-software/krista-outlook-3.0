@@ -56,7 +56,7 @@ const PublicAuth = ({onAuthChange}: { onAuthChange: (authPayload: AuthPayload) =
                             id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter Work or School Account Id"
+                            placeholder="Enter Work or School Email Id"
                         />
                     </div>
 
