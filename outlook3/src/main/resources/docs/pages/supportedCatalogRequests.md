@@ -108,7 +108,7 @@ The Outlook Extension supports the following catalog requests.
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
 |--------------------|--------------------|---------------|---------------------------|
 | Message ID         | Text               | Yes           | Message_ID_Value          |
-| Message            | Paragraph          | Yes           | Hi sir, This is a message |
+| Message            | RichText           | Yes           | Hi sir, This is a message |
 | Attachments        | File               | No            | file.xlsx                 |
 | BodyType           | PickOne            | No            | Text OR HTML              |
 
@@ -128,10 +128,10 @@ The Outlook Extension supports the following catalog requests.
 | **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                            |
 |--------------------|--------------------|------------------------------------|----------------------------------------|
 | Message ID         | Text               | Yes                                | Message_ID_Value                       |
-| Message            | Paragraph          | Yes                                | Hi sir, This is a message              |
-| To                 | List&lt;Email>     | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com, to2@xyz.com] |
-| Cc                 | List&lt;Email>     | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]              |
-| Bcc                | List&lt;Email>     | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com]            |
+| Message            | RichText           | Yes                                | Hi sir, This is a message              |
+| To                 | Text               | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com, to2@xyz.com] |
+| Cc                 | Text               | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]              |
+| Bcc                | Text               | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com]            |
 | Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com                        |
 | Attachments        | File               | No                                 | file.xlsx                              |
 | BodyType           | PickOne            | No                                 | Text OR HTML                           |
@@ -171,7 +171,7 @@ The Outlook Extension supports the following catalog requests.
 |--------------------|--------------------|---------------|---------------------------|
 | Message ID         | Text               | Yes           | Message_ID_Value          |
 | To                 | Text               | Yes           | to@xyz.com. to1@xyz.com   |
-| Message            | Paragraph          | Yes           | Hi sir, This is a message |
+| Message            | RichText           | Yes           | Hi sir, This is a message |
 | BodyType           | PickOne            | No            | Text OR HTML              |
 
 - **Note**: The parameter To is comma seperated emails and if any invalid email address given will be skipped.
@@ -188,16 +188,16 @@ The Outlook Extension supports the following catalog requests.
   Attachments, bcc, cc, and reply to are optional inputs.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                 |
-|--------------------|--------------------|---------------|-----------------------------|
-| Subject            | Text               | Yes           | This is subject             |
-| Message            | Rich Text          | Yes           | Hi sir, This is a message   |
-| Attachments        | File               | No            | file.xlsx                   |
-| To                 | List&lt;Email>     | Yes           | [to@xyz.com, to1@xyz.com]   |
-| Bcc                | List&lt;Email>     | No            | [bcc@xyz.com, bcc1@xyz.com] |
-| Cc                 | List&lt;Email>     | No            | [cc@xyz.com, cc1@xyz.com]   |
-| ReplyTo            | Email              | No            | replyto@xyz.com             |
-| BodyType           | PickOne            | No            | Text OR HTML                |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
+|--------------------|--------------------|---------------|---------------------------|
+| Subject            | Text               | Yes           | This is subject           |
+| Message            | Rich Text          | Yes           | Hi sir, This is a message |
+| Attachments        | File               | No            | file.xlsx                 |
+| To                 | Text               | Yes           | to@xyz.com, to1@xyz.com   |
+| Bcc                | Text               | No            | bcc@xyz.com, bcc1@xyz.com |
+| Cc                 | Text               | No            | cc@xyz.com, cc1@xyz.com   |
+| ReplyTo            | Email              | No            | replyto@xyz.com           |
+| BodyType           | PickOne            | No            | Text OR HTML              |
 
 - **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
   then it will be skipped.
@@ -342,16 +342,16 @@ The Outlook Extension supports the following catalog requests.
   the old email addresses, if configured.
 - **Input Parameters**:
 
-| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                 |
-|--------------------|--------------------|------------------------------------|-----------------------------|
-| Message ID         | Text               | Yes                                | Message_ID_Value            |
-| Message            | Rich Text          | Yes                                | Hi sir, This is a message   |
-| To                 | List&lt;Email>     | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com]   |
-| Cc                 | List&lt;Email>     | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]   |
-| Bcc                | List&lt;Email>     | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com] |
-| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com             |
-| Attachments        | File               | No                                 | file.xlsx                   |
-| BodyType           | PickOne            | No                                 | Text OR HTML                |
+| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**               |
+|--------------------|--------------------|------------------------------------|---------------------------|
+| Message ID         | Text               | Yes                                | Message_ID_Value          |
+| Message            | Rich Text          | Yes                                | Hi sir, This is a message |
+| To                 | Text               | Yes, Overwrites the To list if set | to@xyz.com, to1@xyz.com   |
+| Cc                 | Text               | No, Overwrites the To list if set  | cc@xyz.com, cc1@xyz.com   |
+| Bcc                | Text               | No, Overwrites the To list if set  | bcc@xyz.com, bcc1@xyz.com |
+| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com           |
+| Attachments        | File               | No                                 | file.xlsx                 |
+| BodyType           | PickOne            | No                                 | Text OR HTML              |
 
 - **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given
   then it will be skipped.

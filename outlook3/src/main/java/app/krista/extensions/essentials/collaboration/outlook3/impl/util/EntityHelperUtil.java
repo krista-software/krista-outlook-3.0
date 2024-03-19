@@ -11,6 +11,8 @@ import java.lang.reflect.Type;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.GSON;
 
@@ -42,7 +44,7 @@ public class EntityHelperUtil {
     public static Map<String, Object> getValidatedData(Map<String, Object> entityMap) {
         Map<String, Object> validatedEntityMap = new LinkedHashMap<>();
         entityMap.forEach((key, value) ->
-            validatedEntityMap.put(key, value.equals(Boolean.TRUE) ? "Yes" : value.equals(Boolean.FALSE) ? "No" : value)
+                validatedEntityMap.put(key, value.equals(Boolean.TRUE) ? "Yes" : value.equals(Boolean.FALSE) ? "No" : value)
         );
         return validatedEntityMap;
     }
@@ -71,14 +73,14 @@ public class EntityHelperUtil {
     /**
      * This Function appends message to Entity list content Into Table Format
      *
-     * @param message           A message with is not part of Table
-     * @param entityList        Data to be added into table
+     * @param message                    A message with is not part of Table
+     * @param entityList                 Data to be added into table
      * @param removeEntityFieldFromTable this field contains fieldParameters which are excluded to be added into Table
      * @return {@link String} complete HTML format Rich Text String
      */
     public static String getMessageContent(String message, List<EntityValue> entityList, List<String> removeEntityFieldFromTable) {
         StringBuilder htmlContent = new StringBuilder();
-        formHTMLForTable(htmlContent,message);
+        formHTMLForTable(htmlContent, message);
         if (entityList != null && !entityList.isEmpty()) {
             List<Map<String, Object>> entitiesData = getEntityDataAsList(entityList);
             if (removeEntityFieldFromTable != null && !removeEntityFieldFromTable.isEmpty()) {
@@ -89,8 +91,8 @@ public class EntityHelperUtil {
 
             List<String> headerKeys = new ArrayList<>(entitiesData.get(0).keySet());
             int headerSize = headerKeys.size();
-            addTableHeader(htmlContent, headerKeys,headerSize);
-            addTableData(htmlContent,entitiesData,headerKeys,headerSize);
+            addTableHeader(htmlContent, headerKeys, headerSize);
+            addTableData(htmlContent, entitiesData, headerKeys, headerSize);
             return htmlContent.toString();
         } else {
             throw new IllegalArgumentException(Constants.PLEASE_PROVIDE_LIST_OF_ENTITY_VALUES);
@@ -193,5 +195,26 @@ public class EntityHelperUtil {
             }
         }
         return emailAddresses;
+    }
+
+    public static String formattedMessage(String message, String bodyType) {
+        if (Constants.HTML.equals(bodyType) && message != null) {
+            if (message.contains("<") && message.contains(">")) {
+                String beforeHtmlText = message.substring(0, message.indexOf("<"));
+                String htmlText = message.substring(message.indexOf("<"), (message.lastIndexOf(">") + 1));
+                String afterHtmlText = message.substring((message.lastIndexOf(">") + 1));
+                message = (beforeHtmlText.replace(Constants.NEW_LINE, Constants.BR_TAG) + htmlText + afterHtmlText.replace(Constants.NEW_LINE, Constants.BR_TAG));
+            } else {
+                message = message.replace("\n", "<br>");
+            }
+            return message;
+        }
+        return message;
+    }
+
+    private static boolean isHTML(String input) {
+        Pattern pattern = Pattern.compile("<[^>]*>");
+        Matcher matcher = pattern.matcher(input);
+        return matcher.find();
     }
 }

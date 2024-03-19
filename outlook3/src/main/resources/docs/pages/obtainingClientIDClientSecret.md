@@ -4,7 +4,7 @@
 
 ### Steps to get Client ID, Tenant ID, and Client Secret
 
-* Log in to the Azure portal at [Click Here](https://portal.azure.com/)
+* Log in to the Azure portal at [click here](https://portal.azure.com/).
   ![Home Page](../_media/homePage.png)
 
 

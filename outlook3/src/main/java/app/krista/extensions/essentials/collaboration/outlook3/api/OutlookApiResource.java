@@ -269,12 +269,16 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
+        LOGGER.info("Testing Connection...");
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(outlookAttributes);
+        LOGGER.info("Created auth context id for the attributes");
         TestConnectionResponse testConnectionResponse = null;
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+            LOGGER.info("Test Connection successful. Saving attributes.");
             outlookAttributeStore.save(outlookAttributes, invokerId);
+            LOGGER.info("Saving attributes.");
             if (outlookAttributes.isAllowMailAlert()) {
                 MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
             } else {
@@ -283,7 +287,7 @@ public final class OutlookApiResource {
             testConnectionResponse = new TestConnectionResponse(true, null, null);
             return Constants.GSON.toJson(testConnectionResponse);
         } catch (GraphServiceException cause) {
-            LOGGER.info("failed to get data from graph service client.");
+            LOGGER.info("Failed to get data from graph service client.");
             testConnectionResponse = new TestConnectionResponse(false, "graph service client error", null);
             return Constants.GSON.toJson(testConnectionResponse);
         } catch (MustAuthorizeException cause) {
@@ -315,7 +319,7 @@ public final class OutlookApiResource {
     @javax.ws.rs.Path("/getCredentials")
     @Produces("text/plain")
     public String getCredentials(@QueryParam(AUTH_TYPE) String authType) {
-
+        LOGGER.info("Loading attributes for auth-type: {} for invoker {}", authType, invokerId);
         Map<String, Object> attributes = outlookAttributeStore.load(invokerId).toMap();
         if (authType.equals(attributes.get(AUTH_TYPE))) {
             return Constants.GSON.toJson(attributes);

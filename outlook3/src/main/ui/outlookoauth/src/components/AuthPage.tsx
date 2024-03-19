@@ -100,7 +100,6 @@ const AuthPage = () => {
                             setLoading(true);
                             testConnection(authPayload).then(response => {
                                 if (response.isSuccess) {
-                                    setLoading(false);
                                     setIsConnectionSuccess(true);
                                     const saveButton = document.getElementById("save-button") as HTMLButtonElement;
                                     if (saveButton) {
@@ -111,7 +110,7 @@ const AuthPage = () => {
                                     setIsConnectionSuccess(false);
                                     showNotification("Test Connection failed. Please authenticate again.", "error");
                                 }
-
+                                setLoading(false);
                             });
                         }
                     }

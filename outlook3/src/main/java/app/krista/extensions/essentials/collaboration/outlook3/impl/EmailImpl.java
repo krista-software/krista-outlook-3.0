@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 
 public class EmailImpl implements Email {
 
+    public static final String ADD_CATEGORY = "AddCategory";
+    public static final String REMOVE_CATEGORY = "RemoveCategory";
     private static final Logger log = LoggerFactory.getLogger(EmailImpl.class);
     private final GraphServiceClientProvider provider;
     private final Message message;
@@ -384,32 +386,33 @@ public class EmailImpl implements Email {
         return recipient;
     }
 
-    /**
-     * Add, change category if != null/blank
-     * Remove category if null/blank
-     * <p>
-     * https://learn.microsoft.com/en-us/graph/api/message-update?view=graph-rest-1.0&tabs=java
-     */
     @Override
-    public void updateCategory(String category) {
-        String messageId = this.message.id;
-        log.info("updateCategory() to '{}' for messageID {}", category, messageId);
+    public void addCategory(String category) {
+        updateCategory(category, ADD_CATEGORY);
+    }
 
-        Message patchMessage = new Message();
-        if (StringUtils.isNotEmpty(category)) {
-            patchMessage.categories = List.of(category);
-        } else {
-            patchMessage.categories = Collections.<String>emptyList();
+    @Override
+    public void removeCategory(String category) {
+        updateCategory(category, REMOVE_CATEGORY);
+    }
+
+    private void updateCategory(String category, String type) {
+        List<String> existingCategories = message.categories;
+        if (existingCategories == null) {
+            existingCategories = new ArrayList<>();
         }
-        log.info("updateCategory() to {}", ReflectionToStringBuilder.toString(patchMessage));
-
+        if (REMOVE_CATEGORY.equals(type)) {
+            existingCategories.remove(category);
+        }
+        if (ADD_CATEGORY.equals(type) && !existingCategories.contains(category)) {
+            existingCategories.add(category);
+        }
+        Message patchMessage = new Message();
+        patchMessage.categories = existingCategories;
         MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
-        Message categorizedMessage = (messageRequestBuilder != null) ? messageRequestBuilder.buildRequest().patch(patchMessage) : null;
-        if (categorizedMessage == null) {
-            String userFacingErrorMessage = new StringBuilder().append("Failed to update category to '").append(category)
-                    .append("' for messageId ").append(messageId).toString();
-            log.error(userFacingErrorMessage + " with RequestBuilder: " + ReflectionToStringBuilder.toString(messageRequestBuilder));
-            throw new IllegalStateException(userFacingErrorMessage);
+        if (messageRequestBuilder != null) {
+            messageRequestBuilder.buildRequest().patch(patchMessage);
         }
     }
+
 }

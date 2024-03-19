@@ -67,7 +67,7 @@ const PrivateAuth = ({onAuthChange}: {
                             id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter School or Work Account Id"
+                            placeholder="Enter School or Work Email Id"
                             autoComplete="username"
                         />
                     </div>

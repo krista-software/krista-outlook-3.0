@@ -7,8 +7,7 @@
 
 * Before proceeding with the integration or setup process, ensure you have the necessary access and privileges.
   Depending on your scenario, follow one of the two options below:
-    1. Public Authentication
-        - Ensure you have access to your work or school email account provided by your organization.
+    1. Public authentication, ensure you have access to your work or school email account provided by your organization.
     2. Private Authentication
         - Obtain the Client ID and Client Secret.
         - Grant the Admin level consent.

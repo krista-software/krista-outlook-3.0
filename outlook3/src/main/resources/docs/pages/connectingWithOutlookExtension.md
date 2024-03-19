@@ -10,7 +10,8 @@ To establish a connection with the Outlook Extension, follow the steps below bas
 
 * You need to provide you school or work account mail id, then click on **Test Connection**.
 
-  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft login window.
+  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft
+  login window.
 
 * Once the Authentication is successful, click on **Save Changes**.
 
@@ -23,23 +24,23 @@ To establish a connection with the Outlook Extension, follow the steps below bas
   from your registered web application on the Azure portal.
 
 
-* Navigate to the Details tab in the Outlook Extension and copy the **Extension Base Url** and append *
-  */rest/outlook/callback** at
-  the end of Url, you need this url at the time of creating azure application.
+* Navigate to the Details tab in the Outlook Extension and copy the **Extension Base URL** and append
+  **/rest/outlook/callback** at the end of Url, you need this url at the time of creating azure application.
   ![Routing Id Reference](../_media/routingId.png)
 
 
 * To obtain Client ID, Client Secret and Tenant ID, navigate to the **Obtaining Credentials For Private Authentication**
-  page or [click here](obtainingClientIDClientSecret.md)
+  page or [click here](obtainingClientIDClientSecret.md).
 
 
 * Navigate to the Authentication tab in the Outlook Extension and select **Private**.
   ![Private_Auth](../_media/privateAuth.png)
 
 
-* Provide Email, Client ID, Client Secret and Tenant ID and click on **Test Connection**
+* Provide Email, Client ID, Client Secret and Tenant ID and click on **Test Connection**.
 
-  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft login window.
+  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft
+  login window.
 
 
 * Once the Authentication is successful, click on **Save Changes**.

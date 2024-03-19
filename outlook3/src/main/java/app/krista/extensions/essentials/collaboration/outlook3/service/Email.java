@@ -109,7 +109,7 @@ public interface Email {
      * Returns {@link Email} object of outlook
      *
      * @param message     message to be sent
-     * @param attachments attachments to be attach
+     * @param attachments attachments to be attached
      * @return {@link Email} object of outlook
      */
 
@@ -133,7 +133,7 @@ public interface Email {
      * Returns {@link Email} object of outlook
      *
      * @param message       message to be sent
-     * @param attachments   attachments to be attach
+     * @param attachments   attachments to be attached
      * @param toRecipients  list of to email addresses
      * @param ccRecipients  list of cc email addresses
      * @param bccRecipients list of bcc email addresses
@@ -188,5 +188,8 @@ public interface Email {
      *
      * @param category name of the category to be added
      */
-    void updateCategory(String category);
+    void addCategory(String category);
+
+    void removeCategory(String category);
+
 }

@@ -9,6 +9,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
@@ -40,7 +41,7 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
         name = "Collaboration",
         ecosystemId = "catEntryEcosystem_84b53163-327b-4b1b-8c96-9334d292f9f5",
         ecosystemName = "Essentials",
-        ecosystemVersion = "b94af183-4891-4b54-a9b0-d6096b361fc7")
+        ecosystemVersion = "fe952090-0ea0-424e-96b2-300bc53d1b7d")
 public class MessagingArea {
 
     private static final Logger logger = LoggerFactory.getLogger(MessagingArea.class);
@@ -144,9 +145,8 @@ public class MessagingArea {
                 return false;
             }
             bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            if (Constants.HTML.equals(bodyType)) {
-                message = (message != null) ? message.replace(Constants.NEW_LINE, Constants.BR_TAG) : Constants.EMPTY_STRING;
-            }
+            message = EntityHelperUtil.formattedMessage(message, bodyType);
+            logger.info("Sending message {}", message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return true;
@@ -184,9 +184,8 @@ public class MessagingArea {
                 return false;
             }
             bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            if ("HTML".equals(bodyType)) {
-                message = message != null ? message.replace(Constants.NEW_LINE, Constants.BR_TAG) : null;
-            }
+            message = EntityHelperUtil.formattedMessage(message, bodyType);
+            logger.info("Sending message {}", message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return true;
         } catch (GraphServiceException graphServiceException) {
@@ -240,6 +239,8 @@ public class MessagingArea {
                 return false;
             }
             bodyType = (bodyType == null) ? Constants.HTML : bodyType;
+            message = EntityHelperUtil.formattedMessage(message, bodyType);
+            logger.info("Sending message {}", message);
             email.forward(message, toEmailAddresses(to), bodyType);
             return true;
         } catch (GraphServiceException graphServiceException) {
@@ -290,14 +291,13 @@ public class MessagingArea {
             EmailBuilder builder = account.newEmail();
             builder.withText(subject);
             bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            if ("HTML".equals(bodyType)) {
-                message = (message != null) ? message.replace(Constants.NEW_LINE, Constants.BR_TAG) : null;
-            }
+            message = EntityHelperUtil.formattedMessage(message, bodyType);
+            logger.info("Sending message {}", message);
             builder.withContent(bodyType, message);
             builder.withTo(toEmailAddresses(to));
             builder.withCc(toEmailAddresses(cc));
             builder.withBcc(toEmailAddresses(bcc));
-            builder.withReplyTo(toEmailAddresses(replyTo != null ? replyTo : null));
+            builder.withReplyTo(toEmailAddresses(replyTo));
             if (attachments != null && !attachments.isEmpty()) {
                 builder.withAttachment(mailHandler.toAttachment(attachments));
             }
@@ -381,10 +381,8 @@ public class MessagingArea {
     @Field(name = "Response", type = "Text", required = false)
     public String markMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
-            @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label,
-            @Field(name = "Category", type = "Text", required = false) String category) {
+            @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label) {
 
-        logger.info("markMessage: messageID: {}; label: {}; category: {}", messageID, label, category);
         try {
             Email email = account.getEmail(messageID);
             if (email == null) {
@@ -399,8 +397,6 @@ public class MessagingArea {
             } else {
                 throw new RuntimeException("Unable to mark message (un)read invalid label " + label + " for messageID: " + messageID);
             }
-            logger.info("Attempting to update category to '{}' for messageID {}", category, messageID);
-            email.updateCategory(category);
             return Constants.SUCCESS;
         } catch (GraphServiceException graphServiceException) {
             throw new IllegalArgumentException(Constants.MARK_MESSAGE_REQUEST_FAILED, graphServiceException.getCause());
@@ -433,9 +429,8 @@ public class MessagingArea {
                 throw new IllegalArgumentException(Constants.INVALID_MESSAGE_ID);
             }
             bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            if ("HTML".equals(bodyType)) {
-                message = (message != null) ? message.replace(Constants.NEW_LINE, Constants.BR_TAG) : null;
-            }
+            message = EntityHelperUtil.formattedMessage(message, bodyType);
+            logger.info("Sending message {}", message);
             email.replyText(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return Constants.SUCCESS;
@@ -472,9 +467,8 @@ public class MessagingArea {
                 return Constants.INVALID_MESSAGE_ID;
             }
             bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            if ("HTML".equals(bodyType)) {
-                message = message != null ? message.replace(Constants.NEW_LINE, Constants.BR_TAG) : null;
-            }
+            message = EntityHelperUtil.formattedMessage(message, bodyType);
+            logger.info("Sending message {}", message);
             email.replyText(message, mailHandler.toAttachment(attachments), bodyType);
             return Constants.SUCCESS;
         } catch (GraphServiceException graphServiceException) {
@@ -618,6 +612,40 @@ public class MessagingArea {
             throw new RuntimeException(userFacingErrorMessage, cause);
         }
         return categoryNames;
+    }
+
+    @CatalogRequest(
+            id = "localDomainRequest_e35e5d82-b464-4fe4-875a-33f0dfe48265",
+            name = "Add Category To Message",
+            description = "This request will add category to the given mail ID.",
+            area = "Messaging",
+            type = CatalogRequest.Type.CHANGE_SYSTEM)
+    @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    public Boolean addCategoryToMessage(
+            @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
+            @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+        if (Validators.isStringNullOrBlank(category)) {
+            throw new RuntimeException("Category cannot be empty.");
+        }
+        if (Validators.isStringNullOrBlank(messageID)) {
+            throw new RuntimeException("Message ID cannot be empty.");
+        }
+        Email email = account.getEmail(messageID);
+        email.addCategory(category);
+        return true;
+    }
+
+    @CatalogRequest(
+            id = "localDomainRequest_6cdb6cf3-4ca6-46f0-a682-75be3bd37c98",
+            name = "Remove Category From Message",
+            description = "This request will remove the given category for the given Message Id",
+            area = "Messaging",
+            type = CatalogRequest.Type.CHANGE_SYSTEM)
+    @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    public Boolean removeCategoryFromMessage(
+            @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
+            @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+        throw new UnsupportedOperationException("This method is not yet implemented! If you don't want to support this method, please remove the complete method");
     }
 
 }
