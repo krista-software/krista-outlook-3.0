@@ -1,5 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.service;
 
+import com.microsoft.graph.models.OutlookCategory;
+
 import java.util.List;
 
 /**
@@ -84,4 +86,6 @@ public interface Account {
     EmailBuilder newEmail();
 
     List<String> getCategoryNames();
+
+    OutlookCategory createCategory(String category);
 }

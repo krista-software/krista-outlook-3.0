@@ -29,7 +29,6 @@ const AuthPage = () => {
     const [toastType, setToastType] = useState<string>("error");
     const [authPayload, setAuthPayload] = useState<AuthPayload | null>(null);
     const [isConnectionSuccess, setIsConnectionSuccess] = useState<boolean>(false);
-    const [isSaved, setIsSaved] = useState<boolean>(false);
 
     useEffect(() => {
         getAuth().catch(error => console.log(error));
@@ -72,7 +71,6 @@ const AuthPage = () => {
                 saveButton.click();
             }
             setIsConnectionSuccess(false);
-            setIsSaved(true)
         }
         showNotification(responseMessage, responseType);
     }
@@ -176,21 +174,15 @@ const AuthPage = () => {
         setShowToast(false);
     }
 
-    const isCredSaved = (): boolean => {
-        if (authPayload?.isCredentialsSaved != null) {
-            return authPayload?.isCredentialsSaved;
-        }
-        return false;
-    }
+    // const isCredSaved = (): boolean => {
+    //     if (authPayload?.isCredentialsSaved != null) {
+    //         return authPayload?.isCredentialsSaved;
+    //     }
+    //     return false;
+    // }
 
     const disableSaveButton = (): boolean => {
-        if (isConnectionSuccess) {
-            return false;
-        } else if (!isCredSaved() && !isConnectionSuccess && isSaved) {
-            return true;
-        } else {
-            return isCredSaved() || checkMandatoryFields();
-        }
+        return !isConnectionSuccess;
     }
 
     const checkMandatoryFields = (): boolean => {

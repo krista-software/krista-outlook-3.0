@@ -28,17 +28,23 @@ public class OutlookAttributeStore {
 
 
     public OutlookAttributes load(String key) {
-        Map<String, Object> attributes = Constants.GSON.fromJson(String.valueOf(store.get(key)), Map.class);
-        String authType = attributes.get(AUTH_TYPE).toString();
-        String baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
-        if (Constants.PUBLIC.equals(authType)) {
-            return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
-                    null, (String) attributes.get(EMAIL), (boolean) attributes.get(ALLOW_MAIL_ALERT), authType,
-                    baseUrl);
+        final String loadedAttributes = String.valueOf(store.get(key));
+        if (loadedAttributes == null || loadedAttributes.isBlank()) {
+            return null;
         } else {
-            return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
-                    (String) attributes.get(Constants.TENANT_ID), (String) attributes.get(EMAIL),
-                    (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl);
+            Map<String, Object> attributes = GSON.fromJson(loadedAttributes, Map.class);
+            String authType = attributes.get(AUTH_TYPE).toString();
+            String baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+
+            if (Constants.PUBLIC.equals(authType)) {
+                return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
+                        null, (String) attributes.get(EMAIL), (boolean) attributes.get(ALLOW_MAIL_ALERT), authType,
+                        baseUrl);
+            } else {
+                return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
+                        (String) attributes.get(Constants.TENANT_ID), (String) attributes.get(EMAIL),
+                        (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl);
+            }
         }
     }
 

@@ -7,6 +7,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
+import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.Message;
 import com.microsoft.graph.models.OutlookCategory;
@@ -227,5 +228,20 @@ public class AccountImpl implements Account {
         }
         return categoryNames;
 
+    }
+
+    @Override
+    public OutlookCategory createCategory(String category) {
+        log.info("Creating category with display name: {}", category);
+        OutlookCategory outlookCategory = new OutlookCategory();
+        outlookCategory.displayName = category;
+
+        try {
+            return getUserRequestBuilder(null, null).outlook().masterCategories().buildRequest()
+                    .post(outlookCategory);
+        } catch (GraphServiceException cause) {
+            log.info("Failed to create new category with name: {}", category, cause);
+            return null;
+        }
     }
 }

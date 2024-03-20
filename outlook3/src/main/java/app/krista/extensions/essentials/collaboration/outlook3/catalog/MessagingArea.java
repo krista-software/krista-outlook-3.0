@@ -41,7 +41,7 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
         name = "Collaboration",
         ecosystemId = "catEntryEcosystem_84b53163-327b-4b1b-8c96-9334d292f9f5",
         ecosystemName = "Essentials",
-        ecosystemVersion = "fe952090-0ea0-424e-96b2-300bc53d1b7d")
+        ecosystemVersion = "ef7472cb-3aaa-4570-965b-6b5b6a25e7de")
 public class MessagingArea {
 
     private static final Logger logger = LoggerFactory.getLogger(MessagingArea.class);
@@ -623,12 +623,17 @@ public class MessagingArea {
     @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     public Boolean addCategoryToMessage(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
-            @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+            @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category,
+            @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean createCategory) {
+
         if (Validators.isStringNullOrBlank(category)) {
             throw new RuntimeException("Category cannot be empty.");
         }
         if (Validators.isStringNullOrBlank(messageID)) {
             throw new RuntimeException("Message ID cannot be empty.");
+        }
+        if (Boolean.TRUE.equals(createCategory)) {
+            account.createCategory(category);
         }
         Email email = account.getEmail(messageID);
         return email.addCategory(category);
