@@ -7,7 +7,10 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 
 public final class AuthHelper {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(AuthHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthHelper.class);
+
+    private AuthHelper() {
+    }
 
     public static String getAuthContextId(String state) {
         int authContextIdIndex = state.indexOf(AUTH_CONTEXT_ID);

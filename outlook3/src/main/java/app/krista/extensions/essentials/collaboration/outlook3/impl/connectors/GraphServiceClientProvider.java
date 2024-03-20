@@ -27,6 +27,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.PRIVATE;
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.PUBLIC;
+
 public class GraphServiceClientProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphServiceClientProvider.class);
@@ -74,7 +77,6 @@ public class GraphServiceClientProvider {
         try {
             String userId = getUserId(useSetupEmail, accountID);
             String refreshTokenStoreKey = getRefTokenStoreKey(userId);
-            System.out.println("Refresh token store key: " + refreshTokenStoreKey);
             String refreshToken = refreshTokenStore.get(refreshTokenStoreKey);
             if (refreshToken == null) {
                 throw createMustAuthorizationException(refreshTokenStoreKey, false);
@@ -92,10 +94,12 @@ public class GraphServiceClientProvider {
             RefreshTokenParameters refreshTokenParameters = RefreshTokenParameters.builder(scopeSet, refreshToken).build();
             IClientCredential clientCredential = ClientCredentialFactory.createFromSecret(attributes.getClientSecret());
             String authority;
-            if (attributes.getTenantId() != null) {
+            if (PRIVATE.equals(attributes.getAuthType())) {
                 authority = Constants.AUTHORITY + attributes.getTenantId();
-            } else {
+            } else if (PUBLIC.equals(attributes.getAuthType())) {
                 authority = Constants.ORG_AUTHORITY;
+            } else {
+                throw new IllegalArgumentException("No authentication type found.");
             }
             ConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplication.builder
                     (attributes.getClientId(), clientCredential).authority(authority).build();
@@ -119,7 +123,6 @@ public class GraphServiceClientProvider {
         JsonObject tokenData = refreshToken.getAsJsonObject(firstKey);
         String secret = tokenData.get("secret").getAsString();
         refreshTokenStore.put(userId, secret);
-        LOGGER.info("Updated the refresh token.");
     }
 
     /**
@@ -151,7 +154,6 @@ public class GraphServiceClientProvider {
         if (authContextId != null) {
             NamedValuedField contextIdField = new NamedValuedField(Constants.AUTH_CONTEXT_ID, Constants.TEXT, authContextId, new HashMap<>(), new HashMap<>());
             details.add(contextIdField);
-            System.out.println("added auth context id.");
         }
         return new MustAuthorizeException(reAuthentication ? Constants.REFRESH_TOKEN_EXPIRED : Constants.AUTHORIZATION_PROMPT, details);
     }

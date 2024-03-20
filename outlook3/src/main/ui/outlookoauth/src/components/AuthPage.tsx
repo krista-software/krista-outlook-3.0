@@ -62,7 +62,7 @@ const AuthPage = () => {
         let responseMessage = "Test connection failed";
         let responseType = "error";
 
-        if (response.isSaved) {
+        if (response.isSuccess) {
             responseMessage = "Connection tested successfully. Changes saved!";
             responseType = "success";
             setToastType("success");

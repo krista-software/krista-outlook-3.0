@@ -11,10 +11,8 @@ import java.lang.reflect.Type;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.GSON;
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
 public class EntityHelperUtil {
     private EntityHelperUtil() {
@@ -203,18 +201,13 @@ public class EntityHelperUtil {
                 String beforeHtmlText = message.substring(0, message.indexOf("<"));
                 String htmlText = message.substring(message.indexOf("<"), (message.lastIndexOf(">") + 1));
                 String afterHtmlText = message.substring((message.lastIndexOf(">") + 1));
-                message = (beforeHtmlText.replace(Constants.NEW_LINE, Constants.BR_TAG) + htmlText + afterHtmlText.replace(Constants.NEW_LINE, Constants.BR_TAG));
+                message = (beforeHtmlText.replace(NEW_LINE, BR_TAG) + htmlText + afterHtmlText.replace(Constants.NEW_LINE, Constants.BR_TAG));
             } else {
-                message = message.replace("\n", "<br>");
+                message = message.replace(NEW_LINE, BR_TAG);
             }
             return message;
         }
         return message;
     }
 
-    private static boolean isHTML(String input) {
-        Pattern pattern = Pattern.compile("<[^>]*>");
-        Matcher matcher = pattern.matcher(input);
-        return matcher.find();
-    }
 }

@@ -56,6 +56,7 @@ public final class OutlookApiResource {
     private final AuthorizationListener authorizationListener;
     private final String baseRoutingUrl;
     private final String invokerId;
+    private final Invoker invoker;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
@@ -70,6 +71,7 @@ public final class OutlookApiResource {
         this.notificationProcessQueue = new NotificationProcessQueue(providerFactory, invoker);
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
+        this.invoker = invoker;
     }
 
     @GET
@@ -244,11 +246,11 @@ public final class OutlookApiResource {
                 providerFactory.create().getGraphServiceClientForAdmin()
                         .users(attributes.getEmail())
                         .mailFolders().buildRequest().get();
-                return Constants.GSON.toJson(new SaveCredentialsResponse(true, false));
+                return Constants.GSON.toJson(new AuthenticationResponse(true, null, null));
             } catch (GraphServiceException | NullPointerException cause) {
                 outlookAttributeStore.remove(invokerId);
                 LOGGER.debug("Failed to save attributes");
-                return Constants.GSON.toJson(new SaveCredentialsResponse(false, true));
+                return Constants.GSON.toJson(new AuthenticationResponse(false, "Failed to save attributes", null));
             }
         } else {
             return Constants.GSON.toJson("Failed to save attributes");
@@ -290,11 +292,11 @@ public final class OutlookApiResource {
 
     private String createTestConnectionResponse(boolean isSuccess, String errorMessage, String url) {
         if (isSuccess) {
-            return GSON.toJson(new TestConnectionResponse(true, null, null));
+            return GSON.toJson(new AuthenticationResponse(true, null, null));
         } else if (url != null) {
-            return GSON.toJson(new TestConnectionResponse(false, errorMessage, url));
+            return GSON.toJson(new AuthenticationResponse(false, errorMessage, url));
         } else
-            return GSON.toJson(new TestConnectionResponse(false,
+            return GSON.toJson(new AuthenticationResponse(false,
                     Objects.requireNonNullElse(errorMessage, "Unknown Error"), null));
     }
 
@@ -339,6 +341,21 @@ public final class OutlookApiResource {
         } else {
             return "";
         }
+    }
+
+    @GET
+    @Path("/listeners")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getListeners() {
+        return Response.ok().entity(invoker.listEventListeners()).build();
+    }
+
+    @DELETE
+    @Path("/clearListeners")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response clearListeners() {
+        invoker.listEventListeners().forEach(l -> invoker.unregisterEventListener(l.getListenerId()));
+        return Response.ok("Success").build();
     }
 
 }
