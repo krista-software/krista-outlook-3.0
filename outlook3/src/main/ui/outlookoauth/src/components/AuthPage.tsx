@@ -94,32 +94,7 @@ const AuthPage = () => {
         }
 
         if (response.url) {
-            const popup = window.open(response.url, "_blank", "width=600,height=400");
-            if (popup) {
-                const interval = setInterval(() => {
-                    if (popup.closed) {
-                        console.log("Pop up window closed.")
-                        clearInterval(interval);
-                        if (authPayload) {
-                            setLoading(true);
-                            testConnection(authPayload).then(response => {
-                                if (response.isSuccess) {
-                                    setIsConnectionSuccess(true);
-                                    const saveButton = document.getElementById("save-button") as HTMLButtonElement;
-                                    if (saveButton) {
-                                        saveButton.click();
-                                    }
-                                    showNotification("Connection tested successfully. Please save the changes.", "success");
-                                } else if (response.errorMessage) {
-                                    setIsConnectionSuccess(false);
-                                    showNotification("Test Connection failed. Please authenticate again.", "error");
-                                }
-                                setLoading(false);
-                            });
-                        }
-                    }
-                }, 1000); // Check every second if the popup is closed
-            }
+            handlePopup(response.url);
         } else {
             setLoading(false);
         }
@@ -127,9 +102,41 @@ const AuthPage = () => {
         showNotification(message, type);
     }
 
+    const handlePopup = (url: string) => {
+        const popup = window.open(url, "_blank", "width=600,height=400");
+        if (popup) {
+            const interval = setInterval(() => {
+                if (popup.closed) {
+                    console.log("Pop up window closed.")
+                    clearInterval(interval);
+                    if (authPayload) {
+                        setLoading(true);
+                        testConnection(authPayload).then(response => {
+                            if (response.isSuccess) {
+                                setIsConnectionSuccess(true);
+                                const saveButton = document.getElementById("save-button") as HTMLButtonElement;
+                                if (saveButton) {
+                                    saveButton.click();
+                                }
+                                showNotification("Connection tested successfully. Please save the changes.", "success");
+                            } else if (response.errorMessage) {
+                                setIsConnectionSuccess(false);
+                                showNotification("Test Connection failed. Please authenticate again.", "error");
+                            }
+                            setLoading(false);
+                        });
+                    }
+                }
+            }, 1000); // Check every second if the popup is closed
+        }
+    };
+
     const testApiConnection = (/* parameters */) => {
         if (authPayload) {
-            testConnection(authPayload).then(response => handleResponse(response));
+            testConnection(authPayload).then(response => {
+                handleResponse(response);
+                setLoading(false);
+            });
         }
     };
 

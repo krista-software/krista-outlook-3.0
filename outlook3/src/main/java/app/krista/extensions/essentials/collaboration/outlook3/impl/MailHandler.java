@@ -9,8 +9,6 @@ import app.krista.ksdk.files.FileHandle;
 import app.krista.ksdk.files.FileRepository;
 import app.krista.model.base.File;
 import com.microsoft.graph.models.FileAttachment;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +66,7 @@ public class MailHandler {
 
         FileHandle outputFileHandle = null;
         try (FileInputStream inputStream = new FileInputStream(file)) {
-            outputFileHandle = this.repository.createNewFileByName(FilenameUtils.getName(output.getName()));
+            outputFileHandle = this.repository.createNewFileByName(output.getName());
             outputFileHandle.setContent(inputStream);
         } catch (IOException cause) {
             throw new RuntimeException("Failed to store content to file handle", cause);
@@ -129,8 +127,12 @@ public class MailHandler {
         this.validateTempFile(input);
 
         try (InputStream inputStream = inputFileHandle.getContent();
-             OutputStream outputStream = new FileOutputStream(input)) {
-            IOUtils.copy(inputStream, outputStream);
+             FileOutputStream outputStream = new FileOutputStream(input)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
         } catch (IOException cause) {
             throw new RuntimeException("Failed to store content of input file in temp file at " + input.getAbsolutePath(), cause);
         }
