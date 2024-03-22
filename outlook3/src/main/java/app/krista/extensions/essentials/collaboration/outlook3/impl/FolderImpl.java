@@ -2,6 +2,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
@@ -11,8 +12,6 @@ import com.microsoft.graph.models.Message;
 import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.requests.*;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +22,6 @@ public class FolderImpl implements Folder {
     private final Account account;
     private final GraphServiceClientProvider provider;
     private final MailFolder mailFolder;
-    private static final Logger LOGGER = LoggerFactory.getLogger(FolderImpl.class);
 
     public FolderImpl(Account account, GraphServiceClientProvider provider, MailFolder mailFolder) {
         this.account = account;
@@ -72,7 +70,7 @@ public class FolderImpl implements Folder {
 
     @Override
     public Folder getChildFolderByName(String childFolderName) {
-        if (childFolderName == null || childFolderName.isEmpty()) {
+        if (Validators.isStringNullOrBlank(childFolderName)) {
             throw new IllegalArgumentException(Constants.CHILD_FOLDER_NAME_IS_EMPTY_OR_NULL);
         }
 
@@ -96,7 +94,7 @@ public class FolderImpl implements Folder {
 
     @Override
     public Folder getChildFolderByName(List<String> childFolderPath) {
-        if (childFolderPath == null || childFolderPath.isEmpty()) {
+        if (Validators.isListNullOrEmpty(childFolderPath)) {
             throw new IllegalArgumentException(Constants.FOLDER_PATH_IS_EMPTY_OR_NULL);
         }
 
@@ -131,7 +129,7 @@ public class FolderImpl implements Folder {
 
     @Override
     public Folder getChildFolder(String childFolderId) {
-        if (childFolderId == null || childFolderId.isEmpty()) {
+        if (Validators.isStringNullOrBlank(childFolderId)) {
             throw new IllegalArgumentException(Constants.CHILD_FOLDER_ID_IS_EMPTY_OR_NULL);
         }
 

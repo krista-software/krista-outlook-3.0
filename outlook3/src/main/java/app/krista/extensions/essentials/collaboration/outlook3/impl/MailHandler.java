@@ -5,11 +5,13 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constan
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Attachment;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
+import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.files.FileHandle;
 import app.krista.ksdk.files.FileRepository;
 import app.krista.model.base.File;
 import com.microsoft.graph.models.FileAttachment;
 import org.apache.commons.io.FilenameUtils;
+import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,15 +28,22 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil.getCommaSeparatedEmail;
 import static java.lang.System.getProperty;
 
+@Service
 public class MailHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MailHandler.class);
-
     private final FileRepository repository;
+
+    // This unused parameter is needed for authentication of wait for event requests
+    private AuthorizationContext authorizationContext;
 
     @Inject
     public MailHandler(FileRepository repository) {
         this.repository = repository;
+    }
+
+    public void setAuthorizationContext(AuthorizationContext authContext) {
+        this.authorizationContext = authContext;
     }
 
     public MailDetails fromEmail(Email email, Boolean useEmail) {

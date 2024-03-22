@@ -3,6 +3,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
@@ -52,7 +53,7 @@ public class AccountImpl implements Account {
 
     @Override
     public Folder getFolderByName(List<String> folderNames) {
-        if (folderNames == null || folderNames.isEmpty()) {
+        if (Validators.isListNullOrEmpty(folderNames)) {
             throw new IllegalArgumentException(Constants.FOLDER_NAME_LIST_IS_EMPTY_OR_NULL);
         }
         Folder folder = getFolderByName(folderNames.get(0), null, null);
@@ -65,7 +66,7 @@ public class AccountImpl implements Account {
     @Override
     public Folder getFolderByName(String folderName, Boolean useEmail, String accountID) {
         LOGGER.info("getFolderByName for folderName {}, useEmail {}, accountID {}", folderName, useEmail, accountID);
-        if (folderName == null || folderName.isEmpty()) {
+        if (Validators.isStringNullOrBlank(folderName)) {
             LOGGER.warn(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
         }
@@ -99,7 +100,7 @@ public class AccountImpl implements Account {
 
     @Override
     public Folder getFolder(String folderId) {
-        if (folderId == null || folderId.isEmpty()) {
+        if (Validators.isStringNullOrBlank(folderId)) {
             throw new IllegalArgumentException(Constants.FOLDER_ID_IS_NULL_OR_EMPTY);
         }
         try {
@@ -169,7 +170,7 @@ public class AccountImpl implements Account {
     @Override
     public Email getEmail(String emailMessageId) {
         try {
-            if (emailMessageId == null || emailMessageId.isEmpty()) {
+            if (Validators.isStringNullOrBlank(emailMessageId)) {
                 throw new IllegalArgumentException(Constants.MESSAGE_ID_IS_EMPTY_OR_NULL);
             }
             Message message = getUserRequestBuilder(null, null).messages(emailMessageId).buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML)).get();
@@ -181,7 +182,7 @@ public class AccountImpl implements Account {
 
     @Override
     public List<Email> searchEmails(String searchString) {
-        if (searchString == null || searchString.isEmpty()) {
+        if (Validators.isStringNullOrBlank(searchString)) {
             throw new IllegalArgumentException(Constants.SEARCH_STRING_IS_EMPTY_OR_NULL);
         }
         // Check for special characters to add escape character

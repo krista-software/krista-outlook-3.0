@@ -104,7 +104,6 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
         if (authContext.isPresent()) {
             String authContextId = (String) authContext.get().getValue();
             attributes = attributeStore.load(authContextId);
-            System.out.println(authContextId);
             state += Constants.HASH + authContextId;
         } else {
             attributes = attributeStore.load(invokerId);

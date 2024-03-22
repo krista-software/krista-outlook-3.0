@@ -2,7 +2,6 @@ package app.krista.extensions.essentials.collaboration.outlook3.catalog.entities
 
 import app.krista.extension.impl.anno.*;
 import app.krista.model.base.File;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 import java.util.List;
 
@@ -62,6 +61,14 @@ public class MailDetails {
 
     @Override
     public String toString() {
-        return ReflectionToStringBuilder.toString(this);
+        return new StringBuilder()
+                .append("MailDetails{")
+                .append("messageId='").append(messageID).append("'")
+                .append("from='").append(from).append("'")
+                .append(", to='").append(to).append("'")
+                .append(", subject='").append(subject).append("'")
+                .append(", message='").append(message).append("'")
+                .append("}")
+                .toString();
     }
 }

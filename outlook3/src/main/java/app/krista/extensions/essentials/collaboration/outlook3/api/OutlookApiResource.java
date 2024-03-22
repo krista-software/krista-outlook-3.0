@@ -113,10 +113,13 @@ public final class OutlookApiResource {
             }
             return Constants.USER_AUTHENTICATED_SUCCESSFULLY_SAVE_THE_CHANGES;
         } catch (OAuthException cause) {
+            LOGGER.error(cause.getMessage(), cause);
             throw new IllegalStateException(getErrorDescription(cause), cause.getCause());
         } catch (IOException | ExecutionException cause) {
+            LOGGER.error(cause.getMessage(), cause);
             throw new IllegalStateException(Constants.ERROR_OCCURRED_DURING_AUTHORIZATION, cause.getCause());
         } catch (InterruptedException interruptedException) {
+            LOGGER.error(interruptedException.getMessage(), interruptedException);
             Thread.currentThread().interrupt();
             throw new IllegalStateException(Constants.ERROR_OCCURRED_DURING_AUTHORIZATION, interruptedException.getCause());
         } finally {
@@ -249,11 +252,11 @@ public final class OutlookApiResource {
                 return Constants.GSON.toJson(new AuthenticationResponse(true, null, null));
             } catch (GraphServiceException | NullPointerException cause) {
                 outlookAttributeStore.remove(invokerId);
-                LOGGER.debug("Failed to save attributes");
-                return Constants.GSON.toJson(new AuthenticationResponse(false, "Failed to save attributes", null));
+                LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
+                return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
             }
         } else {
-            return Constants.GSON.toJson("Failed to save attributes");
+            return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
         }
     }
 
@@ -276,7 +279,7 @@ public final class OutlookApiResource {
             }
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.info("Failed to get data from graph service client.");
+            LOGGER.error("Failed to get data from graph service client.");
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
             String state = createStateParameter(cause, outlookAttributes);

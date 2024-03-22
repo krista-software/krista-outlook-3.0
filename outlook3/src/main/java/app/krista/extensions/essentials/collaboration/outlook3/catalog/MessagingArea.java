@@ -17,12 +17,13 @@ import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.context.RequestContext;
-import app.krista.ksdk.files.FileRepository;
 import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
 import app.krista.model.base.FreeForm;
+import com.kristasoft.common.holders.ThreadLocalProxy;
 import com.microsoft.graph.http.GraphServiceException;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ import javax.inject.Inject;
 import javax.ws.rs.InternalServerErrorException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,22 +46,23 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
         ecosystemVersion = "ef7472cb-3aaa-4570-965b-6b5b6a25e7de")
 public class MessagingArea {
 
-    private static final Logger logger = LoggerFactory.getLogger(MessagingArea.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingArea.class);
+    public static final String SENDING_MESSAGE = "Sending message {}";
     private final Account account;
-    private final RequestContext requestContext;
-    private final AuthorizationContext authorizationContext;
     private final EventHandler eventHandler;
     private final MailHandler mailHandler;
     ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private RequestContext requestContext;
+    private AuthorizationContext authorizationContext;
 
     @Inject
     public MessagingArea(AccountImpl account, RequestContext requestContext, AuthorizationContext authorizationContext,
-                         EventHandler eventHandler, FileRepository fileRepository) {
+                         EventHandler eventHandler, MailHandler mailHandler) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
         this.eventHandler = eventHandler;
-        this.mailHandler = new MailHandler(fileRepository);
+        this.mailHandler = mailHandler;
     }
 
     @CatalogRequest(
@@ -82,11 +85,11 @@ public class MessagingArea {
     @Field.Desc(name = "Mail", type = "Entity(Mail Details)", required = false)
     public MailDetails fetchMailByMessageId(
             @Field(name = "Message ID", type = "Text") String messageID) {
-        logger.info("fetchMailByMessageId: start {}", messageID);
+        LOGGER.info("fetchMailByMessageId: start {}", messageID);
 
         MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
         if (mailDetails != null) {
-            logger.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
+            LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
                     mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
         }
         return mailDetails;
@@ -103,7 +106,7 @@ public class MessagingArea {
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Folder Name", type = "Text") String folderName) {
 
-        logger.info("Moving message with ID {} to folder: {}", messageID, folderName);
+        LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
 
         Email email = account.getEmail(messageID);
         if (email == null) {
@@ -133,20 +136,20 @@ public class MessagingArea {
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
-        logger.info("replyToAll: messageId: {}; message: {}", messageId, message);
+        LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
         try {
             if (attachments != null) {
-                logger.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
+                LOGGER.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
             }
 
             Email email = account.getEmail(messageId);
             if (email == null) {
-                logger.error("Invalid message id");
+                LOGGER.error("Invalid message id");
                 return false;
             }
-            bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            message = EntityHelperUtil.formattedMessage(message, bodyType);
-            logger.info("Sending message {}", message);
+            bodyType = getBodyType(bodyType);
+            message = getFormattedMessage(message, bodyType);
+            LOGGER.info(SENDING_MESSAGE, message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return true;
@@ -157,6 +160,15 @@ public class MessagingArea {
             }
             throw new InternalServerErrorException(Constants.REPLY_TO_ALL_REQUEST_FAILED, graphServiceException.getCause());
         }
+    }
+
+    private static String getFormattedMessage(String message, String bodyType) {
+        return EntityHelperUtil.formattedMessage(message, bodyType);
+    }
+
+    @NotNull
+    private static String getBodyType(String bodyType) {
+        return (bodyType == null) ? Constants.HTML : bodyType;
     }
 
     @CatalogRequest(
@@ -173,19 +185,19 @@ public class MessagingArea {
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
         try {
-            logger.info("replyToAll: messageId: {}; message: {}", messageId, message);
+            LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
             if (attachments != null) {
-                logger.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
+                LOGGER.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
             }
 
             Email email = account.getEmail(messageId);
             if (email == null) {
-                logger.debug(Constants.INVALID_MESSAGE_ID);
+                LOGGER.debug(Constants.INVALID_MESSAGE_ID);
                 return false;
             }
-            bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            message = EntityHelperUtil.formattedMessage(message, bodyType);
-            logger.info("Sending message {}", message);
+            bodyType = getBodyType(bodyType);
+            message = getFormattedMessage(message, bodyType);
+            LOGGER.info(SENDING_MESSAGE, message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return true;
         } catch (GraphServiceException graphServiceException) {
@@ -209,7 +221,7 @@ public class MessagingArea {
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
 
-        logger.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+        LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
 
         List<Email> emails = account.getSentFolder().getEmails(pageNumber, pageSize);
         return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
@@ -229,18 +241,18 @@ public class MessagingArea {
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
         try {
-            logger.info("Forwarding mail with messageId: {}; to {}; with message: {}", messageId, to, message);
+            LOGGER.info("Forwarding mail with messageId: {}; to {}; with message: {}", messageId, to, message);
 
             Email email = account.getEmail(messageId);
-            logger.info("email: {}", email);
+            LOGGER.info("email: {}", email);
 
             if (email == null) {
-                logger.error(Constants.INVALID_MESSAGE_ID + ": {}", messageId);
+                LOGGER.error(Constants.INVALID_MESSAGE_ID + ": {}", messageId);
                 return false;
             }
-            bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            message = EntityHelperUtil.formattedMessage(message, bodyType);
-            logger.info("Sending message {}", message);
+            bodyType = getBodyType(bodyType);
+            message = getFormattedMessage(message, bodyType);
+            LOGGER.info(SENDING_MESSAGE, message);
             email.forward(message, toEmailAddresses(to), bodyType);
             return true;
         } catch (GraphServiceException graphServiceException) {
@@ -263,7 +275,7 @@ public class MessagingArea {
     public List<MailDetails> fetchMailDetailsByQuery(
             @Field(name = "Query", type = "Text") String query) {
 
-        logger.info("fetchMailDetailsByQuery: {}", query);
+        LOGGER.info("fetchMailDetailsByQuery: {}", query);
 
         List<Email> emails = account.searchEmails(query);
         return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
@@ -286,13 +298,13 @@ public class MessagingArea {
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
         try {
-            logger.info("Sending email to {}; with body: {}", to, message);
+            LOGGER.info("Sending email to {}; with body: {}", to, message);
 
             EmailBuilder builder = account.newEmail();
             builder.withText(subject);
-            bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            message = EntityHelperUtil.formattedMessage(message, bodyType);
-            logger.info("Sending message {}", message);
+            bodyType = getBodyType(bodyType);
+            message = getFormattedMessage(message, bodyType);
+            LOGGER.info(SENDING_MESSAGE, message);
             builder.withContent(bodyType, message);
             builder.withTo(toEmailAddresses(to));
             builder.withCc(toEmailAddresses(cc));
@@ -302,7 +314,7 @@ public class MessagingArea {
                 builder.withAttachment(mailHandler.toAttachment(attachments));
             }
 
-            logger.info("Sending email: " + ReflectionToStringBuilder.toString(builder));
+            LOGGER.info("Sending email: " + ReflectionToStringBuilder.toString(builder));
 
             builder.send();
             return Constants.SUCCESS;
@@ -333,7 +345,7 @@ public class MessagingArea {
             @Field.Desc(name = "Entity List", type = "[ Entity ]") List<EntityValue> entityList,
             @Field.Desc(name = "Remove Entity Field From Table", type = "[ Text ]", required = false) List<String> removeEntityFieldFromTable) {
         try {
-            logger.info("Sending email to {}; with body: {}", to, message);
+            LOGGER.info("Sending email to {}; with body: {}", to, message);
 
             EmailBuilder builder = account.newEmail();
             builder.withText(subject);
@@ -367,7 +379,7 @@ public class MessagingArea {
     public List<MailDetails> fetchInbox(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
-        logger.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+        LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
         return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
     }
@@ -390,10 +402,10 @@ public class MessagingArea {
             }
             if (label.equalsIgnoreCase(Constants.READ)) {
                 email.markAsRead();
-                logger.info("Marked message {} for messageID {}", label, messageID);
+                LOGGER.info("Marked message {} for messageID {}", label, messageID);
             } else if (label.equalsIgnoreCase(Constants.UNREAD)) {
                 email.markAsUnread();
-                logger.info("Marked message {} for messageID {}", label, messageID);
+                LOGGER.info("Marked message {} for messageID {}", label, messageID);
             } else {
                 throw new RuntimeException("Unable to mark message (un)read invalid label " + label + " for messageID: " + messageID);
             }
@@ -419,18 +431,18 @@ public class MessagingArea {
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
-        logger.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
+        LOGGER.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
         try {
             if (attachments != null) {
-                logger.info("replyToMailWithCCAndBCC attachments: {}", ReflectionToStringBuilder.toString(attachments));
+                LOGGER.info("replyToMailWithCCAndBCC attachments: {}", ReflectionToStringBuilder.toString(attachments));
             }
             Email email = account.getEmail(messageId);
             if (email == null) {
                 throw new IllegalArgumentException(Constants.INVALID_MESSAGE_ID);
             }
-            bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            message = EntityHelperUtil.formattedMessage(message, bodyType);
-            logger.info("Sending message {}", message);
+            bodyType = getBodyType(bodyType);
+            message = getFormattedMessage(message, bodyType);
+            LOGGER.info(SENDING_MESSAGE, message);
             email.replyText(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return Constants.SUCCESS;
@@ -456,9 +468,9 @@ public class MessagingArea {
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
-        logger.info("replyToMail: messageID: {}; message: {}", messageID, message);
+        LOGGER.info("replyToMail: messageID: {}; message: {}", messageID, message);
         if (attachments != null) {
-            logger.info("replyToMail attachments: {}", ReflectionToStringBuilder.toString(attachments));
+            LOGGER.info("replyToMail attachments: {}", ReflectionToStringBuilder.toString(attachments));
         }
 
         try {
@@ -466,9 +478,9 @@ public class MessagingArea {
             if (email == null) {
                 return Constants.INVALID_MESSAGE_ID;
             }
-            bodyType = (bodyType == null) ? Constants.HTML : bodyType;
-            message = EntityHelperUtil.formattedMessage(message, bodyType);
-            logger.info("Sending message {}", message);
+            bodyType = getBodyType(bodyType);
+            message = getFormattedMessage(message, bodyType);
+            LOGGER.info(SENDING_MESSAGE, message);
             email.replyText(message, mailHandler.toAttachment(attachments), bodyType);
             return Constants.SUCCESS;
         } catch (GraphServiceException graphServiceException) {
@@ -490,18 +502,29 @@ public class MessagingArea {
     @Field(name = "Task ID", type = "Text", required = false)
     public String fetchInboxAsync() {
         final String taskId = UUID.randomUUID().toString();
-        boolean useEmail = !requestContext.invokeAsUser();
+        boolean useSetupMail = !requestContext.invokeAsUser();
         String accountID = authorizationContext.getAuthorizedAccount().getAccountId();
+        Map<Class<?>, Object> threadLocals = ThreadLocalProxy.getAll();
+
         executorService.submit(() -> {
             try {
-                List<Email> emails = account.getInboxFolder(useEmail, accountID).getEmails(useEmail);
-                List<MailDetails> mailDetails = emails.stream().map(email -> mailHandler.fromEmail(email, useEmail))
-                        .collect(Collectors.toList());
+                ThreadLocalProxy.setAll(threadLocals);
+                mailHandler.setAuthorizationContext(ThreadLocalProxy.getThreadLocal(AuthorizationContext.class).get());
+
+                List<Email> emails = account.getInboxFolder(useSetupMail, accountID).getEmails(useSetupMail);
+                List<MailDetails> mailDetails = emails.stream().map(email -> {
+                    LOGGER.info("Wait for event request running for email {}", email.getSubject());
+                    return mailHandler.fromEmail(email, useSetupMail);
+                }).collect(Collectors.toList());
+                LOGGER.info("Completed wait for event request.");
                 FreeForm freeForm = new FreeForm();
                 freeForm.put(Constants.DATA, "[ Entity(Mail Details) ]", mailDetails);
+                LOGGER.info("Adding fetched results to event handled.");
                 eventHandler.handleEvent(taskId, freeForm);
             } catch (Exception cause) {
                 throw new IllegalStateException(cause);
+            } finally {
+                ThreadLocalProxy.removeAll();
             }
         });
         return taskId;
@@ -520,11 +543,11 @@ public class MessagingArea {
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData,
             @Field(name = "Task ID", type = "Text") String taskID) {
 
-        logger.info("getResult: eventName: {}; eventData: {}; taskID: {}", eventName, eventData, taskID);
+        LOGGER.info("getResult: eventName: {}; eventData: {}; taskID: {}", eventName, eventData, taskID);
         if (eventName.equals(taskID)) {
             return (List<MailDetails>) eventData.get(Constants.DATA);
         }
-        logger.error("Invalid task ID: {}", taskID);
+        LOGGER.error("Invalid task ID: {}", taskID);
         throw new IllegalStateException(Constants.INVALID_TASK_ID);
     }
 
@@ -539,17 +562,17 @@ public class MessagingArea {
             @Field(name = "Label", type = "Text") String label,
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
-        logger.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
+        LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
         try {
             Folder folder = account.getFolderByName(List.of(label.split(Constants.FORWARD_SLASH)));
             if (folder == null) {
-                logger.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER);
+                LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER);
                 return List.of();
             }
             List<Email> emails = folder.getEmails(pageNumber, pageSize);
             return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
         } catch (GraphServiceException graphServiceException) {
-            logger.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + graphServiceException.getCause(), graphServiceException);
+            LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + graphServiceException.getCause(), graphServiceException);
             return List.of();
         }
     }
@@ -578,7 +601,7 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
     public MailDetails fetchLatestMail() {
-        logger.info("fetchLatestMail: start");
+        LOGGER.info("fetchLatestMail: start");
         List<MailDetails> mailDetailsList = fetchInbox(1.0, 1.0);
         MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
         if (mailDetails != null && mailDetails.sendDateAndTime != null) {
@@ -598,18 +621,14 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Category Names", type = "[ Text ]", required = false)
     public List<String> listCategories() {
-        logger.debug("listCategories(): start");
-        List<String> categoryNames = null;
-
+        LOGGER.info("Fetching Categories");
+        List<String> categoryNames;
         try {
             categoryNames = account.getCategoryNames();
-            logger.debug("listCategories(): {}", categoryNames);
+            LOGGER.info("listCategories(): {}", categoryNames);
         } catch (Exception cause) {
-            String userFacingErrorMessage = new StringBuilder()
-                    .append("Unable to get a list of category names")
-                    .toString();
-            logger.error(userFacingErrorMessage + "; " + cause.getMessage(), cause);
-            throw new RuntimeException(userFacingErrorMessage, cause);
+            LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
+            throw new RuntimeException(cause);
         }
         return categoryNames;
     }

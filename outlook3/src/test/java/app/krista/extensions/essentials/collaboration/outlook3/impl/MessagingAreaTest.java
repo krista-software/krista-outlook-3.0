@@ -24,8 +24,8 @@ public class MessagingAreaTest {
     RequestContext requestContext = mock(RequestContext.class);
     AuthorizationContext authorizationContext = mock(AuthorizationContext.class);
     EventHandler eventHandler = mock(EventHandler.class);
-    FileRepository fileRepository = mock(FileRepository.class);
-    MessagingArea messagingArea = new MessagingArea(account, requestContext, authorizationContext, eventHandler, fileRepository);
+    MailHandler mailHandler = mock(MailHandler.class);
+    MessagingArea messagingArea = new MessagingArea(account, requestContext, authorizationContext, eventHandler, mailHandler);
 
     @Test()
     public void testFetchAllLabels() {

@@ -3,6 +3,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Attachment;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailAddress;
@@ -230,7 +231,7 @@ public class EmailImpl implements Email {
             throw new IllegalStateException(Constants.FORWARD_MAIL_REQUEST_FAILED);
         }
 
-        if (to == null || to.isEmpty()) {
+        if (Validators.isListNullOrEmpty(to)) {
             LOGGER.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
         }
@@ -385,6 +386,7 @@ public class EmailImpl implements Email {
                 messageRequestBuilder.buildRequest().patch(patchMessage);
                 return true;
             } catch (Exception cause) {
+                LOGGER.error(cause.getMessage(), cause);
                 return false;
             }
         }

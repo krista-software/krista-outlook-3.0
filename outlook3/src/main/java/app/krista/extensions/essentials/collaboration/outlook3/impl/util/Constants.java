@@ -129,6 +129,7 @@ public class Constants {
     public static final String AUTH_TYPE = "authType";
     public static final String EMAIL = "email";
     public static final String UNDER_SCORE = "_";
+    public static final String FAILED_TO_SAVE_ATTRIBUTES = "Failed to save attributes";
 
     private Constants() {
     }

@@ -25,5 +25,12 @@ public class Label {
         return new Label(labelName);
     }
 
+    @Override
+    public String toString() {
+        return "Label{" +
+                "Name:'" + name + "'" +
+                "}";
+    }
+
 }
 

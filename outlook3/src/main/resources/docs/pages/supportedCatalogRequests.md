@@ -24,15 +24,48 @@ The Outlook Extension supports the following catalog requests.
 |--------------------|--------------------|---------------|------------------|
 | Message ID         | Text               | Yes           | Message_ID_Value |
 | Label              | Pick One           | Yes           | Read             |
-| Category           | Text               | Yes           | Krista           |
-
-> **Note :** In the context of emails, a category refers to the tag associated with the email.
 
 - **Output Parameters**:
 
 | **Parameter Name** | **Parameter Type** | **Example** |
 |--------------------|--------------------|-------------|
 | Response           | Text               | Success     |
+
+### Add Category To Message
+
+- **Description**: Accepts message ID and Category as input and add given category to message and returns response
+  message.
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value |
+| Category           | Text               | Yes           | Krista           |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| Category Added     | Yes/No             | Yes         |
+
+
+### Remove Category From Message
+
+- **Description**: Accepts message ID and Category as input and remove given category from the message and returns response
+  message.
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value |
+| Category           | Text               | Yes           | Krista           |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| Category Removed   | Yes/No             | Yes         |
+
 
 ### Fetch Mail By Message Id
 

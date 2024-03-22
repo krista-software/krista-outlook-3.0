@@ -6,6 +6,7 @@ import app.krista.extension.util.EntityStore;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.Label;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import org.jvnet.hk2.annotations.Service;
 
@@ -47,7 +48,7 @@ public class LabelStore implements EntityStore<Label> {
 
     @Override
     public void delete(String primaryKey) {
-        throw new IllegalArgumentException("Deleting the folder is not supported.");
+        throw new UnsupportedOperationException("Deleting the folder is not supported.");
     }
 
     @Override
@@ -64,7 +65,7 @@ public class LabelStore implements EntityStore<Label> {
     @Override
     public List<Label> search(SearchQuery searchQuery, long l, int i) throws IOException {
         final List<SearchCondition> searchConditions = searchQuery.getSearchConditions();
-        if (searchConditions == null || searchConditions.isEmpty()) {
+        if (Validators.isListNullOrEmpty(searchConditions)) {
             throw new IllegalArgumentException(Constants.FAILED_TO_SEARCH_FOR_LABELS + Constants.SEARCH_CONDITIONS_NOT_FOUND);
         }
         if (searchConditions.size() == 1) {
