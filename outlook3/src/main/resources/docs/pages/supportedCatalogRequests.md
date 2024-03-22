@@ -41,6 +41,7 @@ The Outlook Extension supports the following catalog requests.
 |--------------------|--------------------|---------------|------------------|
 | Message ID         | Text               | Yes           | Message_ID_Value |
 | Category           | Text               | Yes           | Krista           |
+| Create Category    | Yes/No             | No            | Yes              |
 
 - **Output Parameters**:
 
