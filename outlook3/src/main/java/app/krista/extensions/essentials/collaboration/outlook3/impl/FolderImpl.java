@@ -11,6 +11,8 @@ import com.microsoft.graph.models.Message;
 import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.requests.*;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,7 @@ public class FolderImpl implements Folder {
     private final Account account;
     private final GraphServiceClientProvider provider;
     private final MailFolder mailFolder;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FolderImpl.class);
 
     public FolderImpl(Account account, GraphServiceClientProvider provider, MailFolder mailFolder) {
         this.account = account;

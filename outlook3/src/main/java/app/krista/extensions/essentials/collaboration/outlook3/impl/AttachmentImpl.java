@@ -3,6 +3,8 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Attachment;
 import com.microsoft.graph.models.FileAttachment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,6 +12,7 @@ import java.io.IOException;
 
 public class AttachmentImpl implements Attachment {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AttachmentImpl.class);
     private final com.microsoft.graph.models.Attachment attachment;
 
     public AttachmentImpl(com.microsoft.graph.models.Attachment attachment) {
@@ -39,8 +42,9 @@ public class AttachmentImpl implements Attachment {
         try (FileOutputStream out = new FileOutputStream(fileName)) {
             out.write(bytes);
             return file;
-        } catch (IOException ioException) {
-            throw new IllegalStateException(Constants.ERROR_OCCURRED_DURING_FETCHING_ATTACHMENTS, ioException.getCause());
+        } catch (IOException cause) {
+            LOGGER.error("Failed to download the file.", cause);
+            throw new IllegalArgumentException(Constants.ERROR_OCCURRED_DURING_FETCHING_ATTACHMENTS, cause);
         }
     }
 

@@ -13,6 +13,8 @@ import app.krista.model.field.NamedField;
 import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import org.jvnet.hk2.annotations.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.MultivaluedMap;
@@ -28,6 +30,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V2 = "/outlook/callback";
     private final OutlookAttributeStore attributeStore;
     private final String invokerId;
+    private static final Logger LOGGER = LoggerFactory.getLogger(OutlookRequestAuthenticator.class);
 
     @Inject
     public OutlookRequestAuthenticator(OutlookAttributeStore attributeStore, String invokerId) {
@@ -60,6 +63,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
                 return null;
             }
         } catch (RuntimeException | IOException cause) {
+            LOGGER.error("Failed to get the Authenticated Account Id", cause);
             return null;
         }
     }

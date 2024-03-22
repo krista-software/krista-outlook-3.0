@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Service
 public class AccountImpl implements Account {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AccountImpl.class);
 
     private final GraphServiceClientProvider provider;
 
@@ -64,9 +64,9 @@ public class AccountImpl implements Account {
 
     @Override
     public Folder getFolderByName(String folderName, Boolean useEmail, String accountID) {
-        log.info("getFolderByName for folderName {}, useEmail {}, accountID {}", folderName, useEmail, accountID);
+        LOGGER.info("getFolderByName for folderName {}, useEmail {}, accountID {}", folderName, useEmail, accountID);
         if (folderName == null || folderName.isEmpty()) {
-            log.warn(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
+            LOGGER.warn(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
         }
         MailFolderCollectionPage page = getFoldersRequestBuilder(useEmail, accountID).buildRequest().get();
@@ -83,7 +83,7 @@ public class AccountImpl implements Account {
                 break;
             }
         }
-        log.info("Folder name '{}' not found.", folderName);
+        LOGGER.error("Folder name '{}' not found.", folderName);
         throw new IllegalArgumentException(Constants.FOLDER_NAME_NOT_FOUND);
     }
 
@@ -211,7 +211,7 @@ public class AccountImpl implements Account {
 
     @Override
     public List<String> getCategoryNames() {
-        log.info("getCategoryNames: start");
+        LOGGER.info("Fetching Category Names.");
         List<String> categoryNames = new ArrayList<>();
 
         OutlookCategoryCollectionPage categoriesPage = getUserRequestBuilder(null, null).outlook()
@@ -232,7 +232,7 @@ public class AccountImpl implements Account {
 
     @Override
     public OutlookCategory createCategory(String category) {
-        log.info("Creating category with display name: {}", category);
+        LOGGER.info("Creating category with display name: {}", category);
         OutlookCategory outlookCategory = new OutlookCategory();
         outlookCategory.displayName = category;
 
@@ -240,7 +240,7 @@ public class AccountImpl implements Account {
             return getUserRequestBuilder(null, null).outlook().masterCategories().buildRequest()
                     .post(outlookCategory);
         } catch (GraphServiceException cause) {
-            log.info("Failed to create new category with name: {}", category, cause);
+            LOGGER.error("Failed to create new category with name: {}", category, cause);
             return null;
         }
     }

@@ -87,7 +87,7 @@ public class GraphServiceClientProvider {
         }
     }
 
-    private GraphServiceClient<Request> getGraphServiceClient(String userId, String refreshToken) {
+    private GraphServiceClient<Request> getGraphServiceClient(String refreshTokenStoreKey, String refreshToken) {
         try {
             String[] scopes = Constants.REQUIRED_SCOPE.split(Constants.SCOPE_SEPARATOR);
             Set<String> scopeSet = Arrays.stream(scopes).collect(Collectors.toSet());
@@ -105,15 +105,15 @@ public class GraphServiceClientProvider {
                     (attributes.getClientId(), clientCredential).authority(authority).build();
             IAuthenticationResult authenticationResult = confidentialClientApplication.acquireToken(refreshTokenParameters).get();
             final String cachedTokenContent = confidentialClientApplication.tokenCache().serialize();
-            updateRefreshToken(userId, Constants.GSON.fromJson(cachedTokenContent, JsonObject.class));
+            updateRefreshToken(refreshTokenStoreKey, Constants.GSON.fromJson(cachedTokenContent, JsonObject.class));
             return GraphServiceClient.builder()
                     .authenticationProvider(new GraphServiceClientAuthenticationProvider(authenticationResult.accessToken()))
                     .buildClient();
         } catch (ClientException | ExecutionException | MalformedURLException cause) {
-            throw createMustAuthorizationException(userId, true);
+            throw createMustAuthorizationException(refreshTokenStoreKey, true);
         } catch (InterruptedException cause) {
             Thread.currentThread().interrupt();
-            throw createMustAuthorizationException(userId, true);
+            throw createMustAuthorizationException(refreshTokenStoreKey, true);
         }
     }
 
@@ -123,6 +123,7 @@ public class GraphServiceClientProvider {
         JsonObject tokenData = refreshToken.getAsJsonObject(firstKey);
         String secret = tokenData.get("secret").getAsString();
         refreshTokenStore.put(userId, secret);
+        LOGGER.info("Updated refresh token.");
     }
 
     /**

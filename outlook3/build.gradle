@@ -84,9 +84,9 @@ test {
 dependencies {
 
     annotationProcessor 'app.krista:extension-impl-anno-processors:1.0.94'
-    compileOnly 'app.krista:krista-apis:1.0.94'
-    compileOnly 'org.glassfish.hk2:hk2-api:3.0.3'
-    compileOnly 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
+    implementation 'app.krista:krista-apis:1.0.94'
+    implementation 'org.glassfish.hk2:hk2-api:3.0.3'
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
 
     implementation 'com.microsoft.graph:microsoft-graph:5.76.0'
     implementation 'com.microsoft.graph:microsoft-graph-auth:0.3.0'
@@ -95,6 +95,7 @@ dependencies {
     implementation 'org.glassfish.jersey.media:jersey-media-multipart:2.35'
     implementation 'org.jsoup:jsoup:1.16.1'
     implementation group: 'commons-validator', name: 'commons-validator', version: '1.7'
+    implementation 'commons-io:commons-io:2.11.0'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
 
     testImplementation 'com.kristasoft.common:common-test:1.0.39'

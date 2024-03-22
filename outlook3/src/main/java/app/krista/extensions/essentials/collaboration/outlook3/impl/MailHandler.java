@@ -9,11 +9,15 @@ import app.krista.ksdk.files.FileHandle;
 import app.krista.ksdk.files.FileRepository;
 import app.krista.model.base.File;
 import com.microsoft.graph.models.FileAttachment;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,7 +28,8 @@ import static java.lang.System.getProperty;
 
 public class MailHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(MailHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MailHandler.class);
+
     private final FileRepository repository;
 
     @Inject
@@ -66,7 +71,7 @@ public class MailHandler {
 
         FileHandle outputFileHandle = null;
         try (FileInputStream inputStream = new FileInputStream(file)) {
-            outputFileHandle = this.repository.createNewFileByName(output.getName());
+            outputFileHandle = this.repository.createNewFileByName(FilenameUtils.getName(output.getName()));
             outputFileHandle.setContent(inputStream);
         } catch (IOException cause) {
             throw new RuntimeException("Failed to store content to file handle", cause);
@@ -100,13 +105,13 @@ public class MailHandler {
     public void validateTempFile(final java.io.File file) {
 
         if (file.exists()) {
-            logger.warn("Temp {} file exists. Deleting! ", file.getAbsolutePath());
+            LOGGER.warn("Temp {} file exists. Deleting! ", file.getAbsolutePath());
             final boolean deleted = file.delete();
             if (!deleted) {
-                logger.error("Failed to delete temp file at {} ! Trying to proceed", file.getAbsoluteFile());
+                LOGGER.error("Failed to delete temp file at {} ! Trying to proceed", file.getAbsoluteFile());
             }
         } else {
-            logger.trace("Temp file at {} does not yet exist", file.getAbsoluteFile());
+            LOGGER.trace("Temp file at {} does not yet exist", file.getAbsoluteFile());
         }
 
     }
@@ -117,7 +122,7 @@ public class MailHandler {
         final java.io.File tmpDir = new java.io.File(getProperty("java.io.tmpDir", "/tmp"));
 
         if (tmpDir.exists() && !tmpDir.canWrite()) {
-            logger.error("Unable to write to tmpDir: {}", tmpDir.getAbsolutePath());
+            LOGGER.error("Unable to write to tmpDir: {}", tmpDir.getAbsolutePath());
             throw new IllegalArgumentException("Unable write to temporary file.");
         }
 

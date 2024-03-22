@@ -25,9 +25,7 @@ import java.util.stream.Collectors;
 
 public class EmailImpl implements Email {
 
-    public static final String ADD_CATEGORY = "AddCategory";
-    public static final String REMOVE_CATEGORY = "RemoveCategory";
-    private static final Logger log = LoggerFactory.getLogger(EmailImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmailImpl.class);
     private final GraphServiceClientProvider provider;
     private final Message message;
 
@@ -116,26 +114,20 @@ public class EmailImpl implements Email {
 
     @Override
     public void markAsRead() {
-        Message localMessage = new Message();
-        localMessage.isRead = true;
-        MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
-        if (messageRequestBuilder != null) {
-            Message markedMessage = messageRequestBuilder.buildRequest().patch(localMessage);
-            if (markedMessage == null) {
-                throw new IllegalStateException(Constants.FAILED_TO_MARK_THE_MESSAGE_AS_READ);
-            }
-        } else {
-            throw new IllegalStateException(Constants.FAILED_TO_MARK_THE_MESSAGE_AS_READ);
-        }
+        markMessage(true);
     }
 
     @Override
     public void markAsUnread() {
-        Message readMessage = new Message();
-        readMessage.isRead = false;
+        markMessage(false);
+    }
+
+    private void markMessage(boolean isRead) {
+        Message markMessage = new Message();
+        markMessage.isRead = isRead;
         MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
         if (messageRequestBuilder != null) {
-            Message markedMessage = messageRequestBuilder.buildRequest().patch(readMessage);
+            Message markedMessage = messageRequestBuilder.buildRequest().patch(markMessage);
             if (markedMessage == null) {
                 throw new IllegalStateException(Constants.FAILED_TO_MARK_THE_MESSAGE_AS_READ);
             }
@@ -232,14 +224,14 @@ public class EmailImpl implements Email {
 
     @Override
     public void forward(String message, List<EmailAddress> to, String bodyType) {
-        log.info("forwarding email to {} with message {}", to, message);
+        LOGGER.info("Forwarding email to {} with message {}", to, message);
         MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
         if (messageRequestBuilder == null) {
             throw new IllegalStateException(Constants.FORWARD_MAIL_REQUEST_FAILED);
         }
 
         if (to == null || to.isEmpty()) {
-            log.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
+            LOGGER.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
         }
 
@@ -262,7 +254,8 @@ public class EmailImpl implements Email {
     private ItemBody createItemBody(String message, String bodyType) {
         ItemBody body = new ItemBody();
         body.content = (message == null || message.isBlank()) ? "" : message;
-        body.contentType = BodyType.HTML.equals(bodyType) ? BodyType.HTML : BodyType.TEXT;
+        body.contentType = ("HTML".equals(bodyType)) ? BodyType.HTML : BodyType.TEXT;
+
         return body;
     }
 
@@ -341,7 +334,7 @@ public class EmailImpl implements Email {
 
     private MessageRequestBuilder getMessageRequestBuilder(Boolean useEmail) {
         if (message.id == null || message.id.isEmpty()) {
-            log.warn("Message id is null or empty");
+            LOGGER.warn("Message id is null or empty");
             return null;
         }
         return provider.getUserRequestBuilder(useEmail, null).messages(message.id);
@@ -349,7 +342,7 @@ public class EmailImpl implements Email {
 
     private EmailAddress toEmailAddress(Recipient recipient) {
         if (recipient == null) {
-            log.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
+            LOGGER.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             return null;
         }
         return recipient.emailAddress != null ? new EmailAddress(recipient.emailAddress.name, recipient.emailAddress.address) : null;
@@ -357,7 +350,7 @@ public class EmailImpl implements Email {
 
     private Recipient toRecipient(EmailAddress emailAddress) {
         if (emailAddress == null) {
-            log.warn(Constants.EMAIL_ADDRESS_IS_EMPTY_OR_NULL);
+            LOGGER.warn(Constants.EMAIL_ADDRESS_IS_EMPTY_OR_NULL);
             return null;
         }
         Recipient recipient = new Recipient();
