@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="error">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%-5p %c{1}:%L - %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="error">
+            <AppenderRef ref="console"/>
+        </Root>
+        <Logger name="com.krista" level="trace"/>
+        <Logger name="app.krista.extensions.essentials.collaboration.outlook3" level="trace"/>
+        <Logger name="com.kristasoft.extensions" level="trace"/>
+    </Loggers>
+</Configuration>

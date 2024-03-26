@@ -1,0 +1,385 @@
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    margin-left: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.checkbox-label-container {
+    display: flex;
+    align-items: center; /* Align items vertically in the center */
+    gap: 8px; /* Add space between the checkbox and the label */
+}
+
+.checkbox-label-container input[type="checkbox"] {
+    margin-bottom: 8px; /* Add space to the right of the checkbox */
+}
+
+.checkbox-label-container label {
+    display: inline-block;
+    line-height: 1;
+    padding-top: 2px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+    outline: none;
+    border-color: #009BF4;
+    box-shadow: 0 0 0 2px #a7d8ff;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: 500px;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.form-input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.test-connection-button {
+    /* Box model */
+    box-sizing: border-box;
+    width: 122px;
+    height: 32px;
+    padding: 0px 10px;
+    border: 1px solid #009BF4;
+    border-radius: 6px;
+
+    /* Flexbox layout */
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+    overflow: hidden; /* Hide the content overflow during the animation */
+    white-space: nowrap; /* Prevent text wrapping */
+
+    /* Background */
+    background: #009BF4;
+
+    /* Cursor */
+    cursor: pointer;
+    margin-right: 20px;
+    transition: width 0.2s; /* Add a CSS transition for width changes */
+
+    .button-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .loading-spinner {
+        width: 10px;
+        height: 10px;
+        border: 2px solid #FFFFFF;
+        margin: calc(50vh - 8px) 5px;
+        border-radius: 50%;
+        animation: spin 3s linear infinite;
+        position: relative;
+
+        &:before,
+        &:after {
+            content: "";
+            display: block;
+            width: 2px;
+            height: 2px;
+            border-bottom: 3px solid #FFFFFF;
+            border-left: 3px solid #FFFFFF;
+            position: absolute;
+            top: 1px;
+            left: -3px;
+            box-shadow: -3px 2px 0 2px #009BF4;
+        }
+
+    }
+}
+
+.test-connection-button.loading {
+    cursor: not-allowed;
+    width: 148px; /* Adjust the width while loading */
+}
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(360deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+.test-connection-button:disabled {
+    border: 1px solid #009BF4;
+    cursor: not-allowed;
+}
+
+.test-connection-button span {
+    /* Box model */
+    width: 102px;
+    height: 18px;
+
+    /* Typography */
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 18px;
+    text-align: center;
+    color: #FFFFFF;
+
+    /* Flexbox layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+
+}
+
+.save-changes-button {
+    /* Box model */
+    box-sizing: border-box;
+    width: 122px;
+    height: 32px;
+    padding: 0px 10px;
+    border: 1px solid #009BF4;
+    border-radius: 6px;
+
+    /* Flexbox layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+
+    /* Background */
+    background: #FFFFFF;
+    color: #009BF4;
+
+    /* Cursor */
+    cursor: pointer;
+    /* margin-right: 10000px;*/
+}
+
+.save-changes-button:disabled {
+    color: #A8B1BA;
+    border: 1px solid #A8B1BA;
+    cursor: not-allowed;
+}
+
+.save-changes-button span {
+    /* Box model */
+    width: 102px;
+    height: 18px;
+
+    /* Typography */
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 18px;
+    text-align: center;
+
+
+    /* Flexbox layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+}
+
+.button-container {
+    display: flex;
+    justify-content: flex-end; /* Adjust it according to your design */
+    align-items: center; /* This will vertically align the buttons if the container has height greater than the buttons */
+    margin-top: 25px;
+    width: 422px;
+    border: 2px;
+    position: relative;
+}
+
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #333;
+
+    font-size: 16px;
+    font-weight: 400;
+    text-align: center;
+    z-index: 9999;
+    opacity: 0;
+    animation: toastIn 0.5s ease-in-out forwards;
+}
+
+.toast.success {
+    background-color: #E5F5F0;
+    color: #43A047;
+}
+
+.toast.error {
+    background-color: #C61A24;
+    color: #fff;
+}
+
+.toast.warning {
+    background-color: #C61A24;
+    color: #fff;
+}
+
+.toast-info {
+    background-color: #4ee0f5;
+    color: #fff;
+}
+
+.toast-message {
+    margin: 0;
+    padding: 0;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 100%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0%);
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0%);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 100%);
+    }
+}
+
+select {
+    font-size: 18px; /* or any other size you prefer */
+}
+
+option {
+    font-size: 16px; /* or any other size you prefer */
+    background-color: #fff;
+    color: #333;
+}
+
+.authOptions {
+    display: flex;
+    align-items: center;
+}
+
+/* Style for custom radio buttons in authOptions */
+.authOptions input[type="radio"] {
+    display: none; /* Hide the actual radio buttons */
+}
+
+.authOptions input[type="radio"] + label {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%; /* Make it circular */
+    border: 1px solid #E1E1E1; /* Border color for the outer circle */
+    display: inline-block;
+    margin-right: 10px; /* Adjust spacing as needed */
+    position: relative;
+    margin-bottom: 0px;
+    margin-right: 8px;
+    cursor: pointer; /* Add a pointer cursor for label elements */
+}
+
+.authOptions input[type="radio"] + label::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+
+    background-color: #E1E1E1; /* Default color when the radio button is unchecked */
+    border-radius: 50%; /* Make it circular */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: background-color 0.3s; /* Smooth transition for color change */
+}
+
+.authOptions input[type="radio"]:checked + label {
+    border-color: #009BF4; /* Change the border color when the radio button is checked */
+}
+
+.authOptions input[type="radio"]:checked + label::before {
+    background-color: #009BF4; /* Color when the radio button is checked */
+}
+
+.authOptions div {
+    display: flex;
+    align-items: center;
+    margin: 40px 50px 40px 10px;
+}
+
+.mandatory-asterisk {
+    color: red;
+    margin-left: 2px; /* Optional: to give some space between label and asterisk */
+}
