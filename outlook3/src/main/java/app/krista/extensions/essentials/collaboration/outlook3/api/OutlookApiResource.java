@@ -278,7 +278,7 @@ public final class OutlookApiResource {
             LOGGER.info("Test Connection successful. Saving attributes.");
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Failed to get data from graph service client.");
+            LOGGER.error("Failed to get data from graph service client. : {}",cause.getMessage());
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
             String state = createStateParameter(cause, outlookAttributes);
