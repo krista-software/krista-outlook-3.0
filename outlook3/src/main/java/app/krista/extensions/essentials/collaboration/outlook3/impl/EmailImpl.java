@@ -373,8 +373,7 @@ public class EmailImpl implements Email {
     @Override
     public boolean removeCategory(String category) {
         List<String> existingCategories = getUniqueCategories();
-        existingCategories.remove(category);
-        return updateCategory(existingCategories);
+        return existingCategories.remove(category) && updateCategory(existingCategories);
     }
 
     private boolean updateCategory(List<String> existingCategories) {

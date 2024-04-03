@@ -249,6 +249,11 @@ public final class OutlookApiResource {
                 providerFactory.create().getGraphServiceClientForAdmin()
                         .users(attributes.getEmail())
                         .mailFolders().buildRequest().get();
+                if (attributes.isAllowMailAlert()) {
+                    MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
+                } else {
+                    MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
+                }
                 return Constants.GSON.toJson(new AuthenticationResponse(true, null, null));
             } catch (GraphServiceException | NullPointerException cause) {
                 outlookAttributeStore.remove(invokerId);
@@ -271,12 +276,6 @@ public final class OutlookApiResource {
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
             LOGGER.info("Test Connection successful. Saving attributes.");
-            outlookAttributeStore.save(outlookAttributes, invokerId);
-            if (outlookAttributes.isAllowMailAlert()) {
-                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
-            } else {
-                MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
-            }
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
             LOGGER.error("Failed to get data from graph service client.");
