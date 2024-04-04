@@ -270,16 +270,15 @@ public final class OutlookApiResource {
         String authUrl = null;
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
-            LOGGER.info("Test Connection successful. Saving attributes.");
-            outlookAttributeStore.save(outlookAttributes, invokerId);
             if (outlookAttributes.isAllowMailAlert()) {
-                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
+                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
             } else {
-                MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create());
+                MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
             }
+            LOGGER.info("Test Connection successful.");
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Failed to get data from graph service client.");
+            LOGGER.error("Failed to get data from graph service client. : {}",cause.getMessage(),cause);
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
             String state = createStateParameter(cause, outlookAttributes);
