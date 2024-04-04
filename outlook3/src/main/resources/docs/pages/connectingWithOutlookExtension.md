@@ -3,8 +3,8 @@
 To establish a connection with the Outlook Extension, follow the steps below based on your authentication method:
 
 > **Note**:
-> -If a custom Access Point is being used for the Outlook Extension, then it is mandatory to set the Access Point first before proceeding to Authentication.
-> -If the Access Point is changed, re-authentication is required for the respective access point.
+> - If a custom Access Point is being used for the Outlook Extension, then it is mandatory to set the Access Point first before proceeding to Authentication.
+> - If the Access Point is changed, re-authentication is required for the respective access point.
 
 ## Using Public Authentication
 
