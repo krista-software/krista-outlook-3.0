@@ -48,6 +48,7 @@ public final class OutlookApiResource {
     private static final Set<String> triggeredMailIds = new LinkedHashSet<>();
     private static final int MESSAGE_ID_CAPACITY = 1000;
     private final OutlookAttributeStore outlookAttributeStore;
+    private OutlookAttributes testConnAttributes = null;
     private final RefreshTokenStore refreshTokenStore;
     private final GraphServiceClientProviderFactory providerFactory;
     private final EventHandler eventHandler;
@@ -243,19 +244,24 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        final boolean save = outlookAttributeStore.save(attributes, invokerId);
-        if (save) {
-            try {
-                providerFactory.create().getGraphServiceClientForAdmin()
-                        .users(attributes.getEmail())
-                        .mailFolders().buildRequest().get();
-                return Constants.GSON.toJson(new AuthenticationResponse(true, null, null));
-            } catch (GraphServiceException | NullPointerException cause) {
-                outlookAttributeStore.remove(invokerId);
-                LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
-                return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
+        if(isMatchedToTestedAttributes(testConnAttributes,attributes)) {
+            testConnAttributes = null;
+            final boolean save = outlookAttributeStore.save(attributes, invokerId);
+            if (save) {
+                try {
+                    providerFactory.create().getGraphServiceClientForAdmin()
+                            .users(attributes.getEmail())
+                            .mailFolders().buildRequest().get();
+                    return Constants.GSON.toJson(new AuthenticationResponse(true, null, null));
+                } catch (GraphServiceException | NullPointerException cause) {
+                    outlookAttributeStore.remove(invokerId);
+                    LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
+                    return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
+                }
+            } else {
+                return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
             }
-        } else {
+        }else {
             return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
         }
     }
@@ -270,6 +276,7 @@ public final class OutlookApiResource {
         String authUrl = null;
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+            testConnAttributes = outlookAttributes;
             if (outlookAttributes.isAllowMailAlert()) {
                 MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
             } else {
@@ -358,6 +365,15 @@ public final class OutlookApiResource {
     public Response clearListeners() {
         invoker.listEventListeners().forEach(l -> invoker.unregisterEventListener(l.getListenerId()));
         return Response.ok("Success").build();
+    }
+
+    private boolean isMatchedToTestedAttributes(OutlookAttributes tempAttributes, OutlookAttributes attributes) {
+        return (tempAttributes.getAuthType() == null || tempAttributes.getAuthType().equals(attributes.getAuthType()))
+                && (tempAttributes.getEmail() == null || tempAttributes.getEmail().equals(attributes.getEmail()))
+                && (tempAttributes.getTenantId() == null || tempAttributes.getTenantId().equals(attributes.getTenantId()))
+                && (tempAttributes.getClientSecret() == null || tempAttributes.getClientSecret().equals(attributes.getClientSecret()))
+                && (tempAttributes.getClientId() == null || tempAttributes.getClientId().equals(attributes.getClientId()))
+                && (tempAttributes.isAllowMailAlert() == attributes.isAllowMailAlert());
     }
 
 }
