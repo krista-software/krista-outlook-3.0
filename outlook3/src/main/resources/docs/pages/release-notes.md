@@ -10,7 +10,7 @@
 ## Resolved Bugs
 * [KE-1546](https://antbrains.atlassian.net/browse/KE-1546) Outlook: Credentials save automatically without clicking "Save Changes" button.
 * [KE-1572](https://antbrains.atlassian.net/browse/KE-1572) Outlook: Using invalid data in a request gives a successful response message.
-* [KE-1580](https://antbrains.atlassian.net/browse/KE-1580) Outlook:After adding invalid credentials and clicking on 'save changes,' the invalid credentials are saved.
+* [KE-1580](https://antbrains.atlassian.net/browse/KE-1580) Outlook: After adding invalid credentials and clicking on 'save changes,' the invalid credentials are saved.
 * [KE-1545](https://antbrains.atlassian.net/browse/KE-1545) Outlook: Adding an access point removes credentials from the authentication tab.
 
 ## Known Issues
