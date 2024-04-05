@@ -6,12 +6,15 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.*;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Notification;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.NotificationProcessQueue;
 import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.authentication.AuthorizationListener;
 import app.krista.ksdk.context.AuthorizationContext;
@@ -244,7 +247,7 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        if(isMatchedToTestedAttributes(testConnAttributes,attributes)) {
+        if (isMatchedToTestedAttributes(testConnAttributes, attributes)) {
             testConnAttributes = null;
             final boolean save = outlookAttributeStore.save(attributes, invokerId);
             if (save) {
@@ -261,7 +264,7 @@ public final class OutlookApiResource {
             } else {
                 return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
             }
-        }else {
+        } else {
             return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
         }
     }
@@ -285,7 +288,7 @@ public final class OutlookApiResource {
             LOGGER.info("Test Connection successful.");
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Failed to get data from graph service client. : {}",cause.getMessage(),cause);
+            LOGGER.error("Failed to get data from graph service client. : {}", cause.getMessage(), cause);
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
             String state = createStateParameter(cause, outlookAttributes);
