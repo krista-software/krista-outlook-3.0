@@ -60,7 +60,6 @@ public final class OutlookApiResource {
     private final String baseRoutingUrl;
     private final String invokerId;
     private final Invoker invoker;
-    private static OutlookAttributes testConnAttributes = null;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
@@ -247,24 +246,23 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        if (isMatchedToTestedAttributes(testConnAttributes, attributes)) {
-            testConnAttributes = null;
-            final boolean isSave = outlookAttributeStore.save(attributes, invokerId);
-            if (isSave) {
-                try {
-                    providerFactory.create().getGraphServiceClientForAdmin()
-                            .users(attributes.getEmail())
-                            .mailFolders().buildRequest().get();
-                    return Constants.GSON.toJson(new AuthenticationResponse(true, null, null));
-                } catch (GraphServiceException | NullPointerException cause) {
-                    outlookAttributeStore.remove(invokerId);
-                    LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
-                    return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
-                }
-            }
+        String authContextId = providerFactory.createAttributes(attributes);
+        try {
+            providerFactory.create(authContextId).getGraphServiceClientForAdmin()
+                    .users(attributes.getEmail())
+                    .mailFolders().buildRequest().get();
+            boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
+            return isSaved
+                    ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
+                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null)) ;
+        } catch (Exception cause) {
+            LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
+            return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
+        } finally {
+            outlookAttributeStore.remove(authContextId);
         }
-        return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
     }
+
 
     @POST
     @Path("/testConnection")
@@ -276,7 +274,6 @@ public final class OutlookApiResource {
         String authUrl = null;
         try {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
-            testConnAttributes = outlookAttributes;
             if (outlookAttributes.isAllowMailAlert()) {
                 MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
             } else {
@@ -365,15 +362,6 @@ public final class OutlookApiResource {
     public Response clearListeners() {
         invoker.listEventListeners().forEach(l -> invoker.unregisterEventListener(l.getListenerId()));
         return Response.ok("Success").build();
-    }
-
-    private boolean isMatchedToTestedAttributes(OutlookAttributes testAttributes, OutlookAttributes attributes) {
-        return (testAttributes.getAuthType() == null || testAttributes.getAuthType().equals(attributes.getAuthType()))
-                && (testAttributes.getEmail() == null || testAttributes.getEmail().equals(attributes.getEmail()))
-                && (testAttributes.getTenantId() == null || testAttributes.getTenantId().equals(attributes.getTenantId()))
-                && (testAttributes.getClientSecret() == null || testAttributes.getClientSecret().equals(attributes.getClientSecret()))
-                && (testAttributes.getClientId() == null || testAttributes.getClientId().equals(attributes.getClientId()))
-                && (testAttributes.isAllowMailAlert() == attributes.isAllowMailAlert());
     }
 
 }
