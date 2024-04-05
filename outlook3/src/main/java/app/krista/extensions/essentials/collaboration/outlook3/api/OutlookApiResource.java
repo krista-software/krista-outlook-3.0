@@ -60,7 +60,7 @@ public final class OutlookApiResource {
     private final String baseRoutingUrl;
     private final String invokerId;
     private final Invoker invoker;
-    private OutlookAttributes testConnAttributes = null;
+    private static OutlookAttributes testConnAttributes = null;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
@@ -261,12 +261,9 @@ public final class OutlookApiResource {
                     LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
                     return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
                 }
-            } else {
-                return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
             }
-        } else {
-            return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
         }
+        return Constants.GSON.toJson(FAILED_TO_SAVE_ATTRIBUTES);
     }
 
     @POST
