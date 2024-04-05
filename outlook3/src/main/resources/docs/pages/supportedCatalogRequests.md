@@ -35,6 +35,10 @@ The Outlook Extension supports the following catalog requests.
 
 - **Description**: Accepts message ID and Category as input and add given category to message and returns response
   message.
+
+> **Note :**
+> - In the event that **Create Category** is selected, the category will be accessible globally for all messages. Conversely, if this option is not selected, the category will only be available for the specific message provided.
+
 - **Input Parameters**:
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |

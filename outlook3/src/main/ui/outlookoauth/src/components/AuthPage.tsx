@@ -59,7 +59,7 @@ const AuthPage = () => {
     };
 
     const handleResponseForSavedCred = (response: any) => {
-        let responseMessage = "Test connection failed";
+        let responseMessage = "Test connection failed, Failed to save attributes";
         let responseType = "error";
 
         if (response.isSuccess) {

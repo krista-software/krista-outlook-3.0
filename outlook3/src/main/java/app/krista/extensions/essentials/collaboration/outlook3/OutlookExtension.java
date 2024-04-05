@@ -14,7 +14,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.Outlo
 import javax.inject.Inject;
 import java.util.Map;
 
-@Extension(version = "3.0.0-rc2")
+@Extension(version = "3.0.0-rc3")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
