@@ -249,8 +249,8 @@ public final class OutlookApiResource {
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         if (isMatchedToTestedAttributes(testConnAttributes, attributes)) {
             testConnAttributes = null;
-            final boolean save = outlookAttributeStore.save(attributes, invokerId);
-            if (save) {
+            final boolean isSave = outlookAttributeStore.save(attributes, invokerId);
+            if (isSave) {
                 try {
                     providerFactory.create().getGraphServiceClientForAdmin()
                             .users(attributes.getEmail())
@@ -367,13 +367,13 @@ public final class OutlookApiResource {
         return Response.ok("Success").build();
     }
 
-    private boolean isMatchedToTestedAttributes(OutlookAttributes tempAttributes, OutlookAttributes attributes) {
-        return (tempAttributes.getAuthType() == null || tempAttributes.getAuthType().equals(attributes.getAuthType()))
-                && (tempAttributes.getEmail() == null || tempAttributes.getEmail().equals(attributes.getEmail()))
-                && (tempAttributes.getTenantId() == null || tempAttributes.getTenantId().equals(attributes.getTenantId()))
-                && (tempAttributes.getClientSecret() == null || tempAttributes.getClientSecret().equals(attributes.getClientSecret()))
-                && (tempAttributes.getClientId() == null || tempAttributes.getClientId().equals(attributes.getClientId()))
-                && (tempAttributes.isAllowMailAlert() == attributes.isAllowMailAlert());
+    private boolean isMatchedToTestedAttributes(OutlookAttributes testAttributes, OutlookAttributes attributes) {
+        return (testAttributes.getAuthType() == null || testAttributes.getAuthType().equals(attributes.getAuthType()))
+                && (testAttributes.getEmail() == null || testAttributes.getEmail().equals(attributes.getEmail()))
+                && (testAttributes.getTenantId() == null || testAttributes.getTenantId().equals(attributes.getTenantId()))
+                && (testAttributes.getClientSecret() == null || testAttributes.getClientSecret().equals(attributes.getClientSecret()))
+                && (testAttributes.getClientId() == null || testAttributes.getClientId().equals(attributes.getClientId()))
+                && (testAttributes.isAllowMailAlert() == attributes.isAllowMailAlert());
     }
 
 }
