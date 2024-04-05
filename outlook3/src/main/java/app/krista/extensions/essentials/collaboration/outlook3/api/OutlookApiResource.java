@@ -48,7 +48,6 @@ public final class OutlookApiResource {
     private static final Set<String> triggeredMailIds = new LinkedHashSet<>();
     private static final int MESSAGE_ID_CAPACITY = 1000;
     private final OutlookAttributeStore outlookAttributeStore;
-    private OutlookAttributes testConnAttributes = null;
     private final RefreshTokenStore refreshTokenStore;
     private final GraphServiceClientProviderFactory providerFactory;
     private final EventHandler eventHandler;
@@ -58,6 +57,7 @@ public final class OutlookApiResource {
     private final String baseRoutingUrl;
     private final String invokerId;
     private final Invoker invoker;
+    private OutlookAttributes testConnAttributes = null;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
