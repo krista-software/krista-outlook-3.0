@@ -4,6 +4,10 @@
 
 The Outlook Extension supports the following catalog requests.
 
+> **Note :**
+> - Files with extensions such as "html", "php5", "pht", "phtml", "shtml", "asa", "cer", "asax", "swf", "xap", "jsp", "exe", and "js" are attached as a zip file in the email. Likewise, attachments are received as zip files in the email.
+
+
 ### Fetch All Labels
 
 - **Description**: Returns list of labels.
