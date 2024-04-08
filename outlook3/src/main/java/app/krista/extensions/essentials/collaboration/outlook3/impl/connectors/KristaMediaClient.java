@@ -96,7 +96,6 @@ public class KristaMediaClient {
      */
     private String getFileExtension(String fileName) {
         try {
-            System.out.println("File extension Name :: " + fileName);
             if (fileName.contains(".")) {
                 return fileName.substring((fileName.lastIndexOf(".") + 1));
             }
