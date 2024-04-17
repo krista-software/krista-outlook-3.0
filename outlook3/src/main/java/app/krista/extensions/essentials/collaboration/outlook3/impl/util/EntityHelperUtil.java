@@ -29,7 +29,7 @@ public class EntityHelperUtil {
     public static List<Map<String, Object>> getEntityDataAsList(List<EntityValue> entityValues, Entities registry) {
         List<Map<String, Object>> entityDataToMap = new ArrayList<>();
         for (EntityValue entity : entityValues) {
-            if(registry != null){
+            if (registry != null) {
                 Map<String, EntityAttributeField> attributeFields = registry.getEntityDefinition(entity).getAttributeFields();
                 prepareEntityBasedOnFields(entity, attributeFields);
             }
@@ -40,12 +40,12 @@ public class EntityHelperUtil {
     }
 
     private static void prepareEntityBasedOnFields(EntityValue entity, Map<String, EntityAttributeField> attributeFields) {
-        for(Map.Entry<String, EntityAttributeField> keyValue : attributeFields.entrySet()){
+        for (Map.Entry<String, EntityAttributeField> keyValue : attributeFields.entrySet()) {
             EntityAttributeField field = keyValue.getValue();
-            if(field.getFieldType().equals("com.krista.fields.Percentage")){
-                Double percent = (Double) entity.getFields().get(keyValue.getKey()) * 100 ;
+            if (field.getFieldType().equals("com.krista.fields.Percentage")) {
+                Double percent = (Double) entity.getFields().get(keyValue.getKey()) * 100;
                 String value = EntityHelperUtil.removeTrailingZeros(percent) + " %";
-                entity.getFields().put(keyValue.getKey(),value);
+                entity.getFields().put(keyValue.getKey(), value);
             }
         }
     }
@@ -136,8 +136,8 @@ public class EntityHelperUtil {
                 String value = (cellData instanceof Long)
                         ? EntityHelperUtil.fetchDateTime(cellData, headerKeys.get(cellIndex))
                         : (cellData instanceof Double)
-                            ? removeTrailingZeros((Double) cellData)
-                            : String.valueOf(cellData);
+                        ? removeTrailingZeros((Double) cellData)
+                        : String.valueOf(cellData);
                 htmlContent.append(value);
                 htmlContent.append(Constants.CLOSE_TD_TAG);
             }
