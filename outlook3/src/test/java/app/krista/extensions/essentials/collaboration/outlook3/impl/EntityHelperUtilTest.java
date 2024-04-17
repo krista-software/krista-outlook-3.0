@@ -100,4 +100,25 @@ public class EntityHelperUtilTest {
         System.out.println(" expectedFormat "+expectedFormat);
         Assert.assertEquals(expectedFormat, actualOutput);
     }
+
+    @Test
+    public void testRemoveTrailingZerosWithDecimals() {
+        double number = 123.456000;
+        String result = EntityHelperUtil.removeTrailingZeros(number);
+        Assert.assertEquals("123.456", result);
+    }
+
+    @Test
+    public void testRemoveTrailingZerosWithoutDecimals() {
+        double number = 100.000;
+        String result = EntityHelperUtil.removeTrailingZeros(number);
+        Assert.assertEquals("100", result);
+    }
+
+    @Test
+    public void testRemoveTrailingZerosInteger() {
+        double number = 12345.0;
+        String result = EntityHelperUtil.removeTrailingZeros(number);
+        Assert.assertEquals("12345", result);
+    }
 }
