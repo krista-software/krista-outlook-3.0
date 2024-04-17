@@ -1,8 +1,10 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
 
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailAddress;
+import app.krista.ksdk.entities.Entities;
 import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
+import app.krista.model.entity.EntityAttributeField;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.FileInputStream;
@@ -24,14 +26,30 @@ public class EntityHelperUtil {
      * @param entityValues input {@link List} of {@link EntityValue}
      * @return {@link List} of {@link Map}
      */
-    public static List<Map<String, Object>> getEntityDataAsList(List<EntityValue> entityValues) {
+    public static List<Map<String, Object>> getEntityDataAsList(List<EntityValue> entityValues, Entities registry) {
         List<Map<String, Object>> entityDataToMap = new ArrayList<>();
         for (EntityValue entity : entityValues) {
+            if(registry != null){
+                Map<String, EntityAttributeField> attributeFields = registry.getEntityDefinition(entity).getAttributeFields();
+                prepareEntityBasedOnFields(entity, attributeFields);
+            }
             Map<String, Object> validEntityMapData = getValidatedData(entity.getFields());
             entityDataToMap.add(validEntityMapData);
         }
         return entityDataToMap;
     }
+
+    private static void prepareEntityBasedOnFields(EntityValue entity, Map<String, EntityAttributeField> attributeFields) {
+        for(Map.Entry<String, EntityAttributeField> keyValue : attributeFields.entrySet()){
+            EntityAttributeField field = keyValue.getValue();
+            if(field.getFieldType().equals("com.krista.fields.Percentage")){
+                Double percent = (Double) entity.getFields().get(keyValue.getKey()) * 100 ;
+                String value = EntityHelperUtil.removeTrailingZeros(percent) + " %";
+                entity.getFields().put(keyValue.getKey(),value);
+            }
+        }
+    }
+
 
     /**
      * This function will get Entity Values map  in non-technical form
@@ -76,11 +94,11 @@ public class EntityHelperUtil {
      * @param removeEntityFieldFromTable this field contains fieldParameters which are excluded to be added into Table
      * @return {@link String} complete HTML format Rich Text String
      */
-    public static String getMessageContent(String message, List<EntityValue> entityList, List<String> removeEntityFieldFromTable) {
+    public static String getMessageContent(String message, List<EntityValue> entityList, List<String> removeEntityFieldFromTable, Entities registry) {
         StringBuilder htmlContent = new StringBuilder();
         formHTMLForTable(htmlContent, message);
         if (entityList != null && !entityList.isEmpty()) {
-            List<Map<String, Object>> entitiesData = getEntityDataAsList(entityList);
+            List<Map<String, Object>> entitiesData = getEntityDataAsList(entityList, registry);
             if (removeEntityFieldFromTable != null && !removeEntityFieldFromTable.isEmpty()) {
                 for (String field : removeEntityFieldFromTable) {
                     entitiesData.forEach(data -> data.remove(field));
@@ -107,7 +125,7 @@ public class EntityHelperUtil {
         htmlContent.append(Constants.TABLE_START);
     }
 
-    private static StringBuilder addTableData(StringBuilder htmlContent, List<Map<String, Object>> entitiesData, List<String> headerKeys, int headerSize) {
+    private static void addTableData(StringBuilder htmlContent, List<Map<String, Object>> entitiesData, List<String> headerKeys, int headerSize) {
 
         for (int i = 0; i < entitiesData.size(); i++) {
             htmlContent.append(Constants.TR_TAG);
@@ -115,7 +133,11 @@ public class EntityHelperUtil {
             for (int cellIndex = 0; cellIndex < headerSize; cellIndex++) {
                 htmlContent.append(Constants.TD_TAG);
                 Object cellData = rowData.getOrDefault(headerKeys.get(cellIndex), "");
-                String value = (cellData instanceof Long) ? EntityHelperUtil.fetchDateTime(cellData, headerKeys.get(cellIndex)) : String.valueOf(cellData);
+                String value = (cellData instanceof Long)
+                        ? EntityHelperUtil.fetchDateTime(cellData, headerKeys.get(cellIndex))
+                        : (cellData instanceof Double)
+                            ? removeTrailingZeros((Double) cellData)
+                            : String.valueOf(cellData);
                 htmlContent.append(value);
                 htmlContent.append(Constants.CLOSE_TD_TAG);
             }
@@ -123,7 +145,6 @@ public class EntityHelperUtil {
         }
         htmlContent.append(Constants.CLOSE_TABLE_TAG);
         htmlContent.append(Constants.CLOSE_BODY_TAG);
-        return htmlContent;
     }
 
     private static StringBuilder addTableHeader(StringBuilder htmlContent, List<String> headerKeys, int headerSize) {
@@ -208,6 +229,26 @@ public class EntityHelperUtil {
             return message;
         }
         return message;
+    }
+
+    /**
+     * This function removes zeros from number when number contains Only zeros after decimal
+     *
+     * @param number any double value to parse
+     * @return
+     */
+    public static String removeTrailingZeros(double number) {
+        String stringValue = String.valueOf(number);
+        if (stringValue.contains(".")) {
+            String[] parts = stringValue.split("\\.");
+            String decimalPart = parts[1].replaceAll("0*$", "");
+            if (decimalPart.isEmpty()) {
+                return parts[0];
+            } else {
+                return parts[0] + "." + decimalPart;
+            }
+        }
+        return stringValue;
     }
 
 }
