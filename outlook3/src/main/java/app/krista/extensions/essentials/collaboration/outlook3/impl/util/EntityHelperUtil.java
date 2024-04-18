@@ -31,7 +31,7 @@ public class EntityHelperUtil {
         for (EntityValue entity : entityValues) {
             if (registry != null) {
                 Map<String, EntityAttributeField> attributeFields = registry.getEntityDefinition(entity).getAttributeFields();
-                prepareEntityBasedOnFields(entity, attributeFields);
+                prepareEntity(entity, attributeFields);
             }
             Map<String, Object> validEntityMapData = getValidatedData(entity.getFields());
             entityDataToMap.add(validEntityMapData);
@@ -39,7 +39,7 @@ public class EntityHelperUtil {
         return entityDataToMap;
     }
 
-    private static void prepareEntityBasedOnFields(EntityValue entity, Map<String, EntityAttributeField> attributeFields) {
+    private static void prepareEntity(EntityValue entity, Map<String, EntityAttributeField> attributeFields) {
         for (Map.Entry<String, EntityAttributeField> keyValue : attributeFields.entrySet()) {
             EntityAttributeField field = keyValue.getValue();
             if (field.getFieldType().equals("com.krista.fields.Percentage")) {

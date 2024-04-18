@@ -59,7 +59,7 @@ public class MessagingArea {
 
     @Inject
     public MessagingArea(AccountImpl account, RequestContext requestContext, AuthorizationContext authorizationContext,
-                         EventHandler eventHandler, MailHandler mailHandler,Entities registry) {
+                         EventHandler eventHandler, MailHandler mailHandler, Entities registry) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
