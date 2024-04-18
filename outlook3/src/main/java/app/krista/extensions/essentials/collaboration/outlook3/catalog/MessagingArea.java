@@ -17,6 +17,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.context.RequestContext;
+import app.krista.ksdk.entities.Entities;
 import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
 import app.krista.model.base.FreeForm;
@@ -54,15 +55,17 @@ public class MessagingArea {
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     private RequestContext requestContext;
     private AuthorizationContext authorizationContext;
+    private Entities registry;
 
     @Inject
     public MessagingArea(AccountImpl account, RequestContext requestContext, AuthorizationContext authorizationContext,
-                         EventHandler eventHandler, MailHandler mailHandler) {
+                         EventHandler eventHandler, MailHandler mailHandler, Entities registry) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
         this.eventHandler = eventHandler;
         this.mailHandler = mailHandler;
+        this.registry = registry;
     }
 
     @CatalogRequest(
@@ -349,7 +352,7 @@ public class MessagingArea {
 
             EmailBuilder builder = account.newEmail();
             builder.withText(subject);
-            String content = EntityHelperUtil.getMessageContent(message, entityList, removeEntityFieldFromTable);
+            String content = EntityHelperUtil.getMessageContent(message, entityList, removeEntityFieldFromTable,registry);
             builder.withContent(Constants.HTML, content);
             builder.withTo(toEmailAddresses(to));
             builder.withCc(toEmailAddresses(cc));

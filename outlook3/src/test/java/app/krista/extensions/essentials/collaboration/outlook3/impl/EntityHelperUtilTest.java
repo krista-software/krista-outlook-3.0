@@ -70,7 +70,7 @@ public class EntityHelperUtilTest {
         entityValues.add(entity1);
         entityValues.add(entity2);
 
-        String actualOutput = EntityHelperUtil.getMessageContent("Simple Message Body", entityValues, null);
+        String actualOutput = EntityHelperUtil.getMessageContent("Simple Message Body", entityValues, null,null);
         String expectedFormat = "<html><head><style>table {width: 100%; border-collapse: collapse;} th, td {border: 1px solid #dddddd; text-align: left; padding: 8px;}</style></head><body><div><br/>Simple Message Body</div><br/><table><tr><th>Numb</th><th>isStudent</th><th>Name</th></tr><tr><td>0</td><td>No</td><td>Aman</td></tr><tr><td>123</td><td>Yes</td><td>Naman</td></tr></table><br/></body></html>";
         System.out.println(" actualOutput "+actualOutput);
         System.out.println(" expectedFormat "+expectedFormat);
@@ -94,10 +94,31 @@ public class EntityHelperUtilTest {
         entityValues.add(entity1);
         entityValues.add(entity2);
 
-        String actualOutput = EntityHelperUtil.getMessageContent("Simple Message Body", entityValues, null);
+        String actualOutput = EntityHelperUtil.getMessageContent("Simple Message Body", entityValues, null,null);
         String expectedFormat = "<html><head><style>table {width: 100%; border-collapse: collapse;} th, td {border: 1px solid #dddddd; text-align: left; padding: 8px;}</style></head><body><div><br/>Simple Message Body</div><br/><table><tr><th>Numb</th><th>isStudent</th><th>Name</th></tr><tr><td>0</td><td>No</td><td>Aman</td></tr><tr><td>123</td><td>Yes</td><td>Naman</td></tr></table><br/></body></html>";
         System.out.println(" actualOutput "+actualOutput);
         System.out.println(" expectedFormat "+expectedFormat);
         Assert.assertEquals(expectedFormat, actualOutput);
+    }
+
+    @Test
+    public void testRemoveTrailingZerosWithDecimals() {
+        double number = 123.456000;
+        String result = EntityHelperUtil.removeTrailingZeros(number);
+        Assert.assertEquals("123.456", result);
+    }
+
+    @Test
+    public void testRemoveTrailingZerosWithoutDecimals() {
+        double number = 100.000;
+        String result = EntityHelperUtil.removeTrailingZeros(number);
+        Assert.assertEquals("100", result);
+    }
+
+    @Test
+    public void testRemoveTrailingZerosInteger() {
+        double number = 12345.0;
+        String result = EntityHelperUtil.removeTrailingZeros(number);
+        Assert.assertEquals("12345", result);
     }
 }
