@@ -1,10 +1,17 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
+import app.krista.extension.executor.ExtensionResponse;
 import app.krista.extension.impl.anno.Attribute;
 import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.Domain;
 import app.krista.extension.impl.anno.Field;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.Validator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
@@ -56,16 +63,24 @@ public class MessagingArea {
     private RequestContext requestContext;
     private AuthorizationContext authorizationContext;
     private Entities registry;
+    private final ExtensionResponseGenerator responseGenerator;
+    private final ErrorHandlingStateManager internalStateManager;
+    private final ValidationOrchestrator validationOrchestrator;
 
     @Inject
     public MessagingArea(AccountImpl account, RequestContext requestContext, AuthorizationContext authorizationContext,
-                         EventHandler eventHandler, MailHandler mailHandler, Entities registry) {
+                         EventHandler eventHandler, MailHandler mailHandler, Entities registry,
+                         ExtensionResponseGenerator responseGenerator,
+                         ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
         this.eventHandler = eventHandler;
         this.mailHandler = mailHandler;
         this.registry = registry;
+        this.responseGenerator = responseGenerator;
+        this.internalStateManager = internalStateManager;
+        this.validationOrchestrator = validationOrchestrator;
     }
 
     @CatalogRequest(
@@ -86,16 +101,27 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mail", type = "Entity(Mail Details)", required = false)
-    public MailDetails fetchMailByMessageId(
+    public ExtensionResponse fetchMailByMessageId(
             @Field(name = "Message ID", type = "Text") String messageID) {
-        LOGGER.info("fetchMailByMessageId: start {}", messageID);
 
-        MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
-        if (mailDetails != null) {
-            LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
-                    mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+
+        if (validationResults.isEmpty()) {
+            MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
+            if (mailDetails != null) {
+                LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
+                        mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+            }
+            return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    "Validation Results", validationResults));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    "confirmReenterFetchMail", Map.of("stateId", stateId));
         }
-        return mailDetails;
     }
 
     @CatalogRequest(
@@ -105,21 +131,27 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message ID", type = "Text", required = false)
-    public String moveMessage(
+    public ExtensionResponse moveMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Folder Name", type = "Text") String folderName) {
 
         LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
+                        Validator.ValidationResource.FOLDER_NAME, folderName));
 
-        Email email = account.getEmail(messageID);
-        if (email == null) {
-            return Constants.INVALID_MESSAGE_ID;
+        if (validationResults.isEmpty()) {
+            Email email = account.getEmail(messageID);
+            Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
+            return ExtensionResponseFactory.create(Map.of("Message ID", email.moveToFolder(folder)));
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    "Validation Results", validationResults));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    "confirmReenterMoveMessage", Map.of("stateId", stateId, "Folder Name", folderName));
         }
-        Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
-        if (folder == null) {
-            return Constants.INCORRECT_FOLDER_NAME;
-        }
-        return email.moveToFolder(folder);
     }
 
     @CatalogRequest(
@@ -352,7 +384,7 @@ public class MessagingArea {
 
             EmailBuilder builder = account.newEmail();
             builder.withText(subject);
-            String content = EntityHelperUtil.getMessageContent(message, entityList, removeEntityFieldFromTable,registry);
+            String content = EntityHelperUtil.getMessageContent(message, entityList, removeEntityFieldFromTable, registry);
             builder.withContent(Constants.HTML, content);
             builder.withTo(toEmailAddresses(to));
             builder.withCc(toEmailAddresses(cc));
@@ -590,9 +622,9 @@ public class MessagingArea {
     public MailDetails mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
-        if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-            return fetchMailByMessageId((String) eventData.get(Constants.MESSAGE_ID));
-        }
+//        if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
+//            return fetchMailByMessageId((String) eventData.get(Constants.MESSAGE_ID));
+//        }
         return null;
     }
 
