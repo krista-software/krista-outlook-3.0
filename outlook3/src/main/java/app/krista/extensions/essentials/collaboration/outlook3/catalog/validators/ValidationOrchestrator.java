@@ -1,6 +1,9 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
 import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.EmailImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import com.microsoft.graph.models.Message;
 import org.jvnet.hk2.annotations.Service;
 
 import javax.inject.Inject;
@@ -13,9 +16,15 @@ import java.util.Map;
 public class ValidationOrchestrator {
 
     @Inject
-    public ValidationOrchestrator(AccountImpl account) {
+    public ValidationOrchestrator(Account account) {
         validators.put(Validator.ValidationResource.MESSAGE_ID, new MessageIdValidator(account));
         validators.put(Validator.ValidationResource.FOLDER_NAME, new FolderNameValidator(account));
+        validators.put(Validator.ValidationResource.LABEL, new LabelValidator(account));
+        validators.put(Validator.ValidationResource.CC, new CCEmaiIValidator());
+        validators.put(Validator.ValidationResource.TO, new TOEmaiIValidator());
+        validators.put(Validator.ValidationResource.BCC, new BCCEmaiIValidator());
+        validators.put(Validator.ValidationResource.REPLY_TO, new ReplyToEmaiIValidator());
+        validators.put(Validator.ValidationResource.CATEGORY, new CatagoryValidator(account));
     }
 
     public class ValidationResult {

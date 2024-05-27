@@ -1,8 +1,8 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp;
 
-import app.krista.extension.executor.AskAPersonAction;
-import app.krista.extension.executor.InformAPersonAction;
 import app.krista.extension.executor.RemediationAction;
+import app.krista.extension.executor.impl.AskAPersonAction;
+import app.krista.extension.executor.impl.InformAPersonAction;
 import app.krista.model.field.NamedField;
 import app.krista.model.field.NamedValuedField;
 

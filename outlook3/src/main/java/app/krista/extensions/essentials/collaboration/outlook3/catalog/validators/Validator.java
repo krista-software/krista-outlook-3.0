@@ -6,7 +6,14 @@ public interface Validator {
 
     public enum ValidationResource {
         MESSAGE_ID,
-        FOLDER_NAME
+        FOLDER_NAME,
+        CC,
+        TO,
+        BCC,
+        REPLY_TO,
+        QUERY,
+        LABEL,
+        CATEGORY
     }
 
     Boolean validate(String resourceId, Map<ValidationResource, String> context);

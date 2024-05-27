@@ -3,6 +3,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.catalog.validato
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 
 import java.util.List;
@@ -10,9 +11,9 @@ import java.util.Map;
 
 public class FolderNameValidator implements Validator {
 
-    private final AccountImpl account;
+    private final Account account;
 
-    public FolderNameValidator(AccountImpl account) {
+    public FolderNameValidator(Account account) {
         this.account = account;
     }
 

@@ -130,6 +130,9 @@ public class Constants {
     public static final String EMAIL = "email";
     public static final String UNDER_SCORE = "_";
     public static final String FAILED_TO_SAVE_ATTRIBUTES = "Failed to save attributes";
+    public static final String IS_SUCCESSFUL = "Is Successful";
+    public static final String IS_FORWARDED = "Is Forwarded";
+
 
     private Constants() {
     }

@@ -8,6 +8,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.service.Attachmen
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailAddress;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
+import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.*;
 import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.requests.AttachmentCollectionPage;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.ws.rs.InternalServerErrorException;
 import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -175,14 +177,22 @@ public class EmailImpl implements Email {
 
     @Override
     public Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, List<EmailAddress> toRecipients, List<EmailAddress> ccRecipients, List<EmailAddress> bccRecipients, List<EmailAddress> replyTo, String bodyType) {
-        MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
-        if (messageRequestBuilder == null) {
-            throw new IllegalStateException(Constants.REPLY_TO_ALL_REQUEST_FAILED);
-        }
+        try {
+            MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
+            if (messageRequestBuilder == null) {
+                throw new IllegalStateException(Constants.REPLY_TO_ALL_REQUEST_FAILED);
+            }
 
-        Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
-        messageRequestBuilder.replyAll(MessageReplyAllParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
-        return new EmailImpl(provider, replyMessage);
+            Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
+            messageRequestBuilder.replyAll(MessageReplyAllParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
+            return new EmailImpl(provider, replyMessage);
+        } catch (GraphServiceException graphServiceException) {
+            String errorMessage = graphServiceException.getMessage();
+            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
+                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS, graphServiceException.getCause());
+            }
+            throw new InternalServerErrorException(Constants.REPLY_TO_ALL_REQUEST_FAILED, graphServiceException.getCause());
+        }
     }
 
     @Override
@@ -393,7 +403,7 @@ public class EmailImpl implements Email {
     }
 
     @NotNull
-    private List<String> getUniqueCategories() {
+    public List<String> getUniqueCategories() {
         List<String> existingCategories = message.categories;
         if (existingCategories == null) {
             existingCategories = new ArrayList<>();
