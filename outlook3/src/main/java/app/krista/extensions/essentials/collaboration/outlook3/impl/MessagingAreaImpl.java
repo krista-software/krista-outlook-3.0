@@ -53,10 +53,6 @@ public class MessagingAreaImpl {
 
     public ExtensionResponse replyToAllWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType) {
         try{
-//            if (attachments != null) {
-//                LOGGER.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
-//            }
-
             Email email = account.getEmail(messageId);
             if (email == null) {
                 LOGGER.error("Invalid message id");
@@ -77,10 +73,6 @@ public class MessagingAreaImpl {
 
     public ExtensionResponse replyToAll(List<File> attachments, String messageId, String message, String bodyType) {
         try {
-//            if (attachments != null) {
-//                LOGGER.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
-//            }
-
             Email email = account.getEmail(messageId);
             if (email == null) {
                 LOGGER.debug(Constants.INVALID_MESSAGE_ID);
@@ -223,9 +215,6 @@ public class MessagingAreaImpl {
 
     public ExtensionResponse replyToMailWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType) {
         try {
-//            if (attachments != null) {
-//                LOGGER.info("replyToMailWithCCAndBCC attachments: {}", ReflectionToStringBuilder.toString(attachments));
-//            }
             Email email = account.getEmail(messageId);
             if (email == null) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MESSAGE_ID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
@@ -252,10 +241,6 @@ public class MessagingAreaImpl {
     }
 
     public ExtensionResponse replyToMail(List<File> attachments, String messageId, String message, String bodyType) {
-//        if (attachments != null) {
-//            LOGGER.info("replyToMail attachments: {}", ReflectionToStringBuilder.toString(attachments));
-//        }
-
         try {
             Email email = account.getEmail(messageId);
             if (email == null) {
