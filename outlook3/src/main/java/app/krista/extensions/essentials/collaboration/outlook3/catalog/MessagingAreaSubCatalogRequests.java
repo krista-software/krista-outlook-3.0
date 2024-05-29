@@ -112,7 +112,7 @@ public class MessagingAreaSubCatalogRequests {
 
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE,
-            description = "Checks if user wants to re enter message Id and if yes, sends prompt to do so",
+            description = "Checks if user wants to re enter message Id and folder name if yes, sends prompt to do so",
             type = CatalogRequest.Type.QUERY_SYSTEM
     )
     @SuppressWarnings("unchecked")
