@@ -10,6 +10,8 @@ import java.util.List;
 
 public class RemediationActionFactory {
 
+    private RemediationActionFactory(){}
+
     public static RemediationAction createAskAction(String message,
                                            List<NamedField> fields) {
         return AskAPersonAction.create(message, RemediationAction.RecipientType.ACTIVE_USER, fields);

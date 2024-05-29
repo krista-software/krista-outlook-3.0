@@ -138,7 +138,7 @@ public class MessagingArea {
                     SubCatalogConstants.VALIDATION_RESULTS, validationResults));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.FOLDER_NAME, folderName));
+                    SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
         }
     }
 
@@ -265,8 +265,8 @@ public class MessagingArea {
             List<MailDetails> response = emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
             return ExtensionResponseFactory.create(Map.of("Mails", response));
         } catch (Exception error) {
-            return ExtensionResponseFactory.create("Invalid Query,Please provide valid Query", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("stepMessage", List.of())),
+            return ExtensionResponseFactory.create("Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
                     null, null);
         }
     }
@@ -534,11 +534,19 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.WAIT_FOR_EVENT)
     @Field.Desc(name = "Mail Details", type = "Entity(Mail Details)", required = false)
-    public ExtensionResponse mailReceivedAlert(
+    public MailDetails mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
+        LOGGER.info("Allow Alert Mail Triggered Stage 1" );
         if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-            return fetchMailByMessageId((String) eventData.get(Constants.MESSAGE_ID));
+            LOGGER.info("Allow Alert Mail Triggered Stage 2" );
+            MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
+            LOGGER.info("Allow Alert Mail Triggered Stage 3" );
+            if (mailDetails != null) {
+                LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
+                        mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+            }
+            return mailDetails;
         }
         return null;
     }

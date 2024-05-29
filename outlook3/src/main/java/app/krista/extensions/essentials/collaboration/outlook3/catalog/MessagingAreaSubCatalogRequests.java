@@ -130,7 +130,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchMail",
+                validationResults, "handleReenterMoveMessage",
                 Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, map.get(OutlookResources.MESSAGE_ID), OutlookResources.FOLDER_NAME, map.get(OutlookResources.FOLDER_NAME)));
     }
 
@@ -149,14 +149,14 @@ public class MessagingAreaSubCatalogRequests {
             Email email = account.getEmail(messageID);
             if (email == null) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MESSAGE_ID + messageID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                        List.of(RemediationActionFactory.createInformActionALLParticipants("stepMessage", List.of())),
-                        null, null);
+                        List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MESSAGE_ID + messageID, List.of())),
+                        null, Map.of());
             }
             Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
             if (folder == null) {
                 return ExtensionResponseFactory.create(Constants.INCORRECT_FOLDER_NAME + folderName, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                        List.of(RemediationActionFactory.createInformActionALLParticipants("stepMessage", List.of())),
-                        null, null);
+                        List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INCORRECT_FOLDER_NAME + folderName, List.of())),
+                        null, Map.of());
             }
             return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
         } catch (Exception cause) {

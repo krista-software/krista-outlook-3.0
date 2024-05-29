@@ -1,9 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
-import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.EmailImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
-import com.microsoft.graph.models.Message;
 import org.jvnet.hk2.annotations.Service;
 
 import javax.inject.Inject;
@@ -58,12 +55,13 @@ public class ValidationOrchestrator {
     }
 
     private final Map<Validator.ValidationResource, Validator> validators = new HashMap<>();
+
     public List<ValidationResult> validate(Map<Validator.ValidationResource, String> resources) {
         List<ValidationResult> results = new ArrayList<>();
-        for(Map.Entry<Validator.ValidationResource, String> entry : resources.entrySet()) {
+        for (Map.Entry<Validator.ValidationResource, String> entry : resources.entrySet()) {
             Validator validator = validators.get(entry.getKey());
             assert validator != null;
-            if(!validator.validate(entry.getValue(), resources)) {
+            if (!validator.validate(entry.getValue(), resources)) {
                 results.add(new ValidationResult(validator.getConfirmationStepMessage(entry.getValue(), resources),
                         validator.getFetchFieldName(), validator.getFetchStepMessage(),
                         validator.getErrMessage(entry.getValue())));
