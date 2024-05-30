@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers;
 
 import app.krista.extension.executor.ExtensionResponse;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.MessagingAreaSubCatalogRequests;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.NamedFieldFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.RemediationActionFactory;
@@ -22,7 +23,7 @@ public class ExtensionResponseGenerator {
             Map<String, Object> state) {
         String stepMessage = "";
         String errMessage = "";
-        List<NamedField> fields = List.of(NamedFieldFactory.createSwitchField("Reenter"));
+        List<NamedField> fields = List.of(NamedFieldFactory.createSwitchField(MessagingAreaSubCatalogRequests.REENTER));
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
             stepMessage += validationResult.getConfirmStepMessage() + "\n";
             errMessage += validationResult.getErrMessage() + " ";
