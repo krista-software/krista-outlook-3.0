@@ -487,14 +487,14 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.WAIT_FOR_EVENT)
     @Field.Desc(name = "Mail Details", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> getResult(
+    public ExtensionResponse getResult(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData,
             @Field(name = "Task ID", type = "Text") String taskID) {
 
         LOGGER.info("getResult: eventName: {}; eventData: {}; taskID: {}", eventName, eventData, taskID);
         if (eventName.equals(taskID)) {
-            return (List<MailDetails>) eventData.get(Constants.DATA);
+            return ExtensionResponseFactory.create(Map.of("Mail Details", (List<MailDetails>) eventData.get(Constants.DATA)));
         }
         LOGGER.error("Invalid task ID: {}", taskID);
         throw new IllegalStateException(Constants.INVALID_TASK_ID);
