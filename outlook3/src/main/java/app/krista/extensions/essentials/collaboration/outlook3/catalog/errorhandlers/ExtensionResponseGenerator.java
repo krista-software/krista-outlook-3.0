@@ -61,7 +61,6 @@ public class ExtensionResponseGenerator {
     ) {
         String stepMessage = "Not taking updated values for ";
         String errMessage = "";
-        List<NamedField> fields = new ArrayList<>();
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
             stepMessage += validationResult.getFetchFieldName() + " ";
             errMessage += validationResult.getErrMessage() + " ";
