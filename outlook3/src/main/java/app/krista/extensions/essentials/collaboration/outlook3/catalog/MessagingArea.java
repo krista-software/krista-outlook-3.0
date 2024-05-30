@@ -78,8 +78,8 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Labels", type = "[ Text ]", required = false)
-    public List<String> fetchAllLabels() {
-        return account.getFolderNames();
+    public ExtensionResponse fetchAllLabels() {
+        return ExtensionResponseFactory.create(Map.of("Labels", account.getFolderNames()));
     }
 
     @CatalogRequest(
@@ -213,14 +213,14 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Sent Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> fetchSent(
+    public ExtensionResponse fetchSent(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
 
         LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
 
         List<Email> emails = account.getSentFolder().getEmails(pageNumber, pageSize);
-        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+        return ExtensionResponseFactory.create(Map.of("Sent Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
     }
 
     @CatalogRequest(
@@ -346,12 +346,12 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Inbox Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> fetchInbox(
+    public ExtensionResponse fetchInbox(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
         LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
-        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+        return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
     }
 
     @CatalogRequest(
@@ -534,7 +534,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.WAIT_FOR_EVENT)
     @Field.Desc(name = "Mail Details", type = "Entity(Mail Details)", required = false)
-    public MailDetails mailReceivedAlert(
+    public ExtensionResponse mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
         LOGGER.info("Allow Alert Mail Triggered Stage 1" );
@@ -546,7 +546,8 @@ public class MessagingArea {
                 LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
                         mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
             }
-            return mailDetails;
+            assert mailDetails != null;
+            return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
         }
         return null;
     }
@@ -558,14 +559,14 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
-    public MailDetails fetchLatestMail() {
+    public ExtensionResponse fetchLatestMail() {
         LOGGER.info("fetchLatestMail: start");
-        List<MailDetails> mailDetailsList = fetchInbox(1.0, 1.0);
+        List<MailDetails> mailDetailsList = (List<MailDetails>)fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
         MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
         if (mailDetails != null && mailDetails.sendDateAndTime != null) {
             long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
             if (change <= 120_000) {
-                return mailDetails;
+                return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
             }
         }
         return null;
@@ -578,7 +579,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Category Names", type = "[ Text ]", required = false)
-    public List<String> listCategories() {
+    public ExtensionResponse listCategories() {
         LOGGER.info("Fetching Categories");
         List<String> categoryNames;
         try {
@@ -586,9 +587,11 @@ public class MessagingArea {
             LOGGER.info("listCategories(): {}", categoryNames);
         } catch (Exception cause) {
             LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
-            throw new RuntimeException(cause);
+            return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to fetch categories", List.of())),
+                    null, Map.of());
         }
-        return categoryNames;
+        return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
     }
 
     @CatalogRequest(
