@@ -33,12 +33,12 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 public class MessagingAreaImpl {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaImpl.class);
-    public static final String SENDING_MESSAGE = "Sending message {}";
-    public static final String MAILS = "Mails";
-    public static final String RESPONSE_MESSAGE = "Message";
-    public static final String STEP_MESSAGE = "stepMessage";
-    public static final String CATEGORY_CANNOT_BE_EMPTY = "Category cannot be empty.";
-    public static final String MESSAGE_ID_CANNOT_BE_EMPTY = "Message ID cannot be empty.";
+    private static final String SENDING_MESSAGE = "Sending message {}";
+    private static final String MAILS = "Mails";
+    private static final String RESPONSE_MESSAGE = "Message";
+    private static final String CATEGORY_CANNOT_BE_EMPTY = "Category cannot be empty.";
+    private static final String MESSAGE_ID_CANNOT_BE_EMPTY = "Message ID cannot be empty.";
+    private static final String INVALID_INPUT = "Invalid Input";
     private final Account account;
     private final MailHandler mailHandler;
     private Entities registry;
@@ -65,8 +65,8 @@ public class MessagingAreaImpl {
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         }catch (Exception cause){
-            return ExtensionResponseFactory.create("Invalid Input", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid Input", List.of())),
+            return ExtensionResponseFactory.create(INVALID_INPUT, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(INVALID_INPUT, List.of())),
                     null, Map.of());
         }
     }
@@ -189,9 +189,9 @@ public class MessagingAreaImpl {
         try {
             Email email = account.getEmail(messageID);
             if (email == null) {
-                return ExtensionResponseFactory.create("Unable to mark message, no email found with messageID {}" + messageID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                        List.of(RemediationActionFactory.createInformActionALLParticipants(STEP_MESSAGE, List.of())),
-                        null, null);
+                return ExtensionResponseFactory.create("Unable to mark message, no email found with messageID : " + messageID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to mark message, no email found with messageID : " + messageID, List.of())),
+                        null, Map.of());
             }
             if (label.equalsIgnoreCase(Constants.READ)) {
                 email.markAsRead();
