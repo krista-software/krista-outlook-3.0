@@ -1,13 +1,13 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp;
 
 import app.krista.model.field.NamedField;
-import app.krista.model.field.NamedValuedField;
 
 import java.util.Map;
 
 public class NamedFieldFactory {
 
-    private NamedFieldFactory(){}
+    private NamedFieldFactory() {
+    }
 
     public static NamedField createTextField(String fieldName) {
         return new NamedField(fieldName, FieldTypes.TEXT_FIELD, Map.of(), Map.of());
