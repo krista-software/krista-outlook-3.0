@@ -38,8 +38,6 @@ public class CatagoryValidator implements Validator {
             throw new RuntimeException(cause);
 
         }
-//        List<String> existingCategories = message.categories;
-//        return !existingCategories.isEmpty() && existingCategories.contains(category);
     }
 
     @Override
