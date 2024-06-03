@@ -1,10 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
 import app.krista.extension.executor.ExtensionResponse;
-import app.krista.extension.impl.anno.Attribute;
-import app.krista.extension.impl.anno.CatalogRequest;
-import app.krista.extension.impl.anno.Domain;
-import app.krista.extension.impl.anno.Field;
+import app.krista.extension.impl.anno.*;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
@@ -28,10 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -104,8 +98,8 @@ public class MessagingArea {
             return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults), Map.class));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL, Map.of(OutlookResources.STATE_ID, stateId));
@@ -134,8 +128,8 @@ public class MessagingArea {
             return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
@@ -170,7 +164,7 @@ public class MessagingArea {
             return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
@@ -198,8 +192,8 @@ public class MessagingArea {
             return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageId,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageId,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL, StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
@@ -243,7 +237,7 @@ public class MessagingArea {
             return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL, StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
         }
@@ -298,7 +292,7 @@ public class MessagingArea {
             return messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL, StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
@@ -332,7 +326,8 @@ public class MessagingArea {
             return messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
+            internalStateManager.putMetaInfo(stateId,Map.of(OutlookResources.ENTITY_LIST, entityList)) ;
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE, StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
@@ -370,8 +365,8 @@ public class MessagingArea {
             return messagingAreaImpl.markMessage(messageID, label);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
@@ -407,7 +402,7 @@ public class MessagingArea {
             return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
@@ -434,8 +429,8 @@ public class MessagingArea {
             return messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL, StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
@@ -520,7 +515,7 @@ public class MessagingArea {
             return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL, StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
@@ -537,11 +532,11 @@ public class MessagingArea {
     public ExtensionResponse mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
-        LOGGER.info("Allow Alert Mail Triggered Stage 1" );
+        LOGGER.info("Allow Alert Mail Triggered Stage 1");
         if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-            LOGGER.info("Allow Alert Mail Triggered Stage 2" );
+            LOGGER.info("Allow Alert Mail Triggered Stage 2");
             MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
-            LOGGER.info("Allow Alert Mail Triggered Stage 3" );
+            LOGGER.info("Allow Alert Mail Triggered Stage 3");
             if (mailDetails != null) {
                 LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
                         mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
@@ -561,7 +556,7 @@ public class MessagingArea {
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
     public ExtensionResponse fetchLatestMail() {
         LOGGER.info("fetchLatestMail: start");
-        List<MailDetails> mailDetailsList = (List<MailDetails>)fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
+        List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
         MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
         if (mailDetails != null && mailDetails.sendDateAndTime != null) {
             long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
@@ -613,8 +608,8 @@ public class MessagingArea {
             return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE, StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
@@ -638,8 +633,8 @@ public class MessagingArea {
             return messagingAreaImpl.removeCategoryFromMessage(messageID, category);
         } else {
             String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults));
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.CATEGORY, category));

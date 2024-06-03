@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 @Service
 public class MessagingAreaSubCatalogRequests {
@@ -73,9 +74,9 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text}", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -85,6 +86,16 @@ public class MessagingAreaSubCatalogRequests {
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                 validationResults, "handleReenterFetchMail",
                 Map.of(OutlookResources.STATE_ID, stateId));
+    }
+
+    @NotNull
+    private static List<ValidationOrchestrator.ValidationResult> getValidationResults(Map<String, Object> state) {
+        List<ValidationOrchestrator.ValidationResult> validationResults = new ArrayList<>();
+        List<?> results = (List<?>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        for (Object item : results) {
+            validationResults.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), ValidationOrchestrator.ValidationResult.class));
+        }
+        return validationResults;
     }
 
     @SubCatalogRequest(
@@ -120,9 +131,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Folder Name: Text}", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -176,9 +186,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -235,9 +244,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -283,9 +291,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -330,9 +337,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -381,9 +387,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -407,11 +412,12 @@ public class MessagingAreaSubCatalogRequests {
         LOGGER.info("SubCatalogRequest handleReenterReplayToALL start: {}", map);
         try {
             String stateId = (String) map.get(OutlookResources.STATE_ID);
-            Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-            List<File> attachments = (List<File>) state.get(OutlookResources.ATTACHMENTS);
+            Map<String, Object> state = internalStateManager.get(stateId);
+            Map<String, Object> metaInfo = (Map<String, Object>) internalStateManager.getMetaInfo(stateId);
+            List<File> attachments = getFileList(state);
             String subject = (String) map.get(OutlookResources.SUBJECT);
-            List<String> removeEntityFieldFromTable = (List<String>) state.get(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE);
-            List<EntityValue> entityList = (List<EntityValue>) state.get(OutlookResources.ENTITY_LIST);
+            List<String> removeEntityFieldFromTable = getEntityFieldList(state);
+            List<EntityValue> entityList = (List<EntityValue>) metaInfo.get(OutlookResources.ENTITY_LIST);
             String message = (String) map.get(OutlookResources.MESSAGE);
             String cc = (String) map.get(OutlookResources.CC);
             String to = (String) map.get(OutlookResources.TO);
@@ -425,6 +431,29 @@ public class MessagingAreaSubCatalogRequests {
         }
     }
 
+    @NotNull
+    private static List<File> getFileList(Map<String, Object> state) {
+        List<File> fileList = new ArrayList<>();
+        if (state.containsKey(OutlookResources.ATTACHMENTS)) {
+            List<?> results = (List<?>) state.get(OutlookResources.ATTACHMENTS);
+            for (Object item : results) {
+                fileList.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), File.class));
+            }
+        }
+        return fileList;
+    }
+
+    @NotNull
+    private static List<String> getEntityFieldList(Map<String, Object> state) {
+        List<String> removeEntityFieldFromTable = new ArrayList<>();
+        if (state.containsKey(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE)) {
+            List<?> results = (List<?>) state.get(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE);
+            for (Object item : results) {
+                removeEntityFieldFromTable.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), String.class));
+            }
+        }
+        return removeEntityFieldFromTable;
+    }
 
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE,
@@ -436,9 +465,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Label: PickOne(Read|Unread) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -480,9 +508,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -531,9 +558,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -578,9 +604,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Label: Text, Page Number: Number, Page Size: Number }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -624,9 +649,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Category: Text, Create Category: Boolean }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
@@ -669,9 +693,8 @@ public class MessagingAreaSubCatalogRequests {
             type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Category: Text }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
-        Map<String, Object> state = (Map<String, Object>) internalStateManager.get(stateId);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                (List<ValidationOrchestrator.ValidationResult>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
         if (Boolean.FALSE.equals(reenter)) {
             return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     validationResults, null,
