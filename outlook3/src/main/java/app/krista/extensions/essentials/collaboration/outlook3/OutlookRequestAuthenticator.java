@@ -9,6 +9,7 @@ import app.krista.extension.request.protos.http.HttpRequest;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.model.field.NamedField;
 import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
@@ -28,14 +29,17 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
 
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V3 = "/outlook/v3/oauth/callback";
     public static final String EXTENSION_OAUTH_VERIFICATION_PATH_V2 = "/outlook/callback";
+    public static final String OUTLOOK_MAIL_NOTIFICATION = "/outlook/mailNotification";
+    private final AuthorizationContext authorizationContext;
     private final OutlookAttributeStore attributeStore;
     private final String invokerId;
     private static final Logger LOGGER = LoggerFactory.getLogger(OutlookRequestAuthenticator.class);
 
     @Inject
-    public OutlookRequestAuthenticator(OutlookAttributeStore attributeStore, String invokerId) {
+    public OutlookRequestAuthenticator(OutlookAttributeStore attributeStore, String invokerId, AuthorizationContext authorizationContext) {
         this.attributeStore = attributeStore;
         this.invokerId = invokerId;
+        this.authorizationContext = authorizationContext;
     }
 
     @Override
@@ -59,6 +63,8 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
                 String state = String.valueOf(queryParameters.get(STATE).get(0));
                 String[] parts = state.split(Constants.HASH);
                 return parts[0];
+            } else if (OUTLOOK_MAIL_NOTIFICATION.equals(httpRequest.getUri().getPath())) {
+                return authorizationContext.getAuthorizedAccount().getAccountId();
             } else {
                 return null;
             }

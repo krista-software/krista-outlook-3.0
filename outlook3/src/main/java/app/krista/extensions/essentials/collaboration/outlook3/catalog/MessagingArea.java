@@ -1,44 +1,34 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
-import app.krista.extension.impl.anno.Attribute;
-import app.krista.extension.impl.anno.CatalogRequest;
-import app.krista.extension.impl.anno.Domain;
-import app.krista.extension.impl.anno.Field;
+import app.krista.extension.executor.ExtensionResponse;
+import app.krista.extension.impl.anno.*;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.*;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.Validator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
-import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.context.RequestContext;
-import app.krista.ksdk.entities.Entities;
 import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
 import app.krista.model.base.FreeForm;
 import com.kristasoft.common.holders.ThreadLocalProxy;
-import com.microsoft.graph.http.GraphServiceException;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import javax.ws.rs.InternalServerErrorException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-
-import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil.toEmailAddresses;
 
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",
         name = "Collaboration",
@@ -48,24 +38,31 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 public class MessagingArea {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingArea.class);
-    public static final String SENDING_MESSAGE = "Sending message {}";
     private final Account account;
     private final EventHandler eventHandler;
     private final MailHandler mailHandler;
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     private RequestContext requestContext;
     private AuthorizationContext authorizationContext;
-    private Entities registry;
+    private final MessagingAreaImpl messagingAreaImpl;
+    private final ExtensionResponseGenerator responseGenerator;
+    private final ErrorHandlingStateManager internalStateManager;
+    private final ValidationOrchestrator validationOrchestrator;
 
     @Inject
-    public MessagingArea(AccountImpl account, RequestContext requestContext, AuthorizationContext authorizationContext,
-                         EventHandler eventHandler, MailHandler mailHandler, Entities registry) {
+    public MessagingArea(Account account, RequestContext requestContext, AuthorizationContext authorizationContext,
+                         EventHandler eventHandler, MailHandler mailHandler,
+                         MessagingAreaImpl messagingAreaImpl, ExtensionResponseGenerator responseGenerator,
+                         ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
         this.eventHandler = eventHandler;
         this.mailHandler = mailHandler;
-        this.registry = registry;
+        this.messagingAreaImpl = messagingAreaImpl;
+        this.responseGenerator = responseGenerator;
+        this.internalStateManager = internalStateManager;
+        this.validationOrchestrator = validationOrchestrator;
     }
 
     @CatalogRequest(
@@ -75,8 +72,8 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Labels", type = "[ Text ]", required = false)
-    public List<String> fetchAllLabels() {
-        return account.getFolderNames();
+    public ExtensionResponse fetchAllLabels() {
+        return ExtensionResponseFactory.create(Map.of("Labels", account.getFolderNames()));
     }
 
     @CatalogRequest(
@@ -86,16 +83,27 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mail", type = "Entity(Mail Details)", required = false)
-    public MailDetails fetchMailByMessageId(
+    public ExtensionResponse fetchMailByMessageId(
             @Field(name = "Message ID", type = "Text") String messageID) {
-        LOGGER.info("fetchMailByMessageId: start {}", messageID);
 
-        MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
-        if (mailDetails != null) {
-            LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
-                    mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+
+        if (validationResults.isEmpty()) {
+            MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
+            if (mailDetails != null) {
+                LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
+                        mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+            }
+            return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults), Map.class));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL, Map.of(OutlookResources.STATE_ID, stateId));
         }
-        return mailDetails;
     }
 
     @CatalogRequest(
@@ -105,21 +113,27 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message ID", type = "Text", required = false)
-    public String moveMessage(
+    public ExtensionResponse moveMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Folder Name", type = "Text") String folderName) {
 
         LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
+                        Validator.ValidationResource.FOLDER_NAME, folderName));
 
-        Email email = account.getEmail(messageID);
-        if (email == null) {
-            return Constants.INVALID_MESSAGE_ID;
+        if (validationResults.isEmpty()) {
+            Email email = account.getEmail(messageID);
+            Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
+            return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
         }
-        Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
-        if (folder == null) {
-            return Constants.INCORRECT_FOLDER_NAME;
-        }
-        return email.moveToFolder(folder);
     }
 
     @CatalogRequest(
@@ -129,7 +143,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    public Boolean replyToAllWithCCAndBCC(
+    public ExtensionResponse replyToAllWithCCAndBCC(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "To", type = "Text", required = false) String to,
             @Field(name = "Cc", type = "Text", required = false) String cc,
@@ -140,38 +154,21 @@ public class MessagingArea {
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
         LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
-        try {
-            if (attachments != null) {
-                LOGGER.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
-            }
-
-            Email email = account.getEmail(messageId);
-            if (email == null) {
-                LOGGER.error("Invalid message id");
-                return false;
-            }
-            bodyType = getBodyType(bodyType);
-            message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
-            email.replyToAll(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
-                    toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
-            return true;
-        } catch (GraphServiceException graphServiceException) {
-            String errorMessage = graphServiceException.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS, graphServiceException.getCause());
-            }
-            throw new InternalServerErrorException(Constants.REPLY_TO_ALL_REQUEST_FAILED, graphServiceException.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
+                        Validator.ValidationResource.TO, to
+                        , Validator.ValidationResource.CC, cc
+                        , Validator.ValidationResource.BCC, bcc
+                        , Validator.ValidationResource.REPLY_TO, replyTo));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
         }
-    }
-
-    private static String getFormattedMessage(String message, String bodyType) {
-        return EntityHelperUtil.formattedMessage(message, bodyType);
-    }
-
-    @NotNull
-    private static String getBodyType(String bodyType) {
-        return (bodyType == null) ? Constants.HTML : bodyType;
     }
 
     @CatalogRequest(
@@ -181,35 +178,25 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    public Boolean replyToAll(
+    public ExtensionResponse replyToAll(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
-        try {
-            LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
-            if (attachments != null) {
-                LOGGER.info("replyToAll attachments: {}", ReflectionToStringBuilder.toString(attachments));
-            }
+        LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
 
-            Email email = account.getEmail(messageId);
-            if (email == null) {
-                LOGGER.debug(Constants.INVALID_MESSAGE_ID);
-                return false;
-            }
-            bodyType = getBodyType(bodyType);
-            message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
-            email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
-            return true;
-        } catch (GraphServiceException graphServiceException) {
-            String errorMessage = graphServiceException.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS,
-                        graphServiceException.getCause());
-            }
-            throw new InternalServerErrorException(Constants.REPLY_TO_ALL_REQUEST_FAILED, graphServiceException.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageId,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL, StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
         }
     }
 
@@ -220,14 +207,14 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Sent Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> fetchSent(
+    public ExtensionResponse fetchSent(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
 
         LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
 
         List<Email> emails = account.getSentFolder().getEmails(pageNumber, pageSize);
-        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+        return ExtensionResponseFactory.create(Map.of("Sent Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
     }
 
     @CatalogRequest(
@@ -237,34 +224,22 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Is Forwarded", type = "Switch", required = false)
-    public Boolean forwardMail(
+    public ExtensionResponse forwardMail(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "To", type = "Text") String to,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
-        try {
-            LOGGER.info("Forwarding mail with messageId: {}; to {}; with message: {}", messageId, to, message);
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId, Validator.ValidationResource.TO, to));
 
-            Email email = account.getEmail(messageId);
-            LOGGER.info("email: {}", email);
-
-            if (email == null) {
-                LOGGER.error(Constants.INVALID_MESSAGE_ID + ": {}", messageId);
-                return false;
-            }
-            bodyType = getBodyType(bodyType);
-            message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
-            email.forward(message, toEmailAddresses(to), bodyType);
-            return true;
-        } catch (GraphServiceException graphServiceException) {
-            String errorMessage = graphServiceException.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS,
-                        graphServiceException.getCause());
-            }
-            throw new InternalServerErrorException(Constants.FORWARD_MAIL_REQUEST_FAILED, graphServiceException.getCause());
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL, StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
         }
     }
 
@@ -275,13 +250,19 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> fetchMailDetailsByQuery(
+    public ExtensionResponse fetchMailDetailsByQuery(
             @Field(name = "Query", type = "Text") String query) {
 
         LOGGER.info("fetchMailDetailsByQuery: {}", query);
-
-        List<Email> emails = account.searchEmails(query);
-        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+        try {
+            List<Email> emails = account.searchEmails(query);
+            List<MailDetails> response = emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+            return ExtensionResponseFactory.create(Map.of("Mails", response));
+        } catch (Exception error) {
+            return ExtensionResponseFactory.create("Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
+                    null, null);
+        }
     }
 
     @CatalogRequest(
@@ -291,7 +272,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false)
-    public String sendMail(
+    public ExtensionResponse sendMail(
             @Field(name = "Subject", type = "Text") String subject,
             @Field(name = "Message", type = "RichText") String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
@@ -300,33 +281,21 @@ public class MessagingArea {
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
-        try {
-            LOGGER.info("Sending email to {}; with body: {}", to, message);
 
-            EmailBuilder builder = account.newEmail();
-            builder.withText(subject);
-            bodyType = getBodyType(bodyType);
-            message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
-            builder.withContent(bodyType, message);
-            builder.withTo(toEmailAddresses(to));
-            builder.withCc(toEmailAddresses(cc));
-            builder.withBcc(toEmailAddresses(bcc));
-            builder.withReplyTo(toEmailAddresses(replyTo));
-            if (attachments != null && !attachments.isEmpty()) {
-                builder.withAttachment(mailHandler.toAttachment(attachments));
-            }
-
-            LOGGER.info("Sending email: " + ReflectionToStringBuilder.toString(builder));
-
-            builder.send();
-            return Constants.SUCCESS;
-        } catch (GraphServiceException graphServiceException) {
-            String errorMessage = graphServiceException.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS, graphServiceException.getCause());
-            }
-            throw new InternalServerErrorException(Constants.SEND_MAIL_REQUEST_FAILED, graphServiceException.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(
+                        Validator.ValidationResource.TO, to
+                        , Validator.ValidationResource.CC, cc
+                        , Validator.ValidationResource.BCC, bcc
+                        , Validator.ValidationResource.REPLY_TO, replyTo));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL, StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
         }
     }
 
@@ -337,7 +306,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Text(name = "Message", required = false, attributes = {@Attribute(name = "visualWidth", value = "M")})
-    public String sendMailWithTable(
+    public ExtensionResponse sendMailWithTable(
             @Field.Text(name = "Subject", attributes = {@Attribute(name = "visualWidth", value = "S")}) String subject,
             @Field(name = "Message", type = "RichText", attributes = {@Attribute(name = "visualWidth", value = "L")}) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) List<File> attachments,
@@ -347,28 +316,21 @@ public class MessagingArea {
             @Field.Text(name = "Reply To", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String replyTo,
             @Field.Desc(name = "Entity List", type = "[ Entity ]") List<EntityValue> entityList,
             @Field.Desc(name = "Remove Entity Field From Table", type = "[ Text ]", required = false) List<String> removeEntityFieldFromTable) {
-        try {
-            LOGGER.info("Sending email to {}; with body: {}", to, message);
-
-            EmailBuilder builder = account.newEmail();
-            builder.withText(subject);
-            String content = EntityHelperUtil.getMessageContent(message, entityList, removeEntityFieldFromTable,registry);
-            builder.withContent(Constants.HTML, content);
-            builder.withTo(toEmailAddresses(to));
-            builder.withCc(toEmailAddresses(cc));
-            builder.withBcc(toEmailAddresses(bcc));
-            builder.withReplyTo(toEmailAddresses(replyTo));
-            if (attachments != null && !attachments.isEmpty()) {
-                builder.withAttachment(mailHandler.toAttachment(attachments));
-            }
-            builder.send();
-            return Constants.SUCCESS;
-        } catch (GraphServiceException cause) {
-            String errorMessage = cause.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS, cause.getCause());
-            }
-            throw new InternalServerErrorException(Constants.SEND_MAIL_REQUEST_FAILED, cause.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(
+                        Validator.ValidationResource.TO, to
+                        , Validator.ValidationResource.CC, cc
+                        , Validator.ValidationResource.BCC, bcc
+                        , Validator.ValidationResource.REPLY_TO, replyTo));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
+            internalStateManager.putMetaInfo(stateId,Map.of(OutlookResources.ENTITY_LIST, entityList)) ;
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE, StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
         }
     }
 
@@ -379,12 +341,12 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Inbox Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> fetchInbox(
+    public ExtensionResponse fetchInbox(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
         LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
-        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+        return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
     }
 
     @CatalogRequest(
@@ -394,27 +356,22 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Response", type = "Text", required = false)
-    public String markMessage(
+    public ExtensionResponse markMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label) {
-
-        try {
-            Email email = account.getEmail(messageID);
-            if (email == null) {
-                throw new RuntimeException("Unable to mark message, no email found with messageID {}" + messageID);
-            }
-            if (label.equalsIgnoreCase(Constants.READ)) {
-                email.markAsRead();
-                LOGGER.info("Marked message {} for messageID {}", label, messageID);
-            } else if (label.equalsIgnoreCase(Constants.UNREAD)) {
-                email.markAsUnread();
-                LOGGER.info("Marked message {} for messageID {}", label, messageID);
-            } else {
-                throw new RuntimeException("Unable to mark message (un)read invalid label " + label + " for messageID: " + messageID);
-            }
-            return Constants.SUCCESS;
-        } catch (GraphServiceException graphServiceException) {
-            throw new IllegalArgumentException(Constants.MARK_MESSAGE_REQUEST_FAILED, graphServiceException.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.markMessage(messageID, label);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
+                            OutlookResources.STATE_ID, stateId
+                            , OutlookResources.LABEL, label, OutlookResources.MESSAGE_ID, messageID));
         }
     }
 
@@ -425,7 +382,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false, attributes = {}, options = {})
-    public String replyToMailWithCCAndBCC(
+    public ExtensionResponse replyToMailWithCCAndBCC(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
@@ -435,26 +392,20 @@ public class MessagingArea {
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
         LOGGER.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
-        try {
-            if (attachments != null) {
-                LOGGER.info("replyToMailWithCCAndBCC attachments: {}", ReflectionToStringBuilder.toString(attachments));
-            }
-            Email email = account.getEmail(messageId);
-            if (email == null) {
-                throw new IllegalArgumentException(Constants.INVALID_MESSAGE_ID);
-            }
-            bodyType = getBodyType(bodyType);
-            message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
-            email.replyText(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
-                    toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
-            return Constants.SUCCESS;
-        } catch (GraphServiceException graphServiceException) {
-            String errorMessage = graphServiceException.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS, graphServiceException.getCause());
-            }
-            throw new InternalServerErrorException(Constants.REPLY_TO_MAIL_REQUEST_FAILED, graphServiceException.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
+                        Validator.ValidationResource.TO, to
+                        , Validator.ValidationResource.CC, cc
+                        , Validator.ValidationResource.BCC, bcc
+                        , Validator.ValidationResource.REPLY_TO, replyTo));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
         }
     }
 
@@ -465,34 +416,24 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false)
-    public String replyToMail(
+    public ExtensionResponse replyToMail(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
 
         LOGGER.info("replyToMail: messageID: {}; message: {}", messageID, message);
-        if (attachments != null) {
-            LOGGER.info("replyToMail attachments: {}", ReflectionToStringBuilder.toString(attachments));
-        }
-
-        try {
-            Email email = account.getEmail(messageID);
-            if (email == null) {
-                return Constants.INVALID_MESSAGE_ID;
-            }
-            bodyType = getBodyType(bodyType);
-            message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
-            email.replyText(message, mailHandler.toAttachment(attachments), bodyType);
-            return Constants.SUCCESS;
-        } catch (GraphServiceException graphServiceException) {
-            String errorMessage = graphServiceException.getMessage();
-            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
-                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS,
-                        graphServiceException.getCause());
-            }
-            throw new InternalServerErrorException(Constants.REPLY_TO_MAIL_REQUEST_FAILED, graphServiceException.getCause());
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL, StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
         }
     }
 
@@ -541,14 +482,14 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.WAIT_FOR_EVENT)
     @Field.Desc(name = "Mail Details", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> getResult(
+    public ExtensionResponse getResult(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData,
             @Field(name = "Task ID", type = "Text") String taskID) {
 
         LOGGER.info("getResult: eventName: {}; eventData: {}; taskID: {}", eventName, eventData, taskID);
         if (eventName.equals(taskID)) {
-            return (List<MailDetails>) eventData.get(Constants.DATA);
+            return ExtensionResponseFactory.create(Map.of("Mail Details", (List<MailDetails>) eventData.get(Constants.DATA)));
         }
         LOGGER.error("Invalid task ID: {}", taskID);
         throw new IllegalStateException(Constants.INVALID_TASK_ID);
@@ -561,22 +502,23 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public List<MailDetails> fetchMailsByLabel(
+    public ExtensionResponse fetchMailsByLabel(
             @Field(name = "Label", type = "Text") String label,
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
         LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
-        try {
-            Folder folder = account.getFolderByName(List.of(label.split(Constants.FORWARD_SLASH)));
-            if (folder == null) {
-                LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER);
-                return List.of();
-            }
-            List<Email> emails = folder.getEmails(pageNumber, pageSize);
-            return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
-        } catch (GraphServiceException graphServiceException) {
-            LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + graphServiceException.getCause(), graphServiceException);
-            return List.of();
+
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.LABEL, label));
+
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL, StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
         }
     }
 
@@ -587,11 +529,20 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.WAIT_FOR_EVENT)
     @Field.Desc(name = "Mail Details", type = "Entity(Mail Details)", required = false)
-    public MailDetails mailReceivedAlert(
+    public ExtensionResponse mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
+        LOGGER.info("Allow Alert Mail Triggered Stage 1");
         if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-            return fetchMailByMessageId((String) eventData.get(Constants.MESSAGE_ID));
+            LOGGER.info("Allow Alert Mail Triggered Stage 2");
+            MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
+            LOGGER.info("Allow Alert Mail Triggered Stage 3");
+            if (mailDetails != null) {
+                LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
+                        mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+            }
+            assert mailDetails != null;
+            return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
         }
         return null;
     }
@@ -603,14 +554,14 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
-    public MailDetails fetchLatestMail() {
+    public ExtensionResponse fetchLatestMail() {
         LOGGER.info("fetchLatestMail: start");
-        List<MailDetails> mailDetailsList = fetchInbox(1.0, 1.0);
+        List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
         MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
         if (mailDetails != null && mailDetails.sendDateAndTime != null) {
             long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
             if (change <= 120_000) {
-                return mailDetails;
+                return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
             }
         }
         return null;
@@ -623,7 +574,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Category Names", type = "[ Text ]", required = false)
-    public List<String> listCategories() {
+    public ExtensionResponse listCategories() {
         LOGGER.info("Fetching Categories");
         List<String> categoryNames;
         try {
@@ -631,9 +582,11 @@ public class MessagingArea {
             LOGGER.info("listCategories(): {}", categoryNames);
         } catch (Exception cause) {
             LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
-            throw new RuntimeException(cause);
+            return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to fetch categories", List.of())),
+                    null, Map.of());
         }
-        return categoryNames;
+        return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
     }
 
     @CatalogRequest(
@@ -643,22 +596,24 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    public Boolean addCategoryToMessage(
+    public ExtensionResponse addCategoryToMessage(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category,
             @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean createCategory) {
 
-        if (Validators.isStringNullOrBlank(category)) {
-            throw new RuntimeException("Category cannot be empty.");
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE, StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
         }
-        if (Validators.isStringNullOrBlank(messageID)) {
-            throw new RuntimeException("Message ID cannot be empty.");
-        }
-        if (Boolean.TRUE.equals(createCategory)) {
-            account.createCategory(category);
-        }
-        Email email = account.getEmail(messageID);
-        return email.addCategory(category);
     }
 
     @CatalogRequest(
@@ -668,17 +623,22 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    public Boolean removeCategoryFromMessage(
+    public ExtensionResponse removeCategoryFromMessage(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
-        if (Validators.isStringNullOrBlank(category)) {
-            throw new RuntimeException("Category cannot be empty.");
+        List<ValidationOrchestrator.ValidationResult> validationResults =
+                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
+                        Validator.ValidationResource.CATEGORY, category));
+        if (validationResults.isEmpty()) {
+            return messagingAreaImpl.removeCategoryFromMessage(messageID, category);
+        } else {
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.CATEGORY, category));
         }
-        if (Validators.isStringNullOrBlank(messageID)) {
-            throw new RuntimeException("Message ID cannot be empty.");
-        }
-        Email email = account.getEmail(messageID);
-        return email.removeCategory(category);
     }
 
 }

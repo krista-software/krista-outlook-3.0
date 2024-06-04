@@ -10,11 +10,12 @@ import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
+import app.krista.ksdk.context.AuthorizationContext;
 
 import javax.inject.Inject;
 import java.util.Map;
 
-@Extension(version = "3.0.1-rc2")
+@Extension(version = "3.0.2-rc1")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
@@ -23,8 +24,8 @@ public class OutlookExtension {
     private final String routingUrl;
 
     @Inject
-    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore, GraphServiceClientProviderFactory providerFactory) {
-        this.requestAuthenticator = new OutlookRequestAuthenticator(attributeStore, invoker.getInvokerId());
+    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore, GraphServiceClientProviderFactory providerFactory, AuthorizationContext authorizationContext) {
+        this.requestAuthenticator = new OutlookRequestAuthenticator(attributeStore, invoker.getInvokerId(), authorizationContext);
         this.providerFactory = providerFactory;
         this.routingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
     }
