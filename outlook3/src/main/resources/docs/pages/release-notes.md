@@ -3,7 +3,7 @@
 ## Version 3.0.2
 
 - **Developer Name** : Chetan Sonawane
-- **Krista Service APIs Java** : 1.0.94
+- **Krista Service APIs Java** : 1.0.98
 - **Global Catalog Version** : 1.0.46
 - **Appliance Release Version** : 3.3.3
 
