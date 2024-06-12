@@ -9,7 +9,7 @@
 
 ## Resolved Bugs
 
-* **Not Available**
+* [KR-13811] : Outlook: User unable to send a mail by Send mail request
 
 ## Known Issues
 

@@ -156,10 +156,10 @@ public class MessagingArea {
         LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
         List<ValidationOrchestrator.ValidationResult> validationResults =
                 validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
-                        Validator.ValidationResource.TO, to
-                        , Validator.ValidationResource.CC, cc
-                        , Validator.ValidationResource.BCC, bcc
-                        , Validator.ValidationResource.REPLY_TO, replyTo));
+                        Validator.ValidationResource.TO, validateString(to)
+                        , Validator.ValidationResource.CC, validateString(cc)
+                        , Validator.ValidationResource.BCC, validateString(bcc)
+                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
         if (validationResults.isEmpty()) {
             return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } else {
@@ -285,9 +285,9 @@ public class MessagingArea {
         List<ValidationOrchestrator.ValidationResult> validationResults =
                 validationOrchestrator.validate(Map.of(
                         Validator.ValidationResource.TO, to
-                        , Validator.ValidationResource.CC, cc
-                        , Validator.ValidationResource.BCC, bcc
-                        , Validator.ValidationResource.REPLY_TO, replyTo));
+                        , Validator.ValidationResource.CC, validateString(cc)
+                        , Validator.ValidationResource.BCC, validateString(bcc)
+                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
         if (validationResults.isEmpty()) {
             return messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
         } else {
@@ -319,9 +319,9 @@ public class MessagingArea {
         List<ValidationOrchestrator.ValidationResult> validationResults =
                 validationOrchestrator.validate(Map.of(
                         Validator.ValidationResource.TO, to
-                        , Validator.ValidationResource.CC, cc
-                        , Validator.ValidationResource.BCC, bcc
-                        , Validator.ValidationResource.REPLY_TO, replyTo));
+                        , Validator.ValidationResource.CC, validateString(cc)
+                        , Validator.ValidationResource.BCC, validateString(bcc)
+                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
         if (validationResults.isEmpty()) {
             return messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
         } else {
@@ -394,10 +394,10 @@ public class MessagingArea {
         LOGGER.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
         List<ValidationOrchestrator.ValidationResult> validationResults =
                 validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
-                        Validator.ValidationResource.TO, to
-                        , Validator.ValidationResource.CC, cc
-                        , Validator.ValidationResource.BCC, bcc
-                        , Validator.ValidationResource.REPLY_TO, replyTo));
+                        Validator.ValidationResource.TO, validateString(to)
+                        , Validator.ValidationResource.CC, validateString(cc)
+                        , Validator.ValidationResource.BCC, validateString(bcc)
+                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
         if (validationResults.isEmpty()) {
             return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } else {
@@ -641,4 +641,7 @@ public class MessagingArea {
         }
     }
 
+    private static String validateString(String input){
+        return input == null ? "" : input;
+    }
 }
