@@ -17,4 +17,8 @@ public class NamedFieldFactory {
         return new NamedField(fieldName, FieldTypes.SWITCH_FIELD, Map.of(), Map.of());
     }
 
+    public static NamedField createField(String fieldName, String fieldType) {
+        return new NamedField(fieldName, fieldType, Map.of(), Map.of());
+    }
+
 }

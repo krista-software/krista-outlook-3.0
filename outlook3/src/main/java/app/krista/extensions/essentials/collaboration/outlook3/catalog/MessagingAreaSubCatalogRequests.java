@@ -117,7 +117,7 @@ public class MessagingAreaSubCatalogRequests {
             }
             return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to fetch mail",
+            return ExtensionResponseFactory.create(cause, "Failed to fetch mail by message id",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -229,7 +229,7 @@ public class MessagingAreaSubCatalogRequests {
 
             return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc Bcc Message",
+            return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc and Bcc",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -543,7 +543,7 @@ public class MessagingAreaSubCatalogRequests {
 
             return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Reply Mail With CC BCC",
+            return ExtensionResponseFactory.create(cause, "Failed to Reply Mail With CC and BCC",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -589,7 +589,7 @@ public class MessagingAreaSubCatalogRequests {
 
             return messagingAreaImpl.replyToMail(attachments, messageID, bodyType, message);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Reply Mail Message",
+            return ExtensionResponseFactory.create(cause, "Failed to Reply Mail",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -614,9 +614,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchMailByLabel",
-                addMetaDataToLinkedHashMap(map, stateId)
-        );
+                validationResults, "handleReenterFetchMailByLabel", Map.of());
     }
 
     @SubCatalogRequest(
@@ -745,8 +743,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchInbox",
-                addMetaDataToLinkedHashMap(map, stateId)
+                validationResults, "handleReenterFetchInbox", Map.of()
         );
     }
 
@@ -790,8 +787,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchSent",
-                addMetaDataToLinkedHashMap(map, stateId)
+                validationResults, "handleReenterFetchSent", Map.of()
         );
     }
 

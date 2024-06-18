@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
@@ -29,13 +30,18 @@ public class TOEmaiIValidator implements Validator{
     }
 
     @Override
+    public String getFieldType() {
+        return FieldTypes.TEXT_FIELD;
+    }
+
+    @Override
     public String getFetchStepMessage() {
         return "Please enter valid Email Address.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Email Address : %s does not exist. Please check.", toStringMailIds());
+        return String.format("The provided Email Address : %s does not exist.", toStringMailIds());
     }
 
     @Override

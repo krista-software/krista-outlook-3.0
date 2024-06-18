@@ -21,6 +21,7 @@ public interface Validator {
     Boolean validate(String resourceId, Map<ValidationResource, String> context);
 
     String getFetchFieldName();
+    String getFieldType();
 
     String getFetchStepMessage();
     String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context);

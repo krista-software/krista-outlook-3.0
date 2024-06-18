@@ -38,7 +38,6 @@ public class MessagingAreaImpl {
     private static final String RESPONSE_MESSAGE = "Message";
     private static final String CATEGORY_CANNOT_BE_EMPTY = "Category cannot be empty.";
     private static final String MESSAGE_ID_CANNOT_BE_EMPTY = "Message ID cannot be empty.";
-    private static final String INVALID_INPUT = "Invalid Input";
     private final Account account;
     private final MailHandler mailHandler;
     private Entities registry;
@@ -67,7 +66,7 @@ public class MessagingAreaImpl {
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         }catch (Exception cause){
-            return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc Bcc Message",
+            return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc and Bcc",
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR);
         }
     }
@@ -87,8 +86,8 @@ public class MessagingAreaImpl {
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         }catch (Exception cause){
-            return ExtensionResponseFactory.create("Failed to reply message", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MESSAGE_ID, List.of())),
+            return ExtensionResponseFactory.create("Failed to reply all", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to reply all", List.of())),
                     null, Map.of());
         }
     }

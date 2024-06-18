@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil;
 
@@ -27,18 +28,23 @@ public class PageNumberValidator implements Validator {
     }
 
     @Override
+    public String getFieldType() {
+        return FieldTypes.NUMBER_FIELD;
+    }
+
+    @Override
     public String getFetchStepMessage() {
         return "Please enter valid Page Number.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Page number : %s should be less than 15. Please check.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
+        return String.format("The provided Page number : %s should be less than 15.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 
     @Override
     public String getErrMessage(String resourceId) {
-        return String.format("The provided Page number : %s should be less than 15. Please check.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
+        return String.format("The provided Page number : %s should be less than 15.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 
 }

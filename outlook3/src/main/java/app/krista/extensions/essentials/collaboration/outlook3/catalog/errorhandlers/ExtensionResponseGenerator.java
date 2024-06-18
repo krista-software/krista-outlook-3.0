@@ -46,7 +46,7 @@ public class ExtensionResponseGenerator {
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
             stepMessage += validationResult.getFetchStepMessage() + "\n";
             errMessage += validationResult.getErrMessage() + " ";
-            fields.add(NamedFieldFactory.createTextField(validationResult.getFetchFieldName()));
+            fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
         }
         return ExtensionResponseFactory.create(errMessage, exceptionType,
                 List.of(RemediationActionFactory.createAskAction(stepMessage, fields)),
@@ -63,7 +63,7 @@ public class ExtensionResponseGenerator {
         String errMessage = "";
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
             stepMessage += validationResult.getFetchFieldName() + " ";
-            errMessage += validationResult.getErrMessage() + " ";
+            errMessage += validationResult.getErrMessage() + "\n";
         }
         stepMessage += ".";
         return ExtensionResponseFactory.create(errMessage, exceptionType,
