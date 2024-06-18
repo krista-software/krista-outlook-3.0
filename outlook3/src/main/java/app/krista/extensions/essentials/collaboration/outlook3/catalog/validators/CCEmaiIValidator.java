@@ -40,7 +40,8 @@ public class CCEmaiIValidator implements Validator{
 
     @Override
     public String getErrMessage(String resourceId) {
-        return null;
+        toEmailAddresses(resourceId);
+        return String.format("Invalid 'Cc' Email Ids: %s",toStringMailIds());
     }
 
 

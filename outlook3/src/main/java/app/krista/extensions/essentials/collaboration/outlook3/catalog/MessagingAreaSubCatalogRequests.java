@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Service
 public class MessagingAreaSubCatalogRequests {
@@ -228,7 +229,7 @@ public class MessagingAreaSubCatalogRequests {
 
             return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Reply all Message",
+            return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc Bcc Message",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -664,7 +665,7 @@ public class MessagingAreaSubCatalogRequests {
 
     @SubCatalogRequest(
             name = "handleReenterAddCategoryToMessage",
-            description = "Handle reenter fetch mail by label",
+            description = "Handle reenter Add Category Message",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     public app.krista.extension.executor.ExtensionResponse handleReenterAddCategoryToMessage(
@@ -677,7 +678,7 @@ public class MessagingAreaSubCatalogRequests {
         try {
             return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to fetch mail by label",
+            return ExtensionResponseFactory.create(cause, "Failed to add category to message",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -721,6 +722,96 @@ public class MessagingAreaSubCatalogRequests {
             return messagingAreaImpl.removeCategoryFromMessage(messageID, category);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Failed to remove category",
+                    ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
+        }
+    }
+
+    @SubCatalogRequest(
+            name = SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX,
+            description = "Checks if user wants to re enter fetch Inbox Page Size or Number and if yes, sends prompt to do so",
+            type = CatalogRequest.Type.QUERY_SYSTEM
+    )
+    @SuppressWarnings("unchecked")
+    public ExtensionResponse confirmReenterFetchInbox(@Field.Desc(name = "inputMap",
+            type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number }", required = true) Map<String, Object> map) {
+        Boolean reenter = (Boolean) map.get(REENTER);
+        String stateId = (String) map.get(OutlookResources.STATE_ID);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
+        if (Boolean.FALSE.equals(reenter)) {
+            return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    validationResults, null,
+                    Map.of());
+        }
+        LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
+        return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                validationResults, "handleReenterFetchInbox",
+                addMetaDataToLinkedHashMap(map, stateId)
+        );
+    }
+
+    @SubCatalogRequest(
+            name = "handleReenterFetchInbox",
+            description = "Handle reenter fetch Inbox",
+            type = CatalogRequest.Type.QUERY_SYSTEM)
+    @Field.Desc(name = "Inbox Mails", type = "[ Entity(Mail Details) ]", required = false)
+    public app.krista.extension.executor.ExtensionResponse handleReenterFetchInbox(
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Page Number: Number, Page Size: Number }") Map<String, Object> map) {
+        LOGGER.info("SubCatalogRequest handleReenterFetchInbox start: {}", map);
+        Double pageNumber = (Double) map.get(OutlookResources.PAGE_NUMBER);
+        Double pageSize = (Double) map.get(OutlookResources.PAGE_SIZE);
+
+        try {
+            List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
+            return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
+        } catch (Exception cause) {
+            return ExtensionResponseFactory.create(cause, "Failed to fetch Inbox",
+                    ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
+        }
+    }
+
+
+    @SubCatalogRequest(
+            name = SubCatalogConstants.CONFIRM_REENTER_FETCH_SENT,
+            description = "Checks if user wants to re enter fetch Sent mail Page Size or Number and if yes, sends prompt to do so",
+            type = CatalogRequest.Type.QUERY_SYSTEM
+    )
+    @SuppressWarnings("unchecked")
+    public ExtensionResponse confirmReenterFetchSent(@Field.Desc(name = "inputMap",
+            type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number }", required = true) Map<String, Object> map) {
+        Boolean reenter = (Boolean) map.get(REENTER);
+        String stateId = (String) map.get(OutlookResources.STATE_ID);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
+        if (Boolean.FALSE.equals(reenter)) {
+            return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    validationResults, null,
+                    Map.of());
+        }
+        LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
+        return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                validationResults, "handleReenterFetchSent",
+                addMetaDataToLinkedHashMap(map, stateId)
+        );
+    }
+
+    @SubCatalogRequest(
+            name = "handleReenterFetchSent",
+            description = "Handle reenter fetch sent mail",
+            type = CatalogRequest.Type.QUERY_SYSTEM)
+    @Field.Desc(name = "Sent Mails", type = "[ Entity(Mail Details) ]", required = false)
+    public app.krista.extension.executor.ExtensionResponse handleReenterFetchSent(
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Page Number: Number, Page Size: Number }") Map<String, Object> map) {
+        LOGGER.info("SubCatalogRequest handleReenterFetchMailInbox start: {}", map);
+        Double pageNumber = (Double) map.get(OutlookResources.PAGE_NUMBER);
+        Double pageSize = (Double) map.get(OutlookResources.PAGE_SIZE);
+
+        try {
+            List<Email> emails = account.getSentFolder().getEmails(pageNumber, pageSize);
+            return ExtensionResponseFactory.create(Map.of("Sent Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
+
+        } catch (Exception cause) {
+            return ExtensionResponseFactory.create(cause, "Failed to fetch Sent Mails",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }

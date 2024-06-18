@@ -178,7 +178,7 @@ The Outlook Extension supports the following catalog requests.
 | Attachments        | File               | No                                 | file.xlsx                              |
 | BodyType           | PickOne            | No                                 | Text OR HTML                           |
 
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given
+- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
   then it will be skipped.
 
 - **Output Parameters**:

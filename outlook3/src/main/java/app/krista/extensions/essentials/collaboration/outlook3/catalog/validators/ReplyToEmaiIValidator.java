@@ -40,7 +40,8 @@ public class ReplyToEmaiIValidator implements Validator{
 
     @Override
     public String getErrMessage(String resourceId) {
-        return null;
+        toEmailAddresses(resourceId);
+        return String.format("Invalid 'ReplyTo Email Ids: %s", toStringMailIds());
     }
 
 

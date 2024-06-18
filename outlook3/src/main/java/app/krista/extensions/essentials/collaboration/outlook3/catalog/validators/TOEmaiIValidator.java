@@ -40,7 +40,8 @@ public class TOEmaiIValidator implements Validator{
 
     @Override
     public String getErrMessage(String resourceId) {
-        return null;
+        toEmailAddresses(resourceId);
+        return String.format("Invalid 'To' Email Ids: %s", toStringMailIds());
     }
 
 

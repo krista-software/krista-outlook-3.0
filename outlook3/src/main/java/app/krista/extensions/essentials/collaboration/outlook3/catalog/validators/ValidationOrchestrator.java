@@ -22,6 +22,8 @@ public class ValidationOrchestrator {
         validators.put(Validator.ValidationResource.BCC, new BCCEmaiIValidator());
         validators.put(Validator.ValidationResource.REPLY_TO, new ReplyToEmaiIValidator());
         validators.put(Validator.ValidationResource.CATEGORY, new CatagoryValidator(account));
+        validators.put(Validator.ValidationResource.PAGE_NUMBER, new PageNumberValidator());
+        validators.put(Validator.ValidationResource.PAGE_SIZE, new PageSizeValidator());
     }
 
     public class ValidationResult {
