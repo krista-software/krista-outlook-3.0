@@ -1,50 +1,50 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
+
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
-import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil;
 
 import java.util.Map;
 
-public class MessageIdValidator implements Validator {
+public class PageSizeValidator implements Validator {
 
-    private final Account account;
-
-    public MessageIdValidator(Account account) {
-        this.account = account;
-    }
 
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
         try {
-            account.getEmail(resourceId);
-            return true;
+            return isNumberValid(resourceId);
         } catch (RuntimeException cause) {
             return false;
         }
     }
 
+    private Boolean isNumberValid(String resourceId) {
+        return Double.parseDouble(resourceId) <= 15; // Maximum Limit for Page size
+    }
+
     @Override
     public String getFetchFieldName() {
-        return OutlookResources.MESSAGE_ID;
+        return OutlookResources.PAGE_SIZE;
     }
 
     @Override
     public String getFieldType() {
-        return FieldTypes.TEXT_FIELD;
+        return FieldTypes.NUMBER_FIELD;
     }
 
     @Override
     public String getFetchStepMessage() {
-        return "Please enter valid Message ID.";
+        return "Please enter valid Page Size.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Message ID: %s does not exist.", resourceId);
+        return String.format("The provided Page size : %s should be less than 15.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 
     @Override
     public String getErrMessage(String resourceId) {
-        return String.format("Invalid Message ID: %s", resourceId);
+        return String.format("The provided Page size : %s should be less than 15.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
+
 }

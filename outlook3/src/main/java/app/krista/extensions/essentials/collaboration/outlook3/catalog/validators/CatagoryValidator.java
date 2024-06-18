@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
@@ -46,13 +47,18 @@ public class CatagoryValidator implements Validator {
     }
 
     @Override
+    public String getFieldType() {
+        return FieldTypes.TEXT_FIELD;
+    }
+
+    @Override
     public String getFetchStepMessage() {
         return "Please enter valid Category.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Category: %s does not exist. Please check.", resourceId);
+        return String.format("The provided Category: %s does not exist.", resourceId);
     }
 
     @Override

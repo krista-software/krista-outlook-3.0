@@ -61,6 +61,7 @@ public class Constants {
     public static final String FORWARD_MAIL_REQUEST_FAILED = "Forward mail request failed ";
     public static final String HTML = "HTML";
     public static final String SEND_MAIL_REQUEST_FAILED = "Send mail request failed ";
+    public static final String SEND_MAIL_WITH_TABLE_REQUEST_FAILED = "Send mail with table request failed ";
     public static final String REPLY_TO_MAIL_REQUEST_FAILED = "Reply to mail request failed ";
     public static final String DATA = "Data";
     public static final String INVALID_TASK_ID = "Invalid task ID";

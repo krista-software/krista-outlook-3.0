@@ -17,4 +17,6 @@ public class SubCatalogConstants {
     public static final String CONFIRM_REENTER_FETCH_MAIL_BY_LABEL = "confirmReenterFetchMailByLabel";
     public static final String CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE = "confirmReenterAddCategoryToMessage";
     public static final String CONFIRM_REENTER_REMOVE_CATEGORY = "confirmReenterRemoveCategory";
+    public static final String CONFIRM_REENTER_FETCH_INBOX = "confirmReenterFetchInbox";
+    public static final String CONFIRM_REENTER_FETCH_SENT = "confirmReenterFetchSent";
 }

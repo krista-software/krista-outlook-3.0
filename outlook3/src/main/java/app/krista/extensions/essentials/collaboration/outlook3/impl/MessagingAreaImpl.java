@@ -38,7 +38,6 @@ public class MessagingAreaImpl {
     private static final String RESPONSE_MESSAGE = "Message";
     private static final String CATEGORY_CANNOT_BE_EMPTY = "Category cannot be empty.";
     private static final String MESSAGE_ID_CANNOT_BE_EMPTY = "Message ID cannot be empty.";
-    private static final String INVALID_INPUT = "Invalid Input";
     private final Account account;
     private final MailHandler mailHandler;
     private Entities registry;
@@ -55,8 +54,10 @@ public class MessagingAreaImpl {
         try{
             Email email = account.getEmail(messageId);
             if (email == null) {
-                LOGGER.error("Invalid message id");
-                return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, false));
+                LOGGER.error(Constants.INVALID_MESSAGE_ID);
+                return ExtensionResponseFactory.create(Constants.INVALID_MESSAGE_ID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MESSAGE_ID, List.of())),
+                        null, Map.of());
             }
             bodyType = getBodyType(bodyType);
             message = getFormattedMessage(message, bodyType);
@@ -65,9 +66,8 @@ public class MessagingAreaImpl {
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         }catch (Exception cause){
-            return ExtensionResponseFactory.create(INVALID_INPUT, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants(INVALID_INPUT, List.of())),
-                    null, Map.of());
+            return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc and Bcc",
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR);
         }
     }
 
@@ -76,7 +76,9 @@ public class MessagingAreaImpl {
             Email email = account.getEmail(messageId);
             if (email == null) {
                 LOGGER.debug(Constants.INVALID_MESSAGE_ID);
-                return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, false));
+                return ExtensionResponseFactory.create(Constants.INVALID_MESSAGE_ID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MESSAGE_ID, List.of())),
+                        null, Map.of());
             }
             bodyType = getBodyType(bodyType);
             message = getFormattedMessage(message, bodyType);
@@ -84,8 +86,8 @@ public class MessagingAreaImpl {
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         }catch (Exception cause){
-            return ExtensionResponseFactory.create("Failed to reply message", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MESSAGE_ID, List.of())),
+            return ExtensionResponseFactory.create("Failed to reply all", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to reply all", List.of())),
                     null, Map.of());
         }
     }
@@ -179,8 +181,8 @@ public class MessagingAreaImpl {
                         List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MAIL_ADDRESS, List.of())),
                         null, Map.of());
             }
-            return ExtensionResponseFactory.create(Constants.SEND_MAIL_REQUEST_FAILED, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.SEND_MAIL_REQUEST_FAILED, List.of())),
+            return ExtensionResponseFactory.create(Constants.SEND_MAIL_WITH_TABLE_REQUEST_FAILED, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.SEND_MAIL_WITH_TABLE_REQUEST_FAILED, List.of())),
                     null, Map.of());
         }
     }

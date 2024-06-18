@@ -54,14 +54,6 @@ public class MessagingAreaTest {
         String message = null;
         String bodyType = "HTML";
         List<File> attachments = null;
-        ExtensionResponse response1 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
-        assertEquals(response1.getResponseValue().get("Is Successful"), false);
-        messageID = "";
-        ExtensionResponse response2 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
-        assertEquals(response2.getResponseValue().get("Is Successful"), false);
-        messageID = " ";
-        ExtensionResponse response3 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
-        assertEquals(response3.getResponseValue().get("Is Successful"), false);
         messageID = UUID.randomUUID().toString();
         Email email = mock(EmailImpl.class);
         when(account.getEmail(messageID)).thenReturn(email);

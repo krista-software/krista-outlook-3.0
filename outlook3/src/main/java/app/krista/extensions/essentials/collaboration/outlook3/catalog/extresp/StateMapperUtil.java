@@ -105,4 +105,12 @@ public class StateMapperUtil {
         metaData.put(OutlookResources.CREATE_CATEGORY, createCategory);
         return metaData;
     }
+
+    public static Map<String, Object> addPageMetaDataToMap(Double pageNumber, Double pageSize, String stateId) {
+        Map<String, Object> metaData = new LinkedHashMap<>();
+        metaData.put(OutlookResources.STATE_ID, stateId);
+        metaData.put(OutlookResources.PAGE_NUMBER, pageNumber);
+        metaData.put(OutlookResources.PAGE_SIZE, pageSize);
+        return metaData;
+    }
 }

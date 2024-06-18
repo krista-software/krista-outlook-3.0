@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
@@ -32,13 +33,18 @@ public class LabelValidator implements Validator {
     }
 
     @Override
+    public String getFieldType() {
+        return FieldTypes.TEXT_FIELD;
+    }
+
+    @Override
     public String getFetchStepMessage() {
         return "Please enter valid Label Name.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Label Name: %s does not exist. Please check.", resourceId);
+        return String.format("The provided Label Name: %s does not exist.", resourceId);
     }
 
     @Override

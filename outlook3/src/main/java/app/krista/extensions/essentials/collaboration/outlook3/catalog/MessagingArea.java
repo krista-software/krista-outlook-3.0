@@ -212,9 +212,27 @@ public class MessagingArea {
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
 
         LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+        Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber,pageSize);
+        if(validationResourceMap.isEmpty()){
+           return fetchSentResponse(pageNumber,pageSize);
+        } else {
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+            if(validationResults.isEmpty()){
+                return fetchSentResponse(pageNumber,pageSize);
+            }  else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_SENT, StateMapperUtil.addPageMetaDataToMap(pageNumber , pageSize, stateId));
+            }
+        }
+    }
 
+    private ExtensionResponse fetchSentResponse(Double pageNumber, Double pageSize){
         List<Email> emails = account.getSentFolder().getEmails(pageNumber, pageSize);
         return ExtensionResponseFactory.create(Map.of("Sent Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
+
     }
 
     @CatalogRequest(
@@ -345,6 +363,26 @@ public class MessagingArea {
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
         LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+
+        Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber,pageSize);
+        if(validationResourceMap.isEmpty()){
+           return fetchInboxResponse(pageNumber,pageSize);
+        } else {
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+            if(validationResults.isEmpty()){
+                return fetchInboxResponse(pageNumber,pageSize);
+            }  else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber , pageSize, stateId));
+            }
+        }
+
+    }
+
+    private ExtensionResponse fetchInboxResponse(Double pageNumber, Double pageSize){
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
         return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
     }
@@ -509,7 +547,7 @@ public class MessagingArea {
         LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
 
         List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.LABEL, label));
+                validationOrchestrator.validate(ValidationResourceUtil.prepareValidateLabelMap(label,pageNumber,pageSize));
 
         if (validationResults.isEmpty()) {
             return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);

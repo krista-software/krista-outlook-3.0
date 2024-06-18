@@ -13,12 +13,15 @@ public interface Validator {
         REPLY_TO,
         QUERY,
         LABEL,
-        CATEGORY
+        CATEGORY,
+        PAGE_NUMBER,
+        PAGE_SIZE
     }
 
     Boolean validate(String resourceId, Map<ValidationResource, String> context);
 
     String getFetchFieldName();
+    String getFieldType();
 
     String getFetchStepMessage();
     String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context);
