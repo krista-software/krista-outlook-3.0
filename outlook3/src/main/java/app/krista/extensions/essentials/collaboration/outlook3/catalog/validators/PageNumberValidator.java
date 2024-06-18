@@ -19,7 +19,7 @@ public class PageNumberValidator implements Validator {
     }
 
     private Boolean isNumberValid(String resourceId) {
-        return Double.parseDouble(resourceId) <= 15;
+        return Double.parseDouble(resourceId) <= 15; //Maximum limit for Page Number
     }
 
     @Override
