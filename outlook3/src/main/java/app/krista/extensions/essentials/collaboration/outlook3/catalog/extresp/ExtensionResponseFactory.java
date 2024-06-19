@@ -22,8 +22,9 @@ public class ExtensionResponseFactory {
                                                 ExtensionResponse.Error.ExceptionType exceptionType) {
         ExtensionResponse.Error error = new ExtensionResponse.Error(message, System.currentTimeMillis(),
                 exceptionType, Arrays.toString(cause.getStackTrace()));
+        RemediationActions remediationActions = new RemediationActions(List.of(RemediationActionFactory.createInformAction(message, List.of())), null);
         return new ExtensionResponse(ExtensionResponse.Result.FAILURE,
-                null, error, null, null);
+                null, error,remediationActions , Map.of());
     }
 
     public static ExtensionResponse create(Exception cause,

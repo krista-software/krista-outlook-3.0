@@ -614,7 +614,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchMailByLabel", Map.of());
+                validationResults, "handleReenterFetchMailByLabel", Map.of(OutlookResources.LABEL,map.get(OutlookResources.LABEL)));
     }
 
     @SubCatalogRequest(

@@ -8,48 +8,62 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.R
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
 import app.krista.model.field.NamedField;
 import org.jvnet.hk2.annotations.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 @Service
 public class ExtensionResponseGenerator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionResponseGenerator.class);
+    public static final String ERROR_MESSAGE = "ErrorMessage";
+    public static final String STEP_MESSAGE = "StepMessage";
+    public static final String FIELD = "Field";
 
     public ExtensionResponse generateConfirmationResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,
             String subCatalogRequestName,
             Map<String, Object> state) {
-        String stepMessage = "";
-        String errMessage = "";
+
         List<NamedField> fields = List.of(NamedFieldFactory.createSwitchField(MessagingAreaSubCatalogRequests.REENTER));
-        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage += validationResult.getConfirmStepMessage() + "\n";
-            errMessage += validationResult.getErrMessage() + " ";
-        }
-        return ExtensionResponseFactory.create(errMessage, exceptionType,
-                List.of(RemediationActionFactory.createAskAction(stepMessage, fields)),
+        Map<String, Object> stringStringMap = generateResponse(validationResults, false);
+        return ExtensionResponseFactory.create((String) stringStringMap.get(ERROR_MESSAGE), exceptionType,
+                List.of(RemediationActionFactory.createAskAction((String) stringStringMap.get(STEP_MESSAGE), fields)),
                         subCatalogRequestName, state);
     }
 
+    private Map<String, Object> generateResponse(List<ValidationOrchestrator.ValidationResult> validationResults, boolean fetchResponse)
+    {
+        StringBuilder stepMessage = new StringBuilder();
+        StringBuilder errMessage = new StringBuilder();
+        List<NamedField> fields = new ArrayList<>();
+
+        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
+            stepMessage.append(!fetchResponse ? validationResult.getConfirmStepMessage() : validationResult.getFetchStepMessage()).append("\n");
+            errMessage.append(validationResult.getErrMessage()).append("\n");
+            if(fetchResponse)
+            {
+                fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
+            }
+        }
+        return Map.of(STEP_MESSAGE, stepMessage.toString(), ERROR_MESSAGE, errMessage.toString(), FIELD, fields);
+    }
     public ExtensionResponse generateFetchResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,
             String subCatalogRequestName,
             Map<String, Object> state
     ) {
-        String stepMessage = "";
-        String errMessage = "";
-        List<NamedField> fields = new ArrayList<>();
-        System.out.println("Validation failed for : " + validationResults.size());
-        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage += validationResult.getFetchStepMessage() + "\n";
-            errMessage += validationResult.getErrMessage() + " ";
-            fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
-        }
-        return ExtensionResponseFactory.create(errMessage, exceptionType,
-                List.of(RemediationActionFactory.createAskAction(stepMessage, fields)),
+
+        LOGGER.info("Validation failed for : {}", validationResults.size());
+        Map<String, Object> stringStringMap = generateResponse(validationResults, true);
+        return ExtensionResponseFactory.create((String) stringStringMap.get(ERROR_MESSAGE), exceptionType,
+                List.of(RemediationActionFactory.createAskAction((String) stringStringMap.get(STEP_MESSAGE), (List<NamedField>) stringStringMap.get(FIELD))),
                 subCatalogRequestName, state);
     }
 
@@ -59,15 +73,14 @@ public class ExtensionResponseGenerator {
             String subCatalogRequestName,
             Map<String, Object> state
     ) {
-        String stepMessage = "Not taking updated values for ";
-        String errMessage = "";
+        StringJoiner stepMessage = new StringJoiner(", ", "Updated value for ", " were not provided.");
+        StringBuilder errMessage = new StringBuilder();
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage += validationResult.getFetchFieldName() + " ";
-            errMessage += validationResult.getErrMessage() + "\n";
+            stepMessage.add("'" + validationResult.getFetchFieldName() + "'");
+            errMessage.append(validationResult.getErrMessage()).append("\n");
         }
-        stepMessage += ".";
-        return ExtensionResponseFactory.create(errMessage, exceptionType,
-                List.of(RemediationActionFactory.createInformActionALLParticipants(stepMessage, List.of())),
+        return ExtensionResponseFactory.create(errMessage.toString(), exceptionType,
+                List.of(RemediationActionFactory.createInformActionALLParticipants(stepMessage.toString(), List.of())),
                 subCatalogRequestName, state);
     }
 }
