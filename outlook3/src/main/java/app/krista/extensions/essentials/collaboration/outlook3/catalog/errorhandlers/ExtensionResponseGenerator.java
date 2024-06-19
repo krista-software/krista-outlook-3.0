@@ -20,41 +20,50 @@ import java.util.StringJoiner;
 public class ExtensionResponseGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionResponseGenerator.class);
+    public static final String ERROR_MESSAGE = "ErrorMessage";
+    public static final String STEP_MESSAGE = "StepMessage";
+    public static final String FIELD = "Field";
 
     public ExtensionResponse generateConfirmationResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,
             String subCatalogRequestName,
             Map<String, Object> state) {
-        StringBuilder stepMessage = new StringBuilder();
-        StringBuilder errMessage = new StringBuilder();
+
         List<NamedField> fields = List.of(NamedFieldFactory.createSwitchField(MessagingAreaSubCatalogRequests.REENTER));
-        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage.append(validationResult.getConfirmStepMessage()).append("\n");
-            errMessage.append(validationResult.getErrMessage()).append("\n");
-        }
-        return ExtensionResponseFactory.create(errMessage.toString(), exceptionType,
-                List.of(RemediationActionFactory.createAskAction(stepMessage.toString(), fields)),
+        Map<String, Object> stringStringMap = generateResponse(validationResults, false);
+        return ExtensionResponseFactory.create((String) stringStringMap.get(ERROR_MESSAGE), exceptionType,
+                List.of(RemediationActionFactory.createAskAction((String) stringStringMap.get(STEP_MESSAGE), fields)),
                         subCatalogRequestName, state);
     }
 
+    private Map<String, Object> generateResponse(List<ValidationOrchestrator.ValidationResult> validationResults, boolean fetchResponse)
+    {
+        StringBuilder stepMessage = new StringBuilder();
+        StringBuilder errMessage = new StringBuilder();
+        List<NamedField> fields = new ArrayList<>();
+
+        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
+            stepMessage.append(!fetchResponse ? validationResult.getConfirmStepMessage() : validationResult.getFetchStepMessage()).append("\n");
+            errMessage.append(validationResult.getErrMessage()).append("\n");
+            if(fetchResponse)
+            {
+                fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
+            }
+        }
+        return Map.of(STEP_MESSAGE, stepMessage.toString(), ERROR_MESSAGE, errMessage.toString(), FIELD, fields);
+    }
     public ExtensionResponse generateFetchResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,
             String subCatalogRequestName,
             Map<String, Object> state
     ) {
-        StringBuilder stepMessage = new StringBuilder();
-        StringBuilder errMessage = new StringBuilder();
-        List<NamedField> fields = new ArrayList<>();
+
         LOGGER.info("Validation failed for : {}", validationResults.size());
-        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage.append(validationResult.getFetchStepMessage()).append("\n");
-            errMessage.append(validationResult.getErrMessage()).append("\n");
-            fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
-        }
-        return ExtensionResponseFactory.create(errMessage.toString(), exceptionType,
-                List.of(RemediationActionFactory.createAskAction(stepMessage.toString(), fields)),
+        Map<String, Object> stringStringMap = generateResponse(validationResults, true);
+        return ExtensionResponseFactory.create((String) stringStringMap.get(ERROR_MESSAGE), exceptionType,
+                List.of(RemediationActionFactory.createAskAction((String) stringStringMap.get(STEP_MESSAGE), (List<NamedField>) stringStringMap.get(FIELD))),
                 subCatalogRequestName, state);
     }
 
