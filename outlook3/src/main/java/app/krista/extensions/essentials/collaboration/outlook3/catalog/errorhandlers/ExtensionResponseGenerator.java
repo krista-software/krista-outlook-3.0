@@ -8,28 +8,33 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.R
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
 import app.krista.model.field.NamedField;
 import org.jvnet.hk2.annotations.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 @Service
 public class ExtensionResponseGenerator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionResponseGenerator.class);
 
     public ExtensionResponse generateConfirmationResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,
             String subCatalogRequestName,
             Map<String, Object> state) {
-        String stepMessage = "";
-        String errMessage = "";
+        StringBuilder stepMessage = new StringBuilder();
+        StringBuilder errMessage = new StringBuilder();
         List<NamedField> fields = List.of(NamedFieldFactory.createSwitchField(MessagingAreaSubCatalogRequests.REENTER));
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage += validationResult.getConfirmStepMessage() + "\n";
-            errMessage += validationResult.getErrMessage() + " ";
+            stepMessage.append(validationResult.getConfirmStepMessage()).append("\n");
+            errMessage.append(validationResult.getErrMessage()).append("\n");
         }
-        return ExtensionResponseFactory.create(errMessage, exceptionType,
-                List.of(RemediationActionFactory.createAskAction(stepMessage, fields)),
+        return ExtensionResponseFactory.create(errMessage.toString(), exceptionType,
+                List.of(RemediationActionFactory.createAskAction(stepMessage.toString(), fields)),
                         subCatalogRequestName, state);
     }
 
@@ -39,17 +44,17 @@ public class ExtensionResponseGenerator {
             String subCatalogRequestName,
             Map<String, Object> state
     ) {
-        String stepMessage = "";
-        String errMessage = "";
+        StringBuilder stepMessage = new StringBuilder();
+        StringBuilder errMessage = new StringBuilder();
         List<NamedField> fields = new ArrayList<>();
-        System.out.println("Validation failed for : " + validationResults.size());
+        LOGGER.info("Validation failed for : {}", validationResults.size());
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage += validationResult.getFetchStepMessage() + "\n";
-            errMessage += validationResult.getErrMessage() + " ";
+            stepMessage.append(validationResult.getFetchStepMessage()).append("\n");
+            errMessage.append(validationResult.getErrMessage()).append("\n");
             fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
         }
-        return ExtensionResponseFactory.create(errMessage, exceptionType,
-                List.of(RemediationActionFactory.createAskAction(stepMessage, fields)),
+        return ExtensionResponseFactory.create(errMessage.toString(), exceptionType,
+                List.of(RemediationActionFactory.createAskAction(stepMessage.toString(), fields)),
                 subCatalogRequestName, state);
     }
 
@@ -59,15 +64,14 @@ public class ExtensionResponseGenerator {
             String subCatalogRequestName,
             Map<String, Object> state
     ) {
-        String stepMessage = "Not taking updated values for ";
-        String errMessage = "";
+        StringJoiner stepMessage = new StringJoiner(", ", "Updated value for ", " were not provided.");
+        StringBuilder errMessage = new StringBuilder();
         for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
-            stepMessage += validationResult.getFetchFieldName() + " ";
-            errMessage += validationResult.getErrMessage() + "\n";
+            stepMessage.add("'" + validationResult.getFetchFieldName() + "'");
+            errMessage.append(validationResult.getErrMessage()).append("\n");
         }
-        stepMessage += ".";
-        return ExtensionResponseFactory.create(errMessage, exceptionType,
-                List.of(RemediationActionFactory.createInformActionALLParticipants(stepMessage, List.of())),
+        return ExtensionResponseFactory.create(errMessage.toString(), exceptionType,
+                List.of(RemediationActionFactory.createInformActionALLParticipants(stepMessage.toString(), List.of())),
                 subCatalogRequestName, state);
     }
 }
