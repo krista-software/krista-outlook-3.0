@@ -18,27 +18,18 @@ public class CatagoryValidator implements Validator {
 
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
-        try {
             for(Map.Entry<ValidationResource, String> set : context.entrySet()){
                 if(set.getKey().name().equals("MESSAGE_ID")){
                     return isCategoryExist(resourceId,set.getValue());
                 }
             }
             return false;
-        } catch (RuntimeException cause) {
-            return false;
-        }
     }
 
     private Boolean isCategoryExist(String category, String messageID) {
-        try {
             Email email = account.getEmail(messageID);
             List<String> existingCategories = email.getCategories();
             return !existingCategories.isEmpty() && existingCategories.contains(category);
-        }catch (RuntimeException cause){
-            throw new RuntimeException(cause);
-
-        }
     }
 
     @Override

@@ -24,13 +24,19 @@ public class KristaMediaClient {
      * @throws IOException If an I/O error occurs.
      */
     public app.krista.model.base.File toKristaFile(File file) throws IOException {
+        System.out.println("File Name processing file 1");
+        System.out.println("File Name : "+ file.getName());
         if (isUnsupportedFileFormat(file.getName())) {
             String zipFilePath = zipDir + file.getName().substring(0, file.getName().lastIndexOf(".")) + ".zip";
             compressFile(zipFilePath, file.getAbsolutePath());
             file = new File(zipFilePath);
         }
         try (final FileHandle fileHandle = fileRepository.createNewFileByName(file.getName())) {
-            fileHandle.setContent(new FileInputStream(file));
+            System.out.println("File Name processing file 2");
+            FileInputStream stream = new FileInputStream(file);
+            System.out.println("After File processing Stream");
+            fileHandle.setContent(stream);
+            System.out.println("File Name processing file 3");
             return fileHandle.getFile();
         }
     }
