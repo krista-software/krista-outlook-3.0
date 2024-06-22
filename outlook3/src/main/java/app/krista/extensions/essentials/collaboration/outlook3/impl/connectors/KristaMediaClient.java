@@ -30,7 +30,8 @@ public class KristaMediaClient {
             file = new File(zipFilePath);
         }
         try (final FileHandle fileHandle = fileRepository.createNewFileByName(file.getName())) {
-            fileHandle.setContent(new FileInputStream(file));
+            FileInputStream stream = new FileInputStream(file);
+            fileHandle.setContent(stream);
             return fileHandle.getFile();
         }
     }

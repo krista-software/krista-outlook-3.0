@@ -15,12 +15,8 @@ public class MessageIdValidator implements Validator {
 
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
-        try {
             account.getEmail(resourceId);
             return true;
-        } catch (RuntimeException cause) {
-            return false;
-        }
     }
 
     @Override

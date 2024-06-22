@@ -22,7 +22,7 @@ public class FolderNameValidator implements Validator {
         try {
             Folder folder = account.getFolderByName(List.of(resourceId.split(Constants.FORWARD_SLASH)));
             return folder != null;
-        } catch (RuntimeException cause) {
+        }catch (IllegalArgumentException cause){
             return false;
         }
     }
