@@ -16,6 +16,7 @@
 * [KE-1730] : Error Handling: Outlook: The error message is not displayed to non-admin/author role users for mark message request.
 * [KR-13885]: Jira&Outlook:Unable to understand error message when not reentering field input.
 * [KE-1732] : Error Handling: Outlook: An error message appears when the page number and page size fields are left blank.
+* [KE-1739] : Documentation should be updated with error handling supported request.
 
 ## Known Issues
 

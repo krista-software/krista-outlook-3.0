@@ -71,7 +71,6 @@ The Outlook Extension supports the following catalog requests.
 | Input Parameter | Valid Data        | Invalid Data                                                              |
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Category        | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
 
 ### Remove Category From Message
