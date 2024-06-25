@@ -115,7 +115,7 @@ public class MessagingArea {
             LOGGER.info(cause.getMessage());
             throw cause;
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while fetch maik by message id :{}", cause.getMessage());
+            LOGGER.error("Error occurred while fetch mail by message id :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while fetch maik by message id", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch maik by message id", List.of())),
                     null, null);
