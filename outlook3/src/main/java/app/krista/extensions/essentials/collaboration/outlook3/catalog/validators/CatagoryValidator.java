@@ -4,6 +4,8 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.F
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,7 @@ import java.util.Map;
 public class CatagoryValidator implements Validator {
 
     private final Account account;
+    private static final Logger logger = LoggerFactory.getLogger(CatagoryValidator.class);
 
     public CatagoryValidator(Account account) {
         this.account = account;
@@ -18,18 +21,23 @@ public class CatagoryValidator implements Validator {
 
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
-            for(Map.Entry<ValidationResource, String> set : context.entrySet()){
-                if(set.getKey().name().equals("MESSAGE_ID")){
-                    return isCategoryExist(resourceId,set.getValue());
+        try {
+            for (Map.Entry<ValidationResource, String> set : context.entrySet()) {
+                if (set.getKey().name().equals("MESSAGE_ID")) {
+                    return isCategoryExist(resourceId, set.getValue());
                 }
             }
             return false;
+        } catch (Exception cause) {
+            logger.info(cause.getMessage());
+            return false;
+        }
     }
 
     private Boolean isCategoryExist(String category, String messageID) {
-            Email email = account.getEmail(messageID);
-            List<String> existingCategories = email.getCategories();
-            return !existingCategories.isEmpty() && existingCategories.contains(category);
+        Email email = account.getEmail(messageID);
+        List<String> existingCategories = email.getCategories();
+        return !existingCategories.isEmpty() && existingCategories.contains(category);
     }
 
     @Override
