@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class CCEmaiIValidator implements Validator{
+public class CCEmaiIValidator implements Validator {
 
     private static final List<EmailAddress> emailAddresses = new ArrayList<>();
 
@@ -47,7 +47,7 @@ public class CCEmaiIValidator implements Validator{
     @Override
     public String getErrMessage(String resourceId) {
         toEmailAddresses(resourceId);
-        return String.format("Invalid 'Cc' Email Ids: %s",toStringMailIds());
+        return String.format("Invalid 'Cc' Email Ids: %s", toStringMailIds());
     }
 
 
@@ -63,7 +63,7 @@ public class CCEmaiIValidator implements Validator{
         return emailAddresses;
     }
 
-    private static String toStringMailIds(){
+    private static String toStringMailIds() {
         String mailIds = CCEmaiIValidator.emailAddresses.stream()
                 .map(EmailAddress::getMailAddress)
                 .collect(Collectors.joining(", "));

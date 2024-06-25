@@ -25,10 +25,9 @@ public class LabelValidator implements Validator {
         try {
             Folder folder = account.getFolderByName(List.of(resourceId.split(Constants.FORWARD_SLASH)));
             return folder != null;
-        }catch (IllegalArgumentException cause){
+        } catch (IllegalArgumentException cause) {
             return false;
-        }
-        catch (Exception cause){
+        } catch (Exception cause) {
             logger.info(cause.getMessage());
             return false;
         }
