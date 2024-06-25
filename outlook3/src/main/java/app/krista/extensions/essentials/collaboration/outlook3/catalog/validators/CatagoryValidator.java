@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
@@ -28,6 +29,9 @@ public class CatagoryValidator implements Validator {
                 }
             }
             return false;
+        } catch (MustAuthorizeException cause) {
+            logger.info(cause.getMessage());
+            throw cause;
         } catch (Exception cause) {
             logger.info(cause.getMessage());
             return false;

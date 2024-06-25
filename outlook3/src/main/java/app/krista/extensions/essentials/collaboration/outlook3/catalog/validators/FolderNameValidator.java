@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
@@ -26,6 +27,9 @@ public class FolderNameValidator implements Validator {
         try {
             Folder folder = account.getFolderByName(List.of(resourceId.split(Constants.FORWARD_SLASH)));
             return folder != null;
+        } catch (MustAuthorizeException cause) {
+            logger.info(cause.getMessage());
+            throw cause;
         } catch (IllegalArgumentException cause) {
             return false;
         } catch (Exception cause) {
