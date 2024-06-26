@@ -717,10 +717,11 @@ public class MessagingArea {
                     LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
                             mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
                 }
-                assert mailDetails != null;
-                return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
+                if (mailDetails != null) {
+                    return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
+                }
             }
-            return null;
+            return ExtensionResponseFactory.create(Map.of("Mail Details", new MailDetails()));
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
@@ -750,7 +751,9 @@ public class MessagingArea {
                     return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
                 }
             }
-            return null;
+            return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
+                    null, null);
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
