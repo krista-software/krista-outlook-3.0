@@ -776,26 +776,21 @@ public class MessagingArea {
         try {
             LOGGER.info("Fetching Categories");
             List<String> categoryNames;
-            try {
-                categoryNames = account.getCategoryNames();
-                LOGGER.info("listCategories(): {}", categoryNames);
-            } catch (Exception cause) {
-                LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
-                return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                        List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to fetch categories", List.of())),
-                        null, Map.of());
-            }
+            categoryNames = account.getCategoryNames();
+            LOGGER.info("listCategories(): {}", categoryNames);
             return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while List Categories:{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while List Categories", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while List Categories", List.of())),
-                    null, null);
+            LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
+            return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to fetch categories", List.of())),
+                    null, Map.of());
         }
+
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_e35e5d82-b464-4fe4-875a-33f0dfe48265",
