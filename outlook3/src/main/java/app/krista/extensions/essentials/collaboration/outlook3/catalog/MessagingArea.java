@@ -339,8 +339,8 @@ public class MessagingArea {
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
-        } catch (Exception error) {
-            return ExtensionResponseFactory.create("Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+        } catch (Exception cause) {
+            return ExtensionResponseFactory.create(cause, "Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
                     null, null);
         }
