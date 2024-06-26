@@ -634,6 +634,9 @@ public class MessagingArea {
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
+        } catch (IllegalStateException cause) {
+            LOGGER.error("Illegal state error: {}", cause.getMessage(), cause);
+            throw new IllegalStateException(cause);
         }
     }
 
