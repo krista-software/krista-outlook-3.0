@@ -29,8 +29,6 @@ public class LabelValidator implements Validator {
         } catch (MustAuthorizeException cause) {
             logger.info(cause.getMessage());
             throw cause;
-        } catch (IllegalArgumentException cause) {
-            return false;
         } catch (Exception cause) {
             logger.info(cause.getMessage());
             return false;
