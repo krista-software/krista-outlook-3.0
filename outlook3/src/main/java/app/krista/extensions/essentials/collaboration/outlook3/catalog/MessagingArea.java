@@ -624,6 +624,9 @@ public class MessagingArea {
                     freeForm.put(Constants.DATA, "[ Entity(Mail Details) ]", mailDetails);
                     LOGGER.info("Adding fetched results to event handled.");
                     eventHandler.handleEvent(taskId, freeForm);
+                } catch (MustAuthorizeException cause) {
+                    LOGGER.error(cause.getMessage());
+                    throw cause;
                 } catch (Exception cause) {
                     throw new IllegalStateException(cause);
                 } finally {
@@ -631,9 +634,6 @@ public class MessagingArea {
                 }
             });
             return taskId;
-        } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
         } catch (IllegalStateException cause) {
             LOGGER.error("Illegal state error: {}", cause.getMessage(), cause);
             throw new IllegalStateException(cause);
@@ -708,20 +708,20 @@ public class MessagingArea {
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
         try {
-            LOGGER.info("Allow Alert Mail Triggered Stage 1");
             if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-                LOGGER.info("Allow Alert Mail Triggered Stage 2");
                 MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
-                LOGGER.info("Allow Alert Mail Triggered Stage 3");
                 if (mailDetails != null) {
                     LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
                             mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
-                }
-                if (mailDetails != null) {
                     return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
+                } else {
+                    return ExtensionResponseFactory.create("Mail details not available", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                            List.of(RemediationActionFactory.createInformActionALLParticipants("Mail details not available ", List.of())),
+                            null, null);
                 }
+            } else {
+                throw new IllegalStateException();
             }
-            return ExtensionResponseFactory.create(Map.of("Mail Details", new MailDetails()));
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
@@ -749,11 +749,16 @@ public class MessagingArea {
                 long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
                 if (change <= 120_000) {
                     return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
+                } else {
+                    return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                            List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
+                            null, null);
                 }
+            } else {
+                return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                        List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
+                        null, null);
             }
-            return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
-                    null, null);
         } catch (MustAuthorizeException cause) {
             LOGGER.error(cause.getMessage());
             throw cause;
