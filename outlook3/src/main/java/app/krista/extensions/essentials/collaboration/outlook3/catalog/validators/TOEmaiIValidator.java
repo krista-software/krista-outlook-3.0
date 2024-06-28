@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class TOEmaiIValidator implements Validator{
+public class TOEmaiIValidator implements Validator {
 
     private static final List<EmailAddress> emailAddresses = new ArrayList<>();
 
@@ -63,7 +63,7 @@ public class TOEmaiIValidator implements Validator{
         return emailAddresses;
     }
 
-    private static String toStringMailIds(){
+    private static String toStringMailIds() {
         String mailIds = TOEmaiIValidator.emailAddresses.stream()
                 .map(EmailAddress::getMailAddress)
                 .collect(Collectors.joining(", "));

@@ -1,7 +1,11 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
+
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -9,14 +13,23 @@ public class MessageIdValidator implements Validator {
 
     private final Account account;
 
+    private static final Logger logger = LoggerFactory.getLogger(MessageIdValidator.class);
+
     public MessageIdValidator(Account account) {
         this.account = account;
     }
 
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
+        try {
             account.getEmail(resourceId);
             return true;
+        } catch (MustAuthorizeException cause) {
+            throw cause;
+        } catch (Exception cause) {
+            logger.info(cause.getMessage());
+            return false;
+        }
     }
 
     @Override

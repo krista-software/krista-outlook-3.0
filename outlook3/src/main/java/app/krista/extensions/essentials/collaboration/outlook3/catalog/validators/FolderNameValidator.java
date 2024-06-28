@@ -1,10 +1,13 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.validators;
 
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +15,8 @@ import java.util.Map;
 public class FolderNameValidator implements Validator {
 
     private final Account account;
+
+    private static final Logger logger = LoggerFactory.getLogger(FolderNameValidator.class);
 
     public FolderNameValidator(Account account) {
         this.account = account;
@@ -22,7 +27,11 @@ public class FolderNameValidator implements Validator {
         try {
             Folder folder = account.getFolderByName(List.of(resourceId.split(Constants.FORWARD_SLASH)));
             return folder != null;
-        }catch (IllegalArgumentException cause){
+        } catch (MustAuthorizeException cause) {
+            logger.info(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            logger.info(cause.getMessage());
             return false;
         }
     }

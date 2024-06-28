@@ -15,7 +15,7 @@ import app.krista.ksdk.context.AuthorizationContext;
 import javax.inject.Inject;
 import java.util.Map;
 
-@Extension(version = "3.0.2-rc5")
+@Extension(version = "3.0.2-rc6")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 

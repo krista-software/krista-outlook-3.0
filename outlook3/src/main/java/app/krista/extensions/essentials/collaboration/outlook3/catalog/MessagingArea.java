@@ -1,7 +1,11 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.ExtensionResponse;
-import app.krista.extension.impl.anno.*;
+import app.krista.extension.impl.anno.Attribute;
+import app.krista.extension.impl.anno.CatalogRequest;
+import app.krista.extension.impl.anno.Domain;
+import app.krista.extension.impl.anno.Field;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
@@ -25,7 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -85,24 +92,33 @@ public class MessagingArea {
     @Field.Desc(name = "Mail", type = "Entity(Mail Details)", required = false)
     public ExtensionResponse fetchMailByMessageId(
             @Field(name = "Message ID", type = "Text") String messageID) {
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
-
-        if (validationResults.isEmpty()) {
-            MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
-            if (mailDetails != null) {
-                LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
-                        mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+            if (validationResults.isEmpty()) {
+                MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageID), null);
+                if (mailDetails != null) {
+                    LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
+                            mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+                }
+                return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults), Map.class));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL, Map.of(OutlookResources.STATE_ID, stateId));
             }
-            return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults), Map.class));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL, Map.of(OutlookResources.STATE_ID, stateId));
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while fetch mail by message id :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while fetch mail by message id", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch mail by message id", List.of())),
+                    null, null);
         }
     }
 
@@ -116,23 +132,32 @@ public class MessagingArea {
     public ExtensionResponse moveMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Folder Name", type = "Text") String folderName) {
+        try {
+            LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
+                            Validator.ValidationResource.FOLDER_NAME, folderName));
 
-        LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
-                        Validator.ValidationResource.FOLDER_NAME, folderName));
-
-        if (validationResults.isEmpty()) {
-            Email email = account.getEmail(messageID);
-            Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
-            return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
+            if (validationResults.isEmpty()) {
+                Email email = account.getEmail(messageID);
+                Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
+                return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while moving message to folder :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while moving message to folder", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while moving message to folder", List.of())),
+                    null, null);
         }
     }
 
@@ -152,22 +177,31 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
-
-        LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
-                        Validator.ValidationResource.TO, validateString(to)
-                        , Validator.ValidationResource.CC, validateString(cc)
-                        , Validator.ValidationResource.BCC, validateString(bcc)
-                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+        try {
+            LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
+                            Validator.ValidationResource.TO, validateString(to)
+                            , Validator.ValidationResource.CC, validateString(cc)
+                            , Validator.ValidationResource.BCC, validateString(bcc)
+                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Reply To All With CC and BCC :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Reply To All With CC and BCC", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To All With CC and BCC", List.of())),
+                    null, null);
         }
     }
 
@@ -183,20 +217,29 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+        try {
+            LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
 
-        LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
-
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageId,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL, StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageId,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL, StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Reply To All  :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Reply To All", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To All", List.of())),
+                    null, null);
         }
     }
 
@@ -210,26 +253,35 @@ public class MessagingArea {
     public ExtensionResponse fetchSent(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
-
-        LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
-        Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber,pageSize);
-        if(validationResourceMap.isEmpty()){
-           return fetchSentResponse(pageNumber,pageSize);
-        } else {
-            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
-            if(validationResults.isEmpty()){
-                return fetchSentResponse(pageNumber,pageSize);
-            }  else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_FETCH_SENT, StateMapperUtil.addPageMetaDataToMap(pageNumber , pageSize, stateId));
+        try {
+            LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
+            if (validationResourceMap.isEmpty()) {
+                return fetchSentResponse(pageNumber, pageSize);
+            } else {
+                List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+                if (validationResults.isEmpty()) {
+                    return fetchSentResponse(pageNumber, pageSize);
+                } else {
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_FETCH_SENT, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                }
             }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while fetch sent:{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while fetch sent", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch sent", List.of())),
+                    null, null);
         }
     }
 
-    private ExtensionResponse fetchSentResponse(Double pageNumber, Double pageSize){
+    private ExtensionResponse fetchSentResponse(Double pageNumber, Double pageSize) {
         List<Email> emails = account.getSentFolder().getEmails(pageNumber, pageSize);
         return ExtensionResponseFactory.create(Map.of("Sent Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
 
@@ -247,17 +299,26 @@ public class MessagingArea {
             @Field(name = "To", type = "Text") String to,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId, Validator.ValidationResource.TO, to));
 
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId, Validator.ValidationResource.TO, to));
-
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL, StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL, StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while forward mail :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while forward mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while forward mail", List.of())),
+                    null, null);
         }
     }
 
@@ -270,14 +331,16 @@ public class MessagingArea {
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
     public ExtensionResponse fetchMailDetailsByQuery(
             @Field(name = "Query", type = "Text") String query) {
-
-        LOGGER.info("fetchMailDetailsByQuery: {}", query);
         try {
+            LOGGER.info("fetchMailDetailsByQuery: {}", query);
             List<Email> emails = account.searchEmails(query);
             List<MailDetails> response = emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
             return ExtensionResponseFactory.create(Map.of("Mails", response));
-        } catch (Exception error) {
-            return ExtensionResponseFactory.create("Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            return ExtensionResponseFactory.create(cause, "Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
                     null, null);
         }
@@ -299,21 +362,30 @@ public class MessagingArea {
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
-
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(
-                        Validator.ValidationResource.TO, to
-                        , Validator.ValidationResource.CC, validateString(cc)
-                        , Validator.ValidationResource.BCC, validateString(bcc)
-                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL, StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(
+                            Validator.ValidationResource.TO, to
+                            , Validator.ValidationResource.CC, validateString(cc)
+                            , Validator.ValidationResource.BCC, validateString(bcc)
+                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL, StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while send mail :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while send mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while send mail", List.of())),
+                    null, null);
         }
     }
 
@@ -334,21 +406,31 @@ public class MessagingArea {
             @Field.Text(name = "Reply To", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String replyTo,
             @Field.Desc(name = "Entity List", type = "[ Entity ]") List<EntityValue> entityList,
             @Field.Desc(name = "Remove Entity Field From Table", type = "[ Text ]", required = false) List<String> removeEntityFieldFromTable) {
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(
-                        Validator.ValidationResource.TO, to
-                        , Validator.ValidationResource.CC, validateString(cc)
-                        , Validator.ValidationResource.BCC, validateString(bcc)
-                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
-            internalStateManager.putMetaInfo(stateId,Map.of(OutlookResources.ENTITY_LIST, entityList)) ;
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE, StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(
+                            Validator.ValidationResource.TO, to
+                            , Validator.ValidationResource.CC, validateString(cc)
+                            , Validator.ValidationResource.BCC, validateString(bcc)
+                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
+                internalStateManager.putMetaInfo(stateId, Map.of(OutlookResources.ENTITY_LIST, entityList));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE, StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Send Mail With Table :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Send Mail With Table", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Send Mail With Table", List.of())),
+                    null, null);
         }
     }
 
@@ -362,27 +444,36 @@ public class MessagingArea {
     public ExtensionResponse fetchInbox(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
-        LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
-
-        Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber,pageSize);
-        if(validationResourceMap.isEmpty()){
-           return fetchInboxResponse(pageNumber,pageSize);
-        } else {
-            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
-            if(validationResults.isEmpty()){
-                return fetchInboxResponse(pageNumber,pageSize);
-            }  else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber , pageSize, stateId));
+        try {
+            LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
+            if (validationResourceMap.isEmpty()) {
+                return fetchInboxResponse(pageNumber, pageSize);
+            } else {
+                List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+                if (validationResults.isEmpty()) {
+                    return fetchInboxResponse(pageNumber, pageSize);
+                } else {
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                }
             }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox ", List.of())),
+                    null, null);
         }
 
     }
 
-    private ExtensionResponse fetchInboxResponse(Double pageNumber, Double pageSize){
+    private ExtensionResponse fetchInboxResponse(Double pageNumber, Double pageSize) {
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
         return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
     }
@@ -397,19 +488,29 @@ public class MessagingArea {
     public ExtensionResponse markMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label) {
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.markMessage(messageID, label);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
-                            OutlookResources.STATE_ID, stateId
-                            , OutlookResources.LABEL, label, OutlookResources.MESSAGE_ID, messageID));
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.markMessage(messageID, label);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
+                                OutlookResources.STATE_ID, stateId
+                                , OutlookResources.LABEL, label, OutlookResources.MESSAGE_ID, messageID));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while mark message :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while mark message ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while mark message ", List.of())),
+                    null, null);
         }
     }
 
@@ -429,21 +530,31 @@ public class MessagingArea {
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
-        LOGGER.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
-                        Validator.ValidationResource.TO, validateString(to)
-                        , Validator.ValidationResource.CC, validateString(cc)
-                        , Validator.ValidationResource.BCC, validateString(bcc)
-                        , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+        try {
+            LOGGER.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
+                            Validator.ValidationResource.TO, validateString(to)
+                            , Validator.ValidationResource.CC, validateString(cc)
+                            , Validator.ValidationResource.BCC, validateString(bcc)
+                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Reply To Mail With CC and BCC :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Reply To Mail With CC and BCC ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail With CC and BCC ", List.of())),
+                    null, null);
         }
     }
 
@@ -459,19 +570,28 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
-
-        LOGGER.info("replyToMail: messageID: {}; message: {}", messageID, message);
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL, StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+        try {
+            LOGGER.info("replyToMail: messageID: {}; message: {}", messageID, message);
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL, StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Reply To Mail  :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Reply To Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail", List.of())),
+                    null, null);
         }
     }
 
@@ -483,33 +603,41 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field(name = "Task ID", type = "Text", required = false)
     public String fetchInboxAsync() {
-        final String taskId = UUID.randomUUID().toString();
-        boolean useSetupMail = !requestContext.invokeAsUser();
-        String accountID = authorizationContext.getAuthorizedAccount().getAccountId();
-        Map<Class<?>, Object> threadLocals = ThreadLocalProxy.getAll();
+        try {
+            final String taskId = UUID.randomUUID().toString();
+            boolean useSetupMail = !requestContext.invokeAsUser();
+            String accountID = authorizationContext.getAuthorizedAccount().getAccountId();
+            Map<Class<?>, Object> threadLocals = ThreadLocalProxy.getAll();
 
-        executorService.submit(() -> {
-            try {
-                ThreadLocalProxy.setAll(threadLocals);
-                mailHandler.setAuthorizationContext(ThreadLocalProxy.getThreadLocal(AuthorizationContext.class).get());
+            executorService.submit(() -> {
+                try {
+                    ThreadLocalProxy.setAll(threadLocals);
+                    mailHandler.setAuthorizationContext(ThreadLocalProxy.getThreadLocal(AuthorizationContext.class).get());
 
-                List<Email> emails = account.getInboxFolder(useSetupMail, accountID).getEmails(useSetupMail);
-                List<MailDetails> mailDetails = emails.stream().map(email -> {
-                    LOGGER.info("Wait for event request running for email {}", email.getSubject());
-                    return mailHandler.fromEmail(email, useSetupMail);
-                }).collect(Collectors.toList());
-                LOGGER.info("Completed wait for event request.");
-                FreeForm freeForm = new FreeForm();
-                freeForm.put(Constants.DATA, "[ Entity(Mail Details) ]", mailDetails);
-                LOGGER.info("Adding fetched results to event handled.");
-                eventHandler.handleEvent(taskId, freeForm);
-            } catch (Exception cause) {
-                throw new IllegalStateException(cause);
-            } finally {
-                ThreadLocalProxy.removeAll();
-            }
-        });
-        return taskId;
+                    List<Email> emails = account.getInboxFolder(useSetupMail, accountID).getEmails(useSetupMail);
+                    List<MailDetails> mailDetails = emails.stream().map(email -> {
+                        LOGGER.info("Wait for event request running for email {}", email.getSubject());
+                        return mailHandler.fromEmail(email, useSetupMail);
+                    }).collect(Collectors.toList());
+                    LOGGER.info("Completed wait for event request.");
+                    FreeForm freeForm = new FreeForm();
+                    freeForm.put(Constants.DATA, "[ Entity(Mail Details) ]", mailDetails);
+                    LOGGER.info("Adding fetched results to event handled.");
+                    eventHandler.handleEvent(taskId, freeForm);
+                } catch (MustAuthorizeException cause) {
+                    LOGGER.error(cause.getMessage());
+                    throw cause;
+                } catch (Exception cause) {
+                    throw new IllegalStateException(cause);
+                } finally {
+                    ThreadLocalProxy.removeAll();
+                }
+            });
+            return taskId;
+        } catch (IllegalStateException cause) {
+            LOGGER.error("Illegal state error: {}", cause.getMessage(), cause);
+            throw new IllegalStateException(cause);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -544,19 +672,28 @@ public class MessagingArea {
             @Field(name = "Label", type = "Text") String label,
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
-        LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
+        try {
+            LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(ValidationResourceUtil.prepareValidateLabelMap(label, pageNumber, pageSize));
 
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(ValidationResourceUtil.prepareValidateLabelMap(label,pageNumber,pageSize));
-
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL, StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL, StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Fetch Mails By Label  :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Fetch Mails By Label", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Mails By Label", List.of())),
+                    null, null);
         }
     }
 
@@ -570,19 +707,30 @@ public class MessagingArea {
     public ExtensionResponse mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
-        LOGGER.info("Allow Alert Mail Triggered Stage 1");
-        if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-            LOGGER.info("Allow Alert Mail Triggered Stage 2");
-            MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
-            LOGGER.info("Allow Alert Mail Triggered Stage 3");
-            if (mailDetails != null) {
-                LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
-                        mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+        try {
+            if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
+                MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
+                if (mailDetails != null) {
+                    LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
+                            mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+                    return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
+                } else {
+                    return ExtensionResponseFactory.create("Mail details not available", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                            List.of(RemediationActionFactory.createInformActionALLParticipants("Mail details not available ", List.of())),
+                            null, null);
+                }
+            } else {
+                throw new IllegalStateException();
             }
-            assert mailDetails != null;
-            return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Mail Received Alert:{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Mail Received Alert", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Mail Received Alert", List.of())),
+                    null, null);
         }
-        return null;
     }
 
     @CatalogRequest(
@@ -593,16 +741,33 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
     public ExtensionResponse fetchLatestMail() {
-        LOGGER.info("fetchLatestMail: start");
-        List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
-        MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
-        if (mailDetails != null && mailDetails.sendDateAndTime != null) {
-            long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
-            if (change <= 120_000) {
-                return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
+        try {
+            LOGGER.info("fetchLatestMail: start");
+            List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
+            MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
+            if (mailDetails != null && mailDetails.sendDateAndTime != null) {
+                long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
+                if (change <= 120_000) {
+                    return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
+                } else {
+                    return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                            List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
+                            null, null);
+                }
+            } else {
+                return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                        List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
+                        null, null);
             }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Fetch Latest Mail:{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
+                    null, null);
         }
-        return null;
     }
 
     @CatalogRequest(
@@ -613,19 +778,24 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Category Names", type = "[ Text ]", required = false)
     public ExtensionResponse listCategories() {
-        LOGGER.info("Fetching Categories");
-        List<String> categoryNames;
         try {
+            LOGGER.info("Fetching Categories");
+            List<String> categoryNames;
             categoryNames = account.getCategoryNames();
             LOGGER.info("listCategories(): {}", categoryNames);
+            return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
         } catch (Exception cause) {
             LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
             return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to fetch categories", List.of())),
                     null, Map.of());
         }
-        return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
+
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_e35e5d82-b464-4fe4-875a-33f0dfe48265",
@@ -638,19 +808,28 @@ public class MessagingArea {
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category,
             @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean createCategory) {
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
-
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE, StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE, StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Add Category To Message:{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Add Category To Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Add Category To Message", List.of())),
+                    null, null);
         }
     }
 
@@ -664,22 +843,32 @@ public class MessagingArea {
     public ExtensionResponse removeCategoryFromMessage(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
-        List<ValidationOrchestrator.ValidationResult> validationResults =
-                validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
-                        Validator.ValidationResource.CATEGORY, category));
-        if (validationResults.isEmpty()) {
-            return messagingAreaImpl.removeCategoryFromMessage(messageID, category);
-        } else {
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.CATEGORY, category));
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
+                            Validator.ValidationResource.CATEGORY, category));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.removeCategoryFromMessage(messageID, category);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.CATEGORY, category));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while Remove Category From Message:{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while Remove Category From Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Remove Category From Message", List.of())),
+                    null, null);
         }
     }
 
-    private static String validateString(String input){
+    private static String validateString(String input) {
         return input == null ? "" : input;
     }
 }
