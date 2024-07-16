@@ -2,7 +2,7 @@
 
 ## Version 3.0.2
 
-- **Developer Name** : Chetan Sonawane
+- **Developer Name** : Aradhya Gudadhe
 - **Krista Service APIs Java** : 1.0.98
 - **Global Catalog Version** : 1.0.46
 - **Appliance Release Version** : 3.3.3
@@ -17,6 +17,7 @@
 * [KR-13885]: Jira&Outlook:Unable to understand error message when not reentering field input.
 * [KE-1732] : Error Handling: Outlook: An error message appears when the page number and page size fields are left blank.
 * [KE-1739] : Documentation should be updated with error handling supported request.
+* [KE-1764] : Getting error message when executing request with have people authenticate after adding new invoker.
 
 ## Known Issues
 
