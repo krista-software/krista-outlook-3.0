@@ -182,7 +182,8 @@ public class AccountImpl implements Account {
             LOGGER.error(cause.getMessage(), cause);
             throw cause;
         } catch (RuntimeException cause) {
-            throw new IllegalStateException(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID + emailMessageId);
+            LOGGER.error(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID, cause);
+            throw new IllegalStateException(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID, cause);
         }
     }
 
