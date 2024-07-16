@@ -25,9 +25,10 @@ public class MessageIdValidator implements Validator {
             account.getEmail(resourceId);
             return true;
         } catch (MustAuthorizeException cause) {
+            logger.error("Exception thrown while authorizing user : {} {}", cause.getMessage(), cause);
             throw cause;
         } catch (Exception cause) {
-            logger.info(cause.getMessage());
+            logger.error("Exception thrown while validating message ID: {}", cause.getMessage(), cause);
             return false;
         }
     }

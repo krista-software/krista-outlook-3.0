@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
@@ -177,8 +178,12 @@ public class AccountImpl implements Account {
             }
             Message message = getUserRequestBuilder(null, null).messages(emailMessageId).buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML)).get();
             return new EmailImpl(provider, message);
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage(), cause);
+            throw cause;
         } catch (RuntimeException cause) {
-            throw new IllegalStateException(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID + emailMessageId);
+            LOGGER.error(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID, cause);
+            throw new IllegalStateException(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID, cause);
         }
     }
 
