@@ -473,6 +473,53 @@ public class MessagingArea {
 
     }
 
+    @CatalogRequest(
+            id = "localDomainRequest_d9a9cf34-899a-4c66-b3ef-9c7457446035",
+            name = "Fetch Inbox With Preferences",
+            description = "This request is used to fetch Inbox emails with the selected preferences.",
+            area = "Messaging",
+            type = CatalogRequest.Type.QUERY_SYSTEM)
+    @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
+    public ExtensionResponse fetchInboxWithPreferences(
+            @Field(name = "Page Number", type = "Number", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageNumber,
+            @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageSize,
+            @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference) {
+        if (preference == null || preference.isEmpty()) {
+            preference.put("Mail Body", "Html");
+        }
+        LOGGER.info("fetchInboxWithPreference: pageNumber: {}; pageSize: {}; preference: {}", pageNumber, pageSize, preference);
+        List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize, preference);
+//        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+
+        try {
+            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
+            if (validationResourceMap.isEmpty()) {
+                return fetchInboxResponse(pageNumber, pageSize);
+            } else {
+                List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+                if (validationResults.isEmpty()) {
+                    return fetchInboxResponse(pageNumber, pageSize);
+                } else {
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                }
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox ", List.of())),
+                    null, null);
+        }
+
+
+    }
+
     private ExtensionResponse fetchInboxResponse(Double pageNumber, Double pageSize) {
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
         return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));

@@ -36,6 +36,7 @@ public class Constants {
     public static final String EMAIL_ADDRESS_IS_EMPTY_OR_NULL = "Email address is empty or null.";
     public static final String RECIPIENT_IS_EMPTY_OR_NULL = "Recipient is empty or null.";
     public static final String BODY_CONTENT_TYPE_HTML = "outlook.body-content-type=\"html\"";
+    public static final String BODY_CONTENT_TYPE_TEXT = "outlook.body-content-type=\"text\"";
     public static final String UNAUTHORISED_USER = "Unauthorised user.";
     public static final String USER_AUTHENTICATED_SUCCESSFULLY_SAVE_THE_CHANGES = "User authenticated successfully. Save the changes.";
     public static final String ERROR_OCCURRED_DURING_AUTHORIZATION = "Error occurred during authorization";
