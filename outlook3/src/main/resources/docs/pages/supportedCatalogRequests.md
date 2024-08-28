@@ -471,7 +471,6 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Preference      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
 ### Fetch Latest Mail
 
