@@ -53,6 +53,8 @@ public class ExtensionResponseGenerator {
         }
         return Map.of(STEP_MESSAGE, stepMessage.toString(), ERROR_MESSAGE, errMessage.toString(), FIELD, fields);
     }
+
+    @SuppressWarnings("unchecked")
     public ExtensionResponse generateFetchResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,

@@ -27,16 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class MessagingAreaSubCatalogRequests {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaSubCatalogRequests.class);
     public static final String HANDLE_REENTER_REPLY_TO_ALL_WITH_FIELDS = "handleReenterReplyToAllWithFields";
     public static final String HANDLE_REENTER_REPLY_TO_MAIL_WITH_FIELDS = "handleReenterReplyToMailWithFields";
     public static final String HANDLE_REENTER_SEND_MAIL = "handleReenterSendMail";
@@ -47,6 +42,7 @@ public class MessagingAreaSubCatalogRequests {
     public static final String HANDLE_REENTER_MARK_MESSAGE = "handleReenterMarkMessage";
     public static final String REENTER = "Reenter";
     public static final String REENTER_WAS_TRUE_HENCE_CONTINUING = "Reenter was true. Hence continuing.";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaSubCatalogRequests.class);
     private final MailHandler mailHandler;
     private final Account account;
 
@@ -63,6 +59,48 @@ public class MessagingAreaSubCatalogRequests {
         this.responseGenerator = responseGenerator;
         this.internalStateManager = internalStateManager;
         this.messagingAreaImpl = messagingAreaImpl;
+    }
+
+    @NotNull
+    private static List<ValidationOrchestrator.ValidationResult> getValidationResults(Map<String, Object> state) {
+        List<ValidationOrchestrator.ValidationResult> validationResults = new ArrayList<>();
+        List<?> results = (List<?>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
+        for (Object item : results) {
+            validationResults.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), ValidationOrchestrator.ValidationResult.class));
+        }
+        return validationResults;
+    }
+
+    @NotNull
+    private static Map<String, Object> addMetaDataToLinkedHashMap(Map<String, Object> map, String stateId) {
+        Map<String, Object> metaData = new LinkedHashMap<>();
+        metaData.put(OutlookResources.STATE_ID, stateId);
+        metaData.putAll(map);
+        return metaData;
+    }
+
+    @NotNull
+    private static List<File> getFileList(Map<String, Object> state) {
+        List<File> fileList = new ArrayList<>();
+        if (state.containsKey(OutlookResources.ATTACHMENTS)) {
+            List<?> results = (List<?>) state.get(OutlookResources.ATTACHMENTS);
+            for (Object item : results) {
+                fileList.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), File.class));
+            }
+        }
+        return fileList;
+    }
+
+    @NotNull
+    private static List<String> getEntityFieldList(Map<String, Object> state) {
+        List<String> removeEntityFieldFromTable = new ArrayList<>();
+        if (state.containsKey(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE)) {
+            List<?> results = (List<?>) state.get(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE);
+            for (Object item : results) {
+                removeEntityFieldFromTable.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), String.class));
+            }
+        }
+        return removeEntityFieldFromTable;
     }
 
     @SubCatalogRequest(
@@ -87,16 +125,6 @@ public class MessagingAreaSubCatalogRequests {
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                 validationResults, "handleReenterFetchMail",
                 Map.of(OutlookResources.STATE_ID, stateId));
-    }
-
-    @NotNull
-    private static List<ValidationOrchestrator.ValidationResult> getValidationResults(Map<String, Object> state) {
-        List<ValidationOrchestrator.ValidationResult> validationResults = new ArrayList<>();
-        List<?> results = (List<?>) state.get(SubCatalogConstants.VALIDATION_RESULTS);
-        for (Object item : results) {
-            validationResults.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), ValidationOrchestrator.ValidationResult.class));
-        }
-        return validationResults;
     }
 
     @SubCatalogRequest(
@@ -176,7 +204,6 @@ public class MessagingAreaSubCatalogRequests {
         }
     }
 
-
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS,
             description = "Checks if user wants to re enter reply to all and if yes, sends prompt to do so",
@@ -200,19 +227,12 @@ public class MessagingAreaSubCatalogRequests {
                 addMetaDataToLinkedHashMap(map, stateId));
     }
 
-    @NotNull
-    private static Map<String, Object> addMetaDataToLinkedHashMap(Map<String, Object> map, String stateId) {
-        Map<String, Object> metaData = new LinkedHashMap<>();
-        metaData.put(OutlookResources.STATE_ID, stateId);
-        metaData.putAll(map);
-        return metaData;
-    }
-
     @SubCatalogRequest(
             name = HANDLE_REENTER_REPLY_TO_ALL_WITH_FIELDS,
             description = "Handle Reply To ALL With CC BCC",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToAllWithFields(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
     ) {
@@ -233,7 +253,6 @@ public class MessagingAreaSubCatalogRequests {
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
-
 
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL,
@@ -258,12 +277,12 @@ public class MessagingAreaSubCatalogRequests {
                 addMetaDataToLinkedHashMap(map, stateId));
     }
 
-
     @SubCatalogRequest(
             name = HANDLE_REENTER_REPLY_TO_ALL,
             description = "Handle Reply To ALL",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToAll(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
     ) {
@@ -280,7 +299,6 @@ public class MessagingAreaSubCatalogRequests {
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
-
 
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL,
@@ -327,7 +345,6 @@ public class MessagingAreaSubCatalogRequests {
         }
     }
 
-
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL,
             description = "Checks if user wants to re send mail and if yes, sends prompt to do so",
@@ -356,6 +373,7 @@ public class MessagingAreaSubCatalogRequests {
             description = "Handle Send Mail",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false)
+    @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterSendMail(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
     ) {
@@ -376,7 +394,6 @@ public class MessagingAreaSubCatalogRequests {
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
-
 
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE,
@@ -407,6 +424,7 @@ public class MessagingAreaSubCatalogRequests {
             description = "Handle Send Mail With Table",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false)
+    @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterSendMailWithTable(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText }") Map<String, Object> map
     ) {
@@ -430,30 +448,6 @@ public class MessagingAreaSubCatalogRequests {
             return ExtensionResponseFactory.create(cause, "Failed to Send Mail With Table",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
-    }
-
-    @NotNull
-    private static List<File> getFileList(Map<String, Object> state) {
-        List<File> fileList = new ArrayList<>();
-        if (state.containsKey(OutlookResources.ATTACHMENTS)) {
-            List<?> results = (List<?>) state.get(OutlookResources.ATTACHMENTS);
-            for (Object item : results) {
-                fileList.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), File.class));
-            }
-        }
-        return fileList;
-    }
-
-    @NotNull
-    private static List<String> getEntityFieldList(Map<String, Object> state) {
-        List<String> removeEntityFieldFromTable = new ArrayList<>();
-        if (state.containsKey(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE)) {
-            List<?> results = (List<?>) state.get(OutlookResources.REMOVE_ENTITY_FIELD_FROM_TABLE);
-            for (Object item : results) {
-                removeEntityFieldFromTable.add(Constants.GSON.fromJson(Constants.GSON.toJson(item), String.class));
-            }
-        }
-        return removeEntityFieldFromTable;
     }
 
     @SubCatalogRequest(
@@ -527,6 +521,7 @@ public class MessagingAreaSubCatalogRequests {
             description = "Handle Reply To Mail with cc, bcc, to, Reply to",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false, attributes = {}, options = {})
+    @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToMailWithFields(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
     ) {
@@ -577,6 +572,7 @@ public class MessagingAreaSubCatalogRequests {
             description = "Handle Reply To Mail",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Message", type = "Text", required = false)
+    @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToMail(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
     ) {
@@ -614,7 +610,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchMailByLabel", Map.of(OutlookResources.LABEL,map.get(OutlookResources.LABEL)));
+                validationResults, "handleReenterFetchMailByLabel", Map.of(OutlookResources.LABEL, map.get(OutlookResources.LABEL)));
     }
 
     @SubCatalogRequest(
@@ -765,6 +761,53 @@ public class MessagingAreaSubCatalogRequests {
             return ExtensionResponseFactory.create(cause, "Failed to fetch Inbox",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
+    }
+
+    @SubCatalogRequest(
+            name = SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
+            description = "Checks if user want to re enter fetch Inbox with preferences Page Size or Number or Preference and if yes, sends prompt to do so",
+            type = CatalogRequest.Type.QUERY_SYSTEM
+    )
+    @SuppressWarnings("unchecked")
+    public ExtensionResponse confirmReenterFetchInboxWithPreferences(
+            @Field.Desc(name = "inputMap",
+                    type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number, Preference: { Mail Body: PickOne(Text|Html)} }",
+                    required = true) Map<String, Object> map) {
+        LOGGER.info("SubCatalogRequest confirmReenterFetchInboxWithPreferences start: {}", map);
+        Boolean reenter = (Boolean) map.get(REENTER);
+        String stateId = (String) map.get(OutlookResources.STATE_ID);
+        Map<String, Object> state = internalStateManager.get(stateId);
+        List<ValidationOrchestrator.ValidationResult> validationResults = getValidationResults(state);
+        if (Boolean.FALSE.equals(reenter)) {
+            return responseGenerator.generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    validationResults, null, Map.of());
+        }
+        LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
+        return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                validationResults, "handleReenterFetchInboxWithPreference", Map.of());
+    }
+
+    @SubCatalogRequest(name = "handleReenterFetchInboxWithPreference",
+            description = "Handle reenter fetch inbox with preference",
+            type = CatalogRequest.Type.QUERY_SYSTEM)
+    @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
+    @SuppressWarnings("unchecked")
+    public app.krista.extension.executor.ExtensionResponse handleReenterFetchInboxWithPreference(
+            @Field.Desc(name = "inputMap",
+                    type = "{ stateId: Text, Page Number: Number, Page Size: Number, Preference: { Mail Body: PickOne(Text|Html) } }",
+                    required = false) Map<String, Object> map) {
+        LOGGER.info("SubCatalogRequest handleReenterFetchInboxWithPreference start: {}", map);
+        Double pageNumber = (Double) map.get(OutlookResources.PAGE_NUMBER);
+        Double pageSize = (Double) map.get(OutlookResources.PAGE_SIZE);
+        Map<String, Object> preference = (Map<String, Object>) map.get(OutlookResources.PREFERENCE);
+        try {
+            List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize, preference);
+            return ExtensionResponseFactory.create(Map.of("Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
+        } catch (Exception cause) {
+            return ExtensionResponseFactory.create(cause, "Failed to fetch inbox mails with given preferences",
+                    ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
+        }
+
     }
 
 

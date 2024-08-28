@@ -24,6 +24,7 @@ public class ValidationOrchestrator {
         validators.put(Validator.ValidationResource.CATEGORY, new CatagoryValidator(account));
         validators.put(Validator.ValidationResource.PAGE_NUMBER, new PageNumberValidator());
         validators.put(Validator.ValidationResource.PAGE_SIZE, new PageSizeValidator());
+        validators.put(Validator.ValidationResource.PREFERENCES, new PreferenceValidator());
     }
 
     public class ValidationResult {

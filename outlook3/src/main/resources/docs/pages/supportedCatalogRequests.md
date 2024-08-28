@@ -5,11 +5,15 @@
 The Outlook Extension supports the following catalog requests.
 
 > **Note :**
-> - Files with extensions such as "html", "php5", "pht", "phtml", "shtml", "asa", "cer", "asax", "swf", "xap", "jsp", "exe", and "js" are attached as a zip file in the email. Likewise, attachments are received as zip files in the email.
+> - Files with extensions such as "html", "php5", "pht", "phtml", "shtml", "asa", "cer", "asax", "swf", "xap", "jsp", "
+    exe", and "js" are attached as a zip file in the email. Likewise, attachments are received as zip files in the
+    email.
 
 > **Error Handling Note :**
 > - If a user makes a mistake when entering data, the system will give them a chance to fix it.
-    An error message will pop up, and the user can re-enter the information for that specific field.  If they enter valid data the second time, everything will work as expected.  However, if they enter invalid data again, the system will encounter a problem and display a more specific error message.
+    An error message will pop up, and the user can re-enter the information for that specific field. If they enter valid
+    data the second time, everything will work as expected. However, if they enter invalid data again, the system will
+    encounter a problem and display a more specific error message.
 
 ### Fetch All Labels
 
@@ -50,7 +54,8 @@ The Outlook Extension supports the following catalog requests.
   message.
 
 > **Note :**
-> - In the event that **Create Category** is selected, the category will be accessible globally for all messages. Conversely, if this option is not selected, the category will only be available for the specific message provided.
+> - In the event that **Create Category** is selected, the category will be accessible globally for all messages.
+    Conversely, if this option is not selected, the category will only be available for the specific message provided.
 
 - **Input Parameters**:
 
@@ -72,10 +77,10 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
-
 ### Remove Category From Message
 
-- **Description**: Accepts message ID and Category as input and remove given category from the message and returns response
+- **Description**: Accepts message ID and Category as input and remove given category from the message and returns
+  response
   message.
 - **Input Parameters**:
 
@@ -97,7 +102,6 @@ The Outlook Extension supports the following catalog requests.
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Category        | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
-
 ### Fetch Mail By Message Id
 
 - **Description**: Accepts message Id as input and returns mail. In case of invalid input, this will return empty data.
@@ -118,7 +122,6 @@ The Outlook Extension supports the following catalog requests.
 | Input Parameter | Valid Data        | Invalid Data                                                              |
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Move Message
 
@@ -143,7 +146,6 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Folder Name     | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Fetch Mails By Label
 
@@ -172,7 +174,6 @@ The Outlook Extension supports the following catalog requests.
 | Label           | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Mail Received Alert
 
@@ -212,7 +213,6 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
-
 ### Reply To All With CC and BCC
 
 - **Description**: In this request, you can respond to everyone on a thread. Other recipients would see a message. Use '
@@ -250,7 +250,6 @@ The Outlook Extension supports the following catalog requests.
 | Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
-
 ### Fetch Sent
 
 - **Description**: Accepts page number, and page size as input and returns list of mails from sent folder.
@@ -274,7 +273,6 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Forward Mail
 
@@ -302,7 +300,6 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Send Mail
 
@@ -338,7 +335,6 @@ The Outlook Extension supports the following catalog requests.
 | Cc              | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Send Mail With Table
 
@@ -451,6 +447,31 @@ The Outlook Extension supports the following catalog requests.
 | Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
+### Fetch Inbox With Preferences
+
+- **Description**: This request is used to fetch Inbox emails with the selected preferences.
+- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
+  and of page size is 15.
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**     |
+|--------------------|--------------------|---------------|-----------------|
+| Page Number        | Number             | No            | 1               |
+| Page Size          | Number             | No            | 1               |
+| Preference         | Multi Field        | No            | Mail Body: Text |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** |
+|--------------------|--------------------|
+| Mails              | List&lt;Mails>     |
+
+- **Validation Fields**
+
+| Input Parameter | Valid Data        | Invalid Data                                                              |
+|-----------------|-------------------|---------------------------------------------------------------------------|
+| Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
+| Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
+| Preference      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
 ### Fetch Latest Mail
 
@@ -462,7 +483,6 @@ The Outlook Extension supports the following catalog requests.
 | **Parameter Name** | **Parameter Type** |
 |--------------------|--------------------|
 | New Email          | Mails              |
-
 
 ### Reply To Mail
 
@@ -490,7 +510,6 @@ The Outlook Extension supports the following catalog requests.
 | Input Parameter | Valid Data        | Invalid Data                                                              |
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### Reply To Mail With CC and BCC
 
@@ -530,7 +549,6 @@ The Outlook Extension supports the following catalog requests.
 | Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
 
 ### List Categories
 

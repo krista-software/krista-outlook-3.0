@@ -48,13 +48,13 @@ public class MessagingArea {
     private final Account account;
     private final EventHandler eventHandler;
     private final MailHandler mailHandler;
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private RequestContext requestContext;
-    private AuthorizationContext authorizationContext;
     private final MessagingAreaImpl messagingAreaImpl;
     private final ExtensionResponseGenerator responseGenerator;
     private final ErrorHandlingStateManager internalStateManager;
     private final ValidationOrchestrator validationOrchestrator;
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private RequestContext requestContext;
+    private AuthorizationContext authorizationContext;
 
     @Inject
     public MessagingArea(Account account, RequestContext requestContext, AuthorizationContext authorizationContext,
@@ -70,6 +70,10 @@ public class MessagingArea {
         this.responseGenerator = responseGenerator;
         this.internalStateManager = internalStateManager;
         this.validationOrchestrator = validationOrchestrator;
+    }
+
+    private static String validateString(String input) {
+        return input == null ? "" : input;
     }
 
     @CatalogRequest(
@@ -481,30 +485,30 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
     public ExtensionResponse fetchInboxWithPreferences(
-            @Field(name = "Page Number", type = "Number", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageNumber,
+            @Field(name = "Page Number", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageSize,
             @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference) {
         if (preference == null || preference.isEmpty()) {
             preference.put("Mail Body", "Html");
         }
         LOGGER.info("fetchInboxWithPreference: pageNumber: {}; pageSize: {}; preference: {}", pageNumber, pageSize, preference);
-        List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize, preference);
-//        return emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
 
         try {
-            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
+            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil
+                    .prepareValidateFetchInboxWithPrefMap(pageNumber, pageSize, preference);
             if (validationResourceMap.isEmpty()) {
-                return fetchInboxResponse(pageNumber, pageSize);
+                return fetchInboxResponseWithPref(pageNumber, pageSize, preference);
             } else {
                 List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
                 if (validationResults.isEmpty()) {
-                    return fetchInboxResponse(pageNumber, pageSize);
+                    return fetchInboxResponseWithPref(pageNumber, pageSize, preference);
                 } else {
                     String stateId = UUID.randomUUID().toString();
                     internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
                     return responseGenerator.generateConfirmationResponse(
                             ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                            SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                            SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
+                            StateMapperUtil.addFetchInboxWithPrefMetaDataToMap(pageNumber, pageSize, preference, stateId));
                 }
             }
         } catch (MustAuthorizeException cause) {
@@ -513,16 +517,21 @@ public class MessagingArea {
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox ", List.of())),
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox with given preferences ", List.of())),
                     null, null);
         }
-
 
     }
 
     private ExtensionResponse fetchInboxResponse(Double pageNumber, Double pageSize) {
         List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
         return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
+    }
+
+    private ExtensionResponse fetchInboxResponseWithPref(Double pageNumber, Double pageSize, Map<String, Object> pref) {
+        List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize, pref);
+        return ExtensionResponseFactory.create(Map.of("Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
+
     }
 
     @CatalogRequest(
@@ -787,6 +796,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
+    @SuppressWarnings("unchecked")
     public ExtensionResponse fetchLatestMail() {
         try {
             LOGGER.info("fetchLatestMail: start");
@@ -842,7 +852,6 @@ public class MessagingArea {
         }
 
     }
-
 
     @CatalogRequest(
             id = "localDomainRequest_e35e5d82-b464-4fe4-875a-33f0dfe48265",
@@ -913,9 +922,5 @@ public class MessagingArea {
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Remove Category From Message", List.of())),
                     null, null);
         }
-    }
-
-    private static String validateString(String input) {
-        return input == null ? "" : input;
     }
 }

@@ -15,7 +15,8 @@ public interface Validator {
         LABEL,
         CATEGORY,
         PAGE_NUMBER,
-        PAGE_SIZE
+        PAGE_SIZE,
+        PREFERENCES
     }
 
     Boolean validate(String resourceId, Map<ValidationResource, String> context);
