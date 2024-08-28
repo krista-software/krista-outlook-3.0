@@ -36,16 +36,4 @@ public class ValidationResourceUtil {
         }
         return map;
     }
-
-    public static Map<Validator.ValidationResource, String> prepareValidateFetchInboxWithPrefMap(
-            Double pageNumber, Double pageSize, Map<String, Object> prefMap) {
-        Map<Validator.ValidationResource, String> map = prepareValidateFetchInboxMap(pageNumber, pageSize);
-        if (prefMap != null && !prefMap.isEmpty()) {
-            String prefBodyType = (String) prefMap.get("Mail Body");
-            if (!"html".equalsIgnoreCase(prefBodyType) && !"text".equalsIgnoreCase(prefBodyType)) {
-                map.put(Validator.ValidationResource.PREFERENCES, prefBodyType);
-            }
-        }
-        return map;
-    }
 }

@@ -495,7 +495,7 @@ public class MessagingArea {
 
         try {
             Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil
-                    .prepareValidateFetchInboxWithPrefMap(pageNumber, pageSize, preference);
+                    .prepareValidateFetchInboxMap(pageNumber, pageSize);
             if (validationResourceMap.isEmpty()) {
                 return fetchInboxResponseWithPref(pageNumber, pageSize, preference);
             } else {

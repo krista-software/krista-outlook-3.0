@@ -765,13 +765,13 @@ public class MessagingAreaSubCatalogRequests {
 
     @SubCatalogRequest(
             name = SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
-            description = "Checks if user want to re enter fetch Inbox with preferences Page Size or Number or Preference and if yes, sends prompt to do so",
+            description = "Checks if user want to re enter fetch Inbox with preferences Page Size or Number and if yes, sends prompt to do so",
             type = CatalogRequest.Type.QUERY_SYSTEM
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterFetchInboxWithPreferences(
             @Field.Desc(name = "inputMap",
-                    type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number, Preference: { Mail Body: PickOne(Text|Html)} }",
+                    type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number, Preference: { Mail Body: PickOne(Text|Html) } }",
                     required = true) Map<String, Object> map) {
         LOGGER.info("SubCatalogRequest confirmReenterFetchInboxWithPreferences start: {}", map);
         Boolean reenter = (Boolean) map.get(REENTER);
@@ -784,7 +784,10 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchInboxWithPreference", Map.of());
+                validationResults, "handleReenterFetchInboxWithPreference",
+                Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.PAGE_NUMBER, map.get(OutlookResources.PAGE_NUMBER),
+                        OutlookResources.PAGE_SIZE, map.get(OutlookResources.PAGE_SIZE),
+                        OutlookResources.PREFERENCE, map.get(OutlookResources.PREFERENCE)));
     }
 
     @SubCatalogRequest(name = "handleReenterFetchInboxWithPreference",
