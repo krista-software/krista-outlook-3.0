@@ -11,8 +11,8 @@ The Outlook Extension supports the following catalog requests.
 
 > **Error Handling Note :**
 > - If a user makes a mistake when entering data, the system will give them a chance to fix it.
-    An error message will pop up, and the user can re-enter the information for that specific field. If they enter valid
-    data the second time, everything will work as expected. However, if they enter invalid data again, the system will
+    An error message is displayed. The user can re-enter the information for that specific field. If they enter valid
+    data the second time, everything will work as expected. However, if they enter incorrect data again, the system will
     encounter a problem and display a more specific error message.
 
 ### Fetch All Labels
@@ -451,7 +451,7 @@ The Outlook Extension supports the following catalog requests.
 
 - **Description**: This request is used to fetch Inbox emails with the selected preferences.
 - **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
-  and of page size is 15.
+  and that of page size is 15.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**     |
 |--------------------|--------------------|---------------|-----------------|
