@@ -19,10 +19,10 @@ import java.util.StringJoiner;
 @Service
 public class ExtensionResponseGenerator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionResponseGenerator.class);
     public static final String ERROR_MESSAGE = "ErrorMessage";
     public static final String STEP_MESSAGE = "StepMessage";
     public static final String FIELD = "Field";
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionResponseGenerator.class);
 
     public ExtensionResponse generateConfirmationResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
@@ -34,31 +34,29 @@ public class ExtensionResponseGenerator {
         Map<String, Object> stringStringMap = generateResponse(validationResults, false);
         return ExtensionResponseFactory.create((String) stringStringMap.get(ERROR_MESSAGE), exceptionType,
                 List.of(RemediationActionFactory.createAskAction((String) stringStringMap.get(STEP_MESSAGE), fields)),
-                        subCatalogRequestName, state);
+                subCatalogRequestName, state);
     }
 
-    private Map<String, Object> generateResponse(List<ValidationOrchestrator.ValidationResult> validationResults, boolean fetchResponse)
-    {
+    private Map<String, Object> generateResponse(List<ValidationOrchestrator.ValidationResult> validationResults, boolean fetchResponse) {
         StringBuilder stepMessage = new StringBuilder();
         StringBuilder errMessage = new StringBuilder();
         List<NamedField> fields = new ArrayList<>();
-
-        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
+        for (ValidationOrchestrator.ValidationResult validationResult : validationResults) {
             stepMessage.append(!fetchResponse ? validationResult.getConfirmStepMessage() : validationResult.getFetchStepMessage()).append("\n");
             errMessage.append(validationResult.getErrMessage()).append("\n");
-            if(fetchResponse)
-            {
+            if (fetchResponse) {
                 fields.add(NamedFieldFactory.createField(validationResult.getFetchFieldName(), validationResult.getFieldType()));
             }
         }
         return Map.of(STEP_MESSAGE, stepMessage.toString(), ERROR_MESSAGE, errMessage.toString(), FIELD, fields);
     }
+
+    @SuppressWarnings("unchecked")
     public ExtensionResponse generateFetchResponse(
             ExtensionResponse.Error.ExceptionType exceptionType,
             List<ValidationOrchestrator.ValidationResult> validationResults,
             String subCatalogRequestName,
-            Map<String, Object> state
-    ) {
+            Map<String, Object> state) {
 
         LOGGER.info("Validation failed for : {}", validationResults.size());
         Map<String, Object> stringStringMap = generateResponse(validationResults, true);
@@ -75,7 +73,7 @@ public class ExtensionResponseGenerator {
     ) {
         StringJoiner stepMessage = new StringJoiner(", ", "Updated value for ", " were not provided.");
         StringBuilder errMessage = new StringBuilder();
-        for(ValidationOrchestrator.ValidationResult validationResult : validationResults) {
+        for (ValidationOrchestrator.ValidationResult validationResult : validationResults) {
             stepMessage.add("'" + validationResult.getFetchFieldName() + "'");
             errMessage.append(validationResult.getErrMessage()).append("\n");
         }

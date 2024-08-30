@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *  Outlook Folder Object
@@ -76,6 +77,8 @@ public interface Folder {
      * @return {@link List<Email>} list of emails from given page number of given size
      */
     List<Email> getEmails(Double pageNumber, Double pageSize);
+
+    List<Email> getEmails(Double pageNumber, Double pageSize, Map<String, Object> preferences);
 
     List<Email> getEmails(Boolean useEmail);
 

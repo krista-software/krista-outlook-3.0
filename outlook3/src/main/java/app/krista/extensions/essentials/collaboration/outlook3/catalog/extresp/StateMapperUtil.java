@@ -11,7 +11,8 @@ import java.util.Map;
 
 public class StateMapperUtil {
 
-    private StateMapperUtil(){}
+    private StateMapperUtil() {
+    }
 
     @NotNull
     public static Map<String, Object> addReplyToALLFieldsMetaToMap(String messageId, String to, String cc, String bcc, String replyTo, String message, List<File> attachments, String bodyType, String stateId) {
@@ -67,6 +68,7 @@ public class StateMapperUtil {
 
         return metaData;
     }
+
     public static Map<String, Object> addSendMailWithTableMetaToMap(String subject, String to, String cc, String bcc, String replyTo, String message, String stateId) {
         Map<String, Object> metaData = new LinkedHashMap<>();
         metaData.put(OutlookResources.STATE_ID, stateId);
@@ -111,6 +113,12 @@ public class StateMapperUtil {
         metaData.put(OutlookResources.STATE_ID, stateId);
         metaData.put(OutlookResources.PAGE_NUMBER, pageNumber);
         metaData.put(OutlookResources.PAGE_SIZE, pageSize);
+        return metaData;
+    }
+
+    public static Map<String, Object> addFetchInboxWithPrefMetaDataToMap(Double pageNumber, Double pageSize, Map<String, Object> pref, String stateId) {
+        Map<String, Object> metaData = addPageMetaDataToMap(pageNumber, pageSize, stateId);
+        metaData.put(OutlookResources.PREFERENCE, pref);
         return metaData;
     }
 }

@@ -39,6 +39,7 @@ public class MessagingAreaTest {
     MessagingAreaImpl messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
 
     @Test()
+    @SuppressWarnings("unchecked")
     public void testFetchAllLabels() {
         List<String> labels = Arrays.asList("Archive", "Conversation History", "Deleted Items", "Drafts", "Inbox", "Junk Email", "Outbox", "Sent Items");
         doReturn(labels).when(account).getFolderNames();

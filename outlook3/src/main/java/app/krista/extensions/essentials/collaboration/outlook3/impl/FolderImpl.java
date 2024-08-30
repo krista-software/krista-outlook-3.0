@@ -15,8 +15,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
+
 
 public class FolderImpl implements Folder {
     private final Account account;
@@ -139,13 +143,21 @@ public class FolderImpl implements Folder {
 
     @Override
     public List<Email> getEmails(Double pageNumber, Double pageSize) {
+        return getEmailList(pageNumber, pageSize, HTML);
+    }
+
+    private @Nullable List<Email> getEmailList(Double pageNumber, Double pageSize, String bodyType) {
         int intPageNumber = validatePageNumber(pageNumber);
         int intPageSize = validatePageSize(pageSize);
         int skipParameter = (intPageNumber - 1) * intPageSize;
+        String preference = BODY_CONTENT_TYPE_HTML; // Setting Default Preference to HTML
+        if (bodyType.equalsIgnoreCase(TEXT)) {
+            preference = BODY_CONTENT_TYPE_TEXT;
+        }
 
         MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
                 .messages()
-                .buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML))
+                .buildRequest(new HeaderOption(Constants.PREFER, preference))
                 .top(intPageSize)
                 .skip(skipParameter)
                 .get();
@@ -153,10 +165,18 @@ public class FolderImpl implements Folder {
     }
 
     @Override
+    public List<Email> getEmails(Double pageNumber, Double pageSize, Map<String, Object> preferences) {
+        if (preferences.get("Mail Body").toString().equalsIgnoreCase("Text")) {
+            return getEmailList(pageNumber, pageSize, TEXT);
+        }
+        return getEmailList(pageNumber, pageSize, HTML);
+    }
+
+    @Override
     public List<Email> getEmails(Boolean useEmail) {
         List<Email> emails = new ArrayList<>();
         MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(useEmail)).messages()
-                .buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML))
+                .buildRequest(new HeaderOption(Constants.PREFER, BODY_CONTENT_TYPE_HTML))
                 .get();
 
         int mailCount = 0;

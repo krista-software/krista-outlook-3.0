@@ -25,6 +25,7 @@ public class ErrorHandlingStateManager {
         internalState.put(key, value);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> get(String key) {
         final String map = String.valueOf(internalState.get(key));
         return GSON.fromJson(map, Map.class);
