@@ -35,6 +35,29 @@
 * After registration, in **Overview**, under **Essentials**, you will find the Client ID and Tenant ID.
   ![Client Id and Tenant Id](../_media/clientIDtenantID.png)
 
+* Click **API Permissions**. Under **Configured permissions**, click **Add a permission**.
+  ![Add a Permission](../_media/addAPermission.png)
+
+
+* On the **Request API permissions** page, select **Microsoft Graph**.
+  ![Microsoft Graph](../_media/microsoftGraph.png)
+
+
+* Select **Delegated Permissions**.
+  ![Delegated Permissions](../_media/delegatedPermissions.png)
+
+
+* Start typing permission name and select the following permissions after you see.
+  * openid
+  * offline_access
+  * profile
+  * User.read
+  * Mail.Send
+  * Mail.ReadWrite
+  * Mail.Send.Shared
+  * Mail.ReadWrite.Shared
+
+  ![Select Permission](../_media/selectPermissions.png)
 
 * Click **Certificates & secrets**, go to and click **New client secret**.
   ![Certificates & Secrets](../_media/certificates&Secrets.png)
