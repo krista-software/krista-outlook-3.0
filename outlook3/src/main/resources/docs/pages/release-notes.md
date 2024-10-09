@@ -9,7 +9,8 @@
 
 ## Resolved Bugs
 
-* [KE-1779] : Create Fetch Inbox with preference catalog request in outlook extension.
+* [KE-1779](https://antbrains.atlassian.net/browse/KE-1836) : Create Fetch Inbox with preference catalog request in outlook extension.
+* [KE-1836](https://antbrains.atlassian.net/browse/KE-1836) : Getting an extension error when running the Fetch Inbox With Preferences request without any input.
 
 ## Known Issues
 
