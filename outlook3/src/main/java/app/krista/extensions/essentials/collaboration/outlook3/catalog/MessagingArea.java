@@ -29,10 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -489,6 +486,7 @@ public class MessagingArea {
             @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageSize,
             @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference) {
         if (preference == null || preference.isEmpty()) {
+            preference = new HashMap<>();
             preference.put("Mail Body", "Html");
         }
         LOGGER.info("fetchInboxWithPreference: pageNumber: {}; pageSize: {}; preference: {}", pageNumber, pageSize, preference);
