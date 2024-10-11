@@ -450,14 +450,15 @@ The Outlook Extension supports the following catalog requests.
 ### Fetch Inbox With Preferences
 
 - **Description**: This request is used to fetch Inbox emails with the selected preferences.
-- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
-  and that of page size is 15.
+- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is
+  1, page size is 15 and that of Mail Body is Html.
+- **Note**: "Mail Body" is a standard key and should not be altered.
 
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**     |
-|--------------------|--------------------|---------------|-----------------|
-| Page Number        | Number             | No            | 1               |
-| Page Size          | Number             | No            | 1               |
-| Preference         | Multi Field        | No            | Mail Body: Text |
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**             |
+|--------------------|--------------------|---------------|-------------------------|
+| Page Number        | Number             | No            | 1                       |
+| Page Size          | Number             | No            | 1                       |
+| Preference         | Multi Field        | No            | Mail Body: Text or Html |
 
 - **Output Parameters**:
 
