@@ -17,6 +17,8 @@ import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.options.Option;
 import com.microsoft.graph.options.QueryOption;
 import com.microsoft.graph.requests.*;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.jvnet.hk2.annotations.ContractsProvided;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
@@ -251,5 +253,57 @@ public class AccountImpl implements Account {
             LOGGER.error("Failed to create new category with name: {}", category, cause);
             return null;
         }
+    }
+
+    @Override
+    public List<String> fetchNotificationDeltaQuery() {
+        String deltaLink = provider.getDeltaLink();
+        LOGGER.info("Search for the existing delta link: {}", deltaLink);
+        MessageDeltaCollectionPage deltaCollectionPage = null;
+        UserRequestBuilder userRequestBuilder = getUserRequestBuilder(null, null);
+        if (StringUtils.isNotEmpty(deltaLink)) {
+            LOGGER.info("Fetching delta link using last checkpoint : {}", deltaLink);
+            deltaCollectionPage = new MessageDeltaCollectionRequestBuilder(deltaLink, userRequestBuilder.getClient(), null).buildRequest().get();
+        } else {
+            LOGGER.info("Fetching delta link using start.");
+            deltaCollectionPage = userRequestBuilder.mailFolders("Inbox").messages().delta().buildRequest().get();
+        }
+
+        LOGGER.info("Notification from current page being started.");
+        List<String> messageIds = new ArrayList<>();
+
+        if (deltaCollectionPage == null) {
+            return messageIds;
+        }
+        for (Message message : deltaCollectionPage.getCurrentPage()) {
+            messageIds.add(message.id);
+        }
+
+
+        deltaCollectionPage = getMessageDeltaCollectionFromNextPages(deltaLink, deltaCollectionPage, messageIds);
+
+        LOGGER.info("All the Notification being fetched Storing new delta link.");
+        if (deltaCollectionPage != null) {
+            provider.storeDeltaLink(deltaCollectionPage.deltaLink);
+        }
+        return messageIds;
+    }
+
+    @Nullable
+    private MessageDeltaCollectionPage getMessageDeltaCollectionFromNextPages(String deltaLink, MessageDeltaCollectionPage deltaCollectionPage, List<String> messageIds) {
+        LOGGER.info("Notification being fetched from current page moving to next page.");
+        while (deltaCollectionPage != null && deltaCollectionPage.getNextPage() != null) {
+            deltaCollectionPage = deltaCollectionPage.getNextPage().buildRequest().get();
+            if(deltaLink != null) {
+                if (deltaCollectionPage != null) {
+                    for (Message message : deltaCollectionPage.getCurrentPage()) {
+                        messageIds.add(message.id);
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        return deltaCollectionPage;
     }
 }

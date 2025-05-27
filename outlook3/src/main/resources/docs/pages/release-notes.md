@@ -1,11 +1,11 @@
 # Release Notes - Krista Outlook Extension
 
-## Version 3.0.3
+## Version 3.0.4
 
 - **Developer Name** : Aradhya Gudadhe, VaraPrasad Kolli
-- **Krista Service APIs Java** : 1.0.101
-- **Global Catalog Version** : 1.0.50
-- **Appliance Release Version** : 3.3.7
+- **Krista Service APIs Java** : 1.0.110
+- **Global Catalog Version** : 1.0.57
+- **Appliance Release Version** : 3.4.6
 
 ## Resolved Bugs
 

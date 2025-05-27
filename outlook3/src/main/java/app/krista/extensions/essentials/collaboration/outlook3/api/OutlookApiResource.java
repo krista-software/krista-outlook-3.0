@@ -206,16 +206,20 @@ public final class OutlookApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response subscriptionNotification(JsonObject notification) {
         JsonArray array = notification.get(Constants.VALUE).getAsJsonArray();
+        LOGGER.info("Krista received a new alert to process: {} ", array);
+
         for (int i = 0; i < array.size(); i++) {
             String messageId = array.get(i).getAsJsonObject().get(Constants.RESOURCE_DATA).getAsJsonObject().get(Constants.ID).getAsString();
             if (isDuplicateMessageID(messageId)) {
+                LOGGER.info("Duplicate alert detected, rejecting: {} ", messageId);
                 break;
             }
             FreeForm freeForm = new FreeForm();
             freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, messageId);
+            LOGGER.info("New email received, forwarding to Krista: {} ", messageId);
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
         }
-        MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
+        LOGGER.info("Acknowledgement sent...");
         return Response.status(200).build();
     }
 
@@ -254,7 +258,7 @@ public final class OutlookApiResource {
             boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
             return isSaved
                     ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
-                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null)) ;
+                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
         } catch (Exception cause) {
             LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
             return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));

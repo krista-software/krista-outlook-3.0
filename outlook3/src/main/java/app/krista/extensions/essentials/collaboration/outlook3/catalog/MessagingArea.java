@@ -2,10 +2,13 @@ package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
 import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.ExtensionResponse;
+import app.krista.extension.executor.Invoker;
 import app.krista.extension.impl.anno.Attribute;
 import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.Domain;
 import app.krista.extension.impl.anno.Field;
+import app.krista.extension.request.RoutingInfo;
+import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
@@ -13,7 +16,9 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.*
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.Validator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
@@ -52,12 +57,15 @@ public class MessagingArea {
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     private RequestContext requestContext;
     private AuthorizationContext authorizationContext;
+    private final GraphServiceClientProviderFactory providerFactory;
+
+    private final String baseRoutingUrl;
 
     @Inject
     public MessagingArea(Account account, RequestContext requestContext, AuthorizationContext authorizationContext,
                          EventHandler eventHandler, MailHandler mailHandler,
                          MessagingAreaImpl messagingAreaImpl, ExtensionResponseGenerator responseGenerator,
-                         ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator) {
+                         ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator, GraphServiceClientProviderFactory providerFactory, Invoker invoker) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
@@ -67,6 +75,8 @@ public class MessagingArea {
         this.responseGenerator = responseGenerator;
         this.internalStateManager = internalStateManager;
         this.validationOrchestrator = validationOrchestrator;
+        this.providerFactory = providerFactory;
+        this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
     }
 
     private static String validateString(String input) {
@@ -763,7 +773,12 @@ public class MessagingArea {
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
         try {
             if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-                MailDetails mailDetails = mailHandler.fromEmail(account.getEmail((String) eventData.get(Constants.MESSAGE_ID)), null);
+                LOGGER.info("Creating/Updating subscription...");
+                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
+
+                String messageId = (String) eventData.get(Constants.MESSAGE_ID);
+                LOGGER.info("Processing Mail for Message Id :  {}", messageId);
+                MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageId), null);
                 if (mailDetails != null) {
                     LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
                             mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
@@ -919,6 +934,46 @@ public class MessagingArea {
             return ExtensionResponseFactory.create("Error occurred while Remove Category From Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Remove Category From Message", List.of())),
                     null, null);
+        }
+    }
+
+    @CatalogRequest(
+            id = "localDomainRequest_121d8318-08ab-4c51-acf4-e45d302ac018",
+            name = "Get Notification Delta",
+            description = "This request is used to retrieve delta notifications that were missed by the alert event.",
+            area = "Messaging",
+            type = CatalogRequest.Type.CHANGE_SYSTEM)
+    @Field.Desc(name = "Message Ids", type = "[ Text ]",required = false)
+    public ExtensionResponse getNotificationDelta() {
+        try {
+            return messagingAreaImpl.fetchNotificationDelta();
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while fetching notification delta:{}", cause.getMessage());
+            return new ExtensionResponse(ExtensionResponse.Result.SUCCESS, Map.of("Message Ids", List.of()), null, null, null);
+        }
+    }
+
+    @CatalogRequest(
+            id = "localDomainRequest_796c1290-9922-4d27-805e-5d971303be1a",
+            name = "Send Alert Using Notification Delta",
+            description = "This request is used to send an alert to the Mail Received Alert request and accepts the Message ID as input.",
+            area = "Messaging",
+            type = CatalogRequest.Type.QUERY_SYSTEM)
+    public void sendAlertUsingNotificationDelta(
+            @Field.Text(name = "Message Id", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageId) {
+        try {
+            FreeForm freeForm = new FreeForm();
+            freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, messageId);
+            LOGGER.info("Sending notification delta alert to Krista: {} ", messageId);
+            eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while sending alert using notification delta:{}", cause.getMessage());
         }
     }
 }

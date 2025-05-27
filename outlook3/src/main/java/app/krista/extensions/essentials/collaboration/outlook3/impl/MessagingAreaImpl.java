@@ -323,4 +323,8 @@ public class MessagingAreaImpl {
     public static String getBodyType(String bodyType) {
         return (bodyType == null) ? Constants.HTML : bodyType;
     }
+
+    public ExtensionResponse fetchNotificationDelta() {
+        return ExtensionResponseFactory.create(Map.of("Message Ids", account.fetchNotificationDeltaQuery()));
+    }
 }

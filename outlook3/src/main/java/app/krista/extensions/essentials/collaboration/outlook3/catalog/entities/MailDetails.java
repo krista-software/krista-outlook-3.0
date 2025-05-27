@@ -10,7 +10,7 @@ import java.util.List;
         ecosystemId = "catEntryEcosystem_84b53163-327b-4b1b-8c96-9334d292f9f5",
         ecosystemName = "Essentials",
         ecosystemVersion = "442034bc-7967-4349-9b66-6b13682ca806")
-@Entity(name = "Mail Details", id = "localDomainEntity_0fb99723-377c-419e-b24e-0ab0ce948e8c", primaryKey = "Message ID", options = {})
+@Entity(name = "Mail Details", id = "localDomainEntity_0fb99723-377c-419e-b24e-0ab0ce948e8c", primaryKey = "Message ID", supportStore = false)
 public class MailDetails {
 
     @Field.Text(name = "From", required = false, attributes = {}, options = {})

@@ -8,7 +8,7 @@ import app.krista.extension.impl.anno.*;
         ecosystemId = "catEntryEcosystem_84b53163-327b-4b1b-8c96-9334d292f9f5",
         ecosystemName = "Essentials",
         ecosystemVersion = "b28294f6-04ce-453c-84d9-8f56711d4c2f")
-@Entity(name = "Label", id = "localDomainEntity_c4bf7faa-5e69-402e-96b8-ce75a7663020", primaryKey = "Name")
+@Entity(name = "Label", id = "localDomainEntity_c4bf7faa-5e69-402e-96b8-ce75a7663020", primaryKey = "Name", supportStore = true)
 @Searchable
 public class Label {
 

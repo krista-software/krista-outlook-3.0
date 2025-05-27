@@ -4,6 +4,7 @@ import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.executor.Invoker;
 import app.krista.extension.impl.anno.Extension;
 import app.krista.extension.impl.anno.InvokerRequest;
+import app.krista.extension.impl.anno.Java;
 import app.krista.extension.impl.anno.StaticResource;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
@@ -15,7 +16,8 @@ import app.krista.ksdk.context.AuthorizationContext;
 import javax.inject.Inject;
 import java.util.Map;
 
-@Extension(version = "3.0.3-rc3")
+@Java(version = Java.Version.JAVA_21)
+@Extension(version = "3.0.4")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
