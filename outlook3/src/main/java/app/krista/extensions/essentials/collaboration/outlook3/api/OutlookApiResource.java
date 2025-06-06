@@ -219,6 +219,7 @@ public final class OutlookApiResource {
             LOGGER.info("New email received, forwarding to Krista: {} ", messageId);
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
         }
+        MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
         LOGGER.info("Acknowledgement sent...");
         return Response.status(200).build();
     }

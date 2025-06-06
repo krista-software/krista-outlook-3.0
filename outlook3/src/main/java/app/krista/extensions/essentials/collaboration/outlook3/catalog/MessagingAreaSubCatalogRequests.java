@@ -40,6 +40,7 @@ public class MessagingAreaSubCatalogRequests {
     public static final String HANDLE_REENTER_REPLY_TO_MAIL = "handleReenterReplyToMail";
     public static final String HANDLE_REENTER_FORWARD_MAIL = "handleReenterForwardMail";
     public static final String HANDLE_REENTER_MARK_MESSAGE = "handleReenterMarkMessage";
+    public static final String HANDLE_REENTER_UPDATE_MESSAGE = "handleReenterUpdateMessage";
     public static final String REENTER = "Reenter";
     public static final String REENTER_WAS_TRUE_HENCE_CONTINUING = "Reenter was true. Hence continuing.";
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaSubCatalogRequests.class);

@@ -60,11 +60,11 @@ sourceCompatibility = '21'
 targetCompatibility = '21'
 
 repositories {
-    mavenLocal()
     maven {
         url "https://packages.cicd.in.antbrains.com/artifactory/libs-release"
     }
     mavenCentral()
+    mavenLocal()
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -76,11 +76,28 @@ tasks.register('compile') {
     dependsOn compileJava
 }
 
+tasks.named('compileTestJava') {
+    dependsOn(tasks.named('buildAndCopyUI'))
+}
+
 configurations {
     implementation {
         canBeConsumed = false
         canBeResolved = true
     }
+}
+
+test {
+    useJUnitPlatform()
+
+    // Add these settings to help diagnose test issues
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+
+    // Increase memory if needed
+    maxHeapSize = "1G"
 }
 
 dependencies {
@@ -148,6 +165,41 @@ tasks.register('release', Exec) {
         return standardOutput.toString()
     }
 }
+
+tasks.register('bundleUI', YarnTask) {
+    dependsOn(tasks.named('nodeSetup'))
+    dependsOn(tasks.named('yarnSetup'))
+    dependsOn(tasks.named('yarn'))
+    execOverrides {
+        it.workingDir = file("src/main/ui/outlookoauth")
+    }
+    args.set(['build'])
+}
+
+
+tasks.register('filepermission', Exec) {
+    commandLine('chmod', '-R', '755', "${project.projectDir}/src/main/ui/outlookoauth")
+}
+
+
+tasks.register('buildAndCopyUI', Copy) {
+    dependsOn(tasks.named("bundleUI"))
+    from("${project.projectDir}/src/main/ui/outlookoauth/build")
+    into("${project.buildDir}/resources/main/ui/outlookoauth")
+}
+
+
+tasks.register('buildUI') {
+    dependsOn(tasks.named('buildAndCopyUI'))
+    dependsOn(tasks.named('filepermission'))
+}
+
+
+tasks.register('cleanDir', Delete) {
+    delete("${project.projectDir}/main/ui/outlookoauth/build")
+    delete("${project.buildDir}/resources/ui/outlookoauth")
+}
+
 
 import java.util.regex.Pattern
 /*
@@ -241,10 +293,10 @@ tasks.register('generateReleaseProperties', GenerateReleasePropertiesTask) {
 }
 tasks.named("jar") {
     dependsOn tasks.named("generateReleaseProperties")
+    dependsOn tasks.named("buildAndCopyUI")
 }
 jar {
     // Without this dependency, the jar task may use the fallback "local" value if the file is not available during configuration.
-    dependsOn tasks.named("generateReleaseProperties")
     archiveBaseName.set(computedBaseName)
     manifest {}
     from {
@@ -254,4 +306,13 @@ jar {
     }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
     duplicatesStrategy = "exclude"
+}
+
+tasks.withType(Test).configureEach {
+    doFirst {
+        def byteBuddyAgent = configurations.testRuntimeClasspath.find { it.name.contains('byte-buddy-agent') }
+        if (byteBuddyAgent) {
+            jvmArgs "-javaagent:${byteBuddyAgent}"
+        }
+    }
 }

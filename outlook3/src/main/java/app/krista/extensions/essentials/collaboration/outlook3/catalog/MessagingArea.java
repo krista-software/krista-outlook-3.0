@@ -774,7 +774,6 @@ public class MessagingArea {
         try {
             if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
                 LOGGER.info("Creating/Updating subscription...");
-                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
 
                 String messageId = (String) eventData.get(Constants.MESSAGE_ID);
                 LOGGER.info("Processing Mail for Message Id :  {}", messageId);
@@ -976,4 +975,43 @@ public class MessagingArea {
             LOGGER.error("Error occurred while sending alert using notification delta:{}", cause.getMessage());
         }
     }
+
+    @CatalogRequest(
+            id = "localDomainRequest_2694e61a-1d82-4f55-8a74-a66eba60fe63",
+            name = "Mark Message Category And Status",
+            description = "Applies a category to the message and updates its read/unread status.",
+            area = "Messaging",
+            type = CatalogRequest.Type.CHANGE_SYSTEM)
+    @Field.Text(name = "Response", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    public ExtensionResponse markMessageCategoryAndStatus(
+            @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
+            @Field.PickOne(name = "Label", values = {"Read","Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String label,
+            @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+        try {
+            List<ValidationOrchestrator.ValidationResult> validationResults =
+                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+            if (validationResults.isEmpty()) {
+                return messagingAreaImpl.markMessageCategoryAndStatus(messageID, label, category);
+            } else {
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
+                                OutlookResources.STATE_ID, stateId,
+                                OutlookResources.LABEL, label,
+                                OutlookResources.MESSAGE_ID, messageID));
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error(cause.getMessage());
+            throw cause;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while updating message category and status: {}", cause.getMessage());
+            return ExtensionResponseFactory.create("Error occurred while updating message category and status", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while updating message category and status", List.of())),
+                    null, null);
+        }
+    }
+
 }

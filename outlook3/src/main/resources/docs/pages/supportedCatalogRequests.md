@@ -585,6 +585,29 @@ The Outlook Extension supports the following catalog requests.
 
 - **Note**: This request takes input of message id to send the alert to "Mail Received Alert" request which will help to execute system trigger conversation using alert request.
 
+### Update Message Category And Status
+
+- **Description**: Accepts message ID, label, and category as input. Updates the read/unread status and adds/removes category for the specified message.
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value |
+| Label              | PickOne            | No            | Read/Unread      |
+| Category           | Text               | No            | Krista           |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| Response           | Text               | Success     |
+
+- **Validation Fields**
+
+| Input Parameter | Valid Data        | Invalid Data                                                              |
+|-----------------|-------------------|---------------------------------------------------------------------------|
+| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
+
 ## Entity Requests
 
 The Outlook Extension supports the following entity requests.

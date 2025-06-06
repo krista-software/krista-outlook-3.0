@@ -25,10 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -276,6 +273,14 @@ public class AccountImpl implements Account {
             return messageIds;
         }
         for (Message message : deltaCollectionPage.getCurrentPage()) {
+            Map<String, Object> additionalData = message.additionalDataManager().entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            if (additionalData.containsKey("@removed")) {
+                LOGGER.info("Skipping deleted message ID: {}", message.id);
+                continue; // Skip deleted message
+            }
             messageIds.add(message.id);
         }
 
