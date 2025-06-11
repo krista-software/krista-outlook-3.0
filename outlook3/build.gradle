@@ -347,10 +347,3 @@ tasks.named('jar') {
     dependsOn tasks.named('generateReleaseProperties')
     dependsOn tasks.named('buildAndCopyUI')
 }
-
-// Add a task to skip tests during build
-tasks.register('buildWithoutTests') {
-    dependsOn tasks.named('assemble')
-    dependsOn tasks.named('jar')
-    // Add other tasks that should run during build but not test
-}
