@@ -65,7 +65,8 @@ public class MessagingArea {
     public MessagingArea(Account account, RequestContext requestContext, AuthorizationContext authorizationContext,
                          EventHandler eventHandler, MailHandler mailHandler,
                          MessagingAreaImpl messagingAreaImpl, ExtensionResponseGenerator responseGenerator,
-                         ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator, GraphServiceClientProviderFactory providerFactory, Invoker invoker) {
+                         ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator,
+                         GraphServiceClientProviderFactory providerFactory, Invoker invoker) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;

@@ -9,6 +9,7 @@
 
 ## Resolved Bugs
 
+* [KE-2077](https://antbrains.atlassian.net/browse/KE-2077) : Outlook Extension: "Allow Mail Alert" not working In Test and draft mode of authentication
 * [KE-2024](https://antbrains.atlassian.net/browse/KE-2024) : Outlook extension Missing Email Triggers.
 * [KE-1779](https://antbrains.atlassian.net/browse/KE-1836) : Create Fetch Inbox with preference catalog request in outlook extension.
 * [KE-1836](https://antbrains.atlassian.net/browse/KE-1836) : Getting an extension error when running the Fetch Inbox With Preferences request without any input.

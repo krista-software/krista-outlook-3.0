@@ -40,26 +40,44 @@ public class MailSubscription {
      */
     public static void createOrUpdateSubscription(String routingUrl, GraphServiceClientProvider provider) {
         try {
-            Subscription subscription = setSubscriptionParameters(routingUrl, provider.getOutlookAttributes().getEmail());
+            LOGGER.info("Started with createOrUpdateSubscription. Routing URL: {}", routingUrl);
 
+            // Step 1: Prepare subscription parameters
+            Subscription subscription = setSubscriptionParameters(routingUrl, provider.getOutlookAttributes().getEmail());
+            LOGGER.info("Subscription parameters prepared. Notification URL: {}, Resource: {}",
+                    subscription.notificationUrl, subscription.resource);
+
+            // Step 2: Fetch existing subscriptions
+            LOGGER.info("Fetching existing subscriptions from Graph API...");
             SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().get();
+
+            // Step 3: Check if subscription already exists
             while (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
+                LOGGER.info("Checking current subscription page with {} entries.", collectionPage.getCurrentPage().size());
                 for (Subscription oldSubscription : collectionPage.getCurrentPage()) {
                     if (Objects.requireNonNull(oldSubscription.notificationUrl).equals(subscription.notificationUrl)) {
+                        LOGGER.info("Found existing subscription with matching notification URL. Renewing...");
                         handleSubscriptionRenewal(provider, oldSubscription);
                         return;
                     }
                 }
                 SubscriptionCollectionRequestBuilder nextPage = collectionPage.getNextPage();
                 if (nextPage != null) {
+                    LOGGER.info("Fetching next page of subscriptions...");
                     collectionPage = nextPage.buildRequest().get();
                 } else {
+                    LOGGER.info("No more pages in subscription list.");
                     break;
                 }
             }
-            LOGGER.info("Creating new subscription.");
+
+            // Step 4: No matching subscription found, creating new one
+            LOGGER.info("No existing subscription found with matching notification URL. Creating new subscription. subscription ::::::: {}  "+subscription);
             provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().post(subscription);
+            LOGGER.info("Subscription successfully created.");
+
         } catch (ClientException | ParseException cause) {
+            LOGGER.error("Exception occurred while creating or updating subscription: {}", cause.getMessage(), cause);
             throw new RuntimeException(cause);
         }
     }

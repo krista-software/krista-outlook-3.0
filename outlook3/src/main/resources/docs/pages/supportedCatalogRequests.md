@@ -572,12 +572,13 @@ The Outlook Extension supports the following catalog requests.
 
 - **Note**: This request retrieves all notifications, and it is the user's responsibility to track the processed ones to identify any that were missed. 
 - After each successful execution, Microsoft returns a checkpoint link that can be used to fetch only the new notifications from that point onward.
+- When integrating both "Mail Received Alert" and this request in the same workflow, it is recommended to add a delay of at least 15 seconds after the request get called for optimal performance.
 
 ### Send Alert Using Notification Delta
 
 - **Description**: This request is used to send an alert to the Mail Received Alert request and accepts the Message ID as input.
 
-- **Output Parameters**:
+- **Input Parameters**:
 
 | **Parameter Name** | **Parameter Type** | **Example** |
 |--------------------|--------------------|-------------|
