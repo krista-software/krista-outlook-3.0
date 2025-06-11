@@ -120,7 +120,8 @@ dependencies {
     testImplementation 'app.krista:krista-apis:develop-1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
-    testImplementation 'org.mockito:mockito-inline:3.12.4'
+    testImplementation 'org.mockito:mockito-core:5.10.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.10.0'
 }
 
 tasks.register('createSourceDir', Exec) {
@@ -188,12 +189,10 @@ tasks.register('buildAndCopyUI', Copy) {
     into("${project.buildDir}/resources/main/ui/outlookoauth")
 }
 
-
 tasks.register('buildUI') {
     dependsOn(tasks.named('buildAndCopyUI'))
     dependsOn(tasks.named('filepermission'))
 }
-
 
 tasks.register('cleanDir', Delete) {
     delete("${project.projectDir}/main/ui/outlookoauth/build")
