@@ -189,10 +189,12 @@ tasks.register('buildAndCopyUI', Copy) {
     into("${project.buildDir}/resources/main/ui/outlookoauth")
 }
 
+
 tasks.register('buildUI') {
     dependsOn(tasks.named('buildAndCopyUI'))
     dependsOn(tasks.named('filepermission'))
 }
+
 
 tasks.register('cleanDir', Delete) {
     delete("${project.projectDir}/main/ui/outlookoauth/build")
