@@ -80,18 +80,18 @@ public class MessagingAreaTest {
         // Setup the routing info mock
         when(invoker.getRoutingInfo()).thenReturn(routingInfo);
         when(routingInfo.getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE))
-            .thenReturn(BASE_URL);
+                .thenReturn(BASE_URL);
         when(invoker.getInvokerId()).thenReturn("xAcwhzRYmXuSToCNf4ropQ_e_e");
 
         // Setup the provider factory mock with your credentials
         OutlookAttributes attributes = new OutlookAttributes(
-            "ec0745c8-7635-4b31-97cc-d217944dd620",  // Client ID
-            "REDACTED_SECRET",  // Client Secret
-            "3694f6b4-b5f1-47ef-852f-a0b4a459ab44",  // Tenant ID
-            "service.automation@kristasoft.com",  // Email
-            true,  // Allow mail alert
-            Constants.PRIVATE,  // Auth type
-            BASE_URL  // Routing URL
+                "ec0745c8-7635-4b31-97cc-d217944dd620",  // Client ID
+                "REDACTED_SECRET",  // Client Secret
+                "3694f6b4-b5f1-47ef-852f-a0b4a459ab44",  // Tenant ID
+                "service.automation@kristasoft.com",  // Email
+                true,  // Allow mail alert
+                Constants.PRIVATE,  // Auth type
+                BASE_URL  // Routing URL
         );
 
         when(graphServiceClientProvider.getOutlookAttributes()).thenReturn(attributes);
@@ -100,17 +100,17 @@ public class MessagingAreaTest {
 
         // Initialize the objects under test
         messagingArea = new MessagingArea(
-            account,
-            requestContext,
-            authorizationContext,
-            eventHandler,
-            mailHandler,
-            messagingAreaImpl2,
-            responseGenerator,
-            internalStateManager,
-            validationOrchestrator,
-            providerFactory,
-            invoker
+                account,
+                requestContext,
+                authorizationContext,
+                eventHandler,
+                mailHandler,
+                messagingAreaImpl2,
+                responseGenerator,
+                internalStateManager,
+                validationOrchestrator,
+                providerFactory,
+                invoker
         );
 
         messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
@@ -192,3 +192,5 @@ public class MessagingAreaTest {
     }
 
 }
+
+
