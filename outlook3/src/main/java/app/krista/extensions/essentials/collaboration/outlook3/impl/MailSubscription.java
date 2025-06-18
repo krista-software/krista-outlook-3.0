@@ -18,7 +18,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.Objects;
-
+import java.util.UUID;
 
 /**
  * This class is used for Mail Alerts
@@ -33,78 +33,138 @@ public class MailSubscription {
     }
 
     /**
-     * This method will create a mail alert subscription
+     * This method will create a mail alert subscription with retry mechanism
      *
      * @param routingUrl routing url to get the mail alert
      * @param provider   {@link GraphServiceClientProvider} object to get the subscriptions from microsoft
+     * @return boolean indicating if subscription was created successfully
      */
-    public static void createOrUpdateSubscription(String routingUrl, GraphServiceClientProvider provider) {
+    public static boolean createOrUpdateSubscription(String routingUrl, GraphServiceClientProvider provider) {
         try {
-            LOGGER.info("Started with createOrUpdateSubscription. Routing URL: {}", routingUrl);
-
             // Step 1: Prepare subscription parameters
             Subscription subscription = setSubscriptionParameters(routingUrl, provider.getOutlookAttributes().getEmail());
-            LOGGER.info("Subscription parameters prepared. Notification URL: {}, Resource: {}",
-                    subscription.notificationUrl, subscription.resource);
 
             // Step 2: Fetch existing subscriptions
-            LOGGER.info("Fetching existing subscriptions from Graph API...");
-            SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().get();
+            SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin()
+                    .subscriptions()
+                    .buildRequest()
+                    .get();
 
             // Step 3: Check if subscription already exists
             while (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
-                LOGGER.info("Checking current subscription page with {} entries.", collectionPage.getCurrentPage().size());
                 for (Subscription oldSubscription : collectionPage.getCurrentPage()) {
                     if (Objects.requireNonNull(oldSubscription.notificationUrl).equals(subscription.notificationUrl)) {
-                        LOGGER.info("Found existing subscription with matching notification URL. Renewing...");
-                        handleSubscriptionRenewal(provider, oldSubscription);
-                        return;
+                        LOGGER.info("Found existing subscription. Checking if renewal needed.");
+                        return handleSubscriptionRenewal(provider, oldSubscription);
                     }
                 }
+
                 SubscriptionCollectionRequestBuilder nextPage = collectionPage.getNextPage();
                 if (nextPage != null) {
-                    LOGGER.info("Fetching next page of subscriptions...");
                     collectionPage = nextPage.buildRequest().get();
                 } else {
-                    LOGGER.info("No more pages in subscription list.");
                     break;
                 }
             }
 
-            // Step 4: No matching subscription found, creating new one
-            LOGGER.info("No existing subscription found with matching notification URL. Creating new subscription. subscription ::::::: {}  "+subscription);
-            provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().post(subscription);
-            LOGGER.info("Subscription successfully created.");
+            // Step 4: No matching subscription found, creating new one with retry mechanism
+            LOGGER.info("No existing subscription found. Creating new subscription.");
+            return createSubscriptionWithRetry(provider, subscription);
 
         } catch (ClientException | ParseException cause) {
-            LOGGER.error("Exception occurred while creating or updating subscription: {}", cause.getMessage(), cause);
-            throw new RuntimeException(cause);
+            LOGGER.error("Exception occurred while creating or updating subscription: {}", cause.getMessage());
+            return false;
         }
     }
 
-    private static void handleSubscriptionRenewal(GraphServiceClientProvider provider, Subscription oldSubscription) {
+    /**
+     * Handles the renewal of an existing subscription if needed
+     *
+     * @param provider        GraphServiceClientProvider object
+     * @param oldSubscription The existing subscription to check for renewal
+     * @return boolean indicating if renewal was successful or not needed
+     */
+    private static boolean handleSubscriptionRenewal(GraphServiceClientProvider provider, Subscription oldSubscription) {
+        // Calculate time remaining until expiration
         final long expirationEpoch = Objects.requireNonNull(oldSubscription.expirationDateTime).toEpochSecond() * 1000;
         final long currentTimeInMillis = Instant.now().toEpochMilli();
         final long remainingTime = expirationEpoch - currentTimeInMillis;
-        LOGGER.info("Requires microsoft Renewal after {} hours", (((remainingTime / 1000) / 60) / 60));
+
+        // Calculate elapsed time since creation
         final long elapsedTime = MAIL_ALERT_SUBSCRIPTION_VALIDITY - remainingTime;
-        LOGGER.info("Requires interval renewal after {} minutes", (((elapsedTime - TWENTY_FIVE_HOURS_IN_MILLIS) / 1000) / 60));
+
+        // Determine if renewal is required
         final boolean requireRenew = elapsedTime > TWENTY_FIVE_HOURS_IN_MILLIS;
+
         if (requireRenew) {
-            LOGGER.info("Renewing subscription Mail alert subscription for id: {}", oldSubscription.id);
-            renewSubscription(provider, oldSubscription.id);
+            LOGGER.info("Renewing subscription with ID: {}", oldSubscription.id);
+            return renewSubscription(provider, oldSubscription.id);
         }
+
+        return true; // Subscription exists and doesn't need renewal
+    }
+
+    /**
+     * Creates a subscription with retry mechanism
+     *
+     * @param provider     GraphServiceClientProvider to use
+     * @param subscription Subscription to create
+     * @return boolean indicating if subscription was created successfully
+     */
+    private static boolean createSubscriptionWithRetry(GraphServiceClientProvider provider, Subscription subscription) {
+        int maxRetries = 5;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            LOGGER.info("Attempting to create subscription - attempt {}/{}", attempt, maxRetries);
+            try {
+                // Use synchronous approach for better error handling
+                provider.getGraphServiceClientForAdmin()
+                        .subscriptions()
+                        .buildRequest()
+                        .post(subscription);
+
+                LOGGER.info("Subscription created successfully");
+                return true; // Success
+            } catch (ClientException e) {
+                String errorMessage = e.getMessage();
+
+                if (errorMessage.contains("ValidationError") &&
+                        errorMessage.contains("Notification endpoint must respond with 200 OK")) {
+                    LOGGER.error("Validation error: Microsoft Graph API cannot reach notification endpoint: {}",
+                            subscription.notificationUrl);
+                } else {
+                    LOGGER.error("Error on attempt {}/{}: {}", attempt, maxRetries, errorMessage);
+                }
+
+                // If this is the last attempt, return failure
+                if (attempt == maxRetries) {
+                    LOGGER.error("All {} retry attempts failed", maxRetries);
+                    return false;
+                }
+
+                try {
+                    // Exponential backoff: 2^attempt * 1000 ms (2s, 4s, 8s, 16s, 32s)
+                    int waitTime = (int) (Math.pow(2, attempt) * 1000);
+                    LOGGER.info("Waiting for {} ms before retry attempt {}", waitTime, attempt + 1);
+                    Thread.sleep(waitTime);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                }
+            }
+        }
+
+        return false; // Should never reach here, but just in case
     }
 
     /**
      * This method is used to set subscription parameters for creating a mail alert subscription
      *
-     * @param routingUrl routing url to get the mail alert
+     * @param routingUrl      routing url to get the mail alert
+     * @param alertUserMailId email address of the user
      * @return {@link Subscription} object with subscription parameters
      */
     @NotNull
     private static Subscription setSubscriptionParameters(String routingUrl, String alertUserMailId) throws ParseException {
-        LOGGER.info("setting subscription parameters");
         Subscription subscription = new Subscription();
         subscription.changeType = Constants.CREATED;
         subscription.notificationUrl = routingUrl + Constants.REST_OUTLOOK_MAIL_NOTIFICATION;
@@ -119,19 +179,32 @@ public class MailSubscription {
      *
      * @param provider       {@link GraphServiceClientProvider} object to get the subscriptions list
      * @param subscriptionId id of the existing subscription
+     * @return boolean indicating if renewal was successful
      */
-    public static void renewSubscription(GraphServiceClientProvider provider, String subscriptionId) {
-        LOGGER.info("Renewing the subscription with id {} for user {}", subscriptionId,
-                provider.getOutlookAttributes().getEmail());
+    public static boolean renewSubscription(GraphServiceClientProvider provider, String subscriptionId) {
         try {
+            // Create a new subscription object with just the expiration date
             Subscription subscription = new Subscription();
             subscription.expirationDateTime = getExpirationDateTime();
-            provider.getGraphServiceClientForAdmin().subscriptions(subscriptionId).buildRequest().patch(subscription);
+
+            // Patch the existing subscription with the new expiration date
+            provider.getGraphServiceClientForAdmin()
+                    .subscriptions(subscriptionId)
+                    .buildRequest()
+                    .patch(subscription);
+
+            LOGGER.info("Subscription renewed successfully");
+            return true;
         } catch (ClientException | ParseException cause) {
-            throw new RuntimeException(cause);
+            LOGGER.error("Error renewing subscription: {}", cause.getMessage());
+            return false;
         }
     }
 
+    /**
+     * Calculate the expiration date for the subscription
+     * Microsoft requires an expiration date, and it can be at most 3 days in the future
+     */
     private static OffsetDateTime getExpirationDateTime() throws ParseException {
         long threeDaysInMillis = System.currentTimeMillis() + MAIL_ALERT_SUBSCRIPTION_VALIDITY;
         Date date = new Date(threeDaysInMillis);
@@ -144,22 +217,39 @@ public class MailSubscription {
      *
      * @param provider   {@link GraphServiceClientProvider} object to get the subscriptions
      * @param routingUrl url to remove the subscription alert
+     * @return boolean indicating if deletion was successful
      */
-    public static void deleteSubscription(String routingUrl, GraphServiceClientProvider provider) {
+    public static boolean deleteSubscription(String routingUrl, GraphServiceClientProvider provider) {
         LOGGER.info("Deleting subscription.");
+
         try {
-            SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin().subscriptions().buildRequest().get();
+            SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin()
+                .subscriptions()
+                .buildRequest()
+                .get();
+
             if (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
+                boolean foundSubscription = false;
+
                 for (Subscription subscription : collectionPage.getCurrentPage()) {
-                    if (Objects.requireNonNull(subscription.notificationUrl).equals(routingUrl + Constants.REST_OUTLOOK_MAIL_NOTIFICATION)) {
-                        LOGGER.info("Deleting the old subscription for user {} with id {}",
-                                provider.getOutlookAttributes().getEmail(), subscription.id);
-                        provider.getGraphServiceClientForAdmin().subscriptions(Objects.requireNonNull(subscription.id)).buildRequest().delete();
+                    if (Objects.requireNonNull(subscription.notificationUrl)
+                            .equals(routingUrl + Constants.REST_OUTLOOK_MAIL_NOTIFICATION)) {
+
+                        provider.getGraphServiceClientForAdmin().subscriptions(Objects.requireNonNull(subscription.id))
+                            .buildRequest().delete();
+
+                        LOGGER.info("Subscription deleted successfully");
+                        foundSubscription = true;
                     }
                 }
+
+                return true; // Return true if we found and deleted a subscription, or if there was nothing to delete
+            } else {
+                return true; // No subscriptions to delete is still a success
             }
         } catch (ClientException cause) {
-            LOGGER.info(cause.getMessage());
+            LOGGER.error("Error deleting subscription: {}", cause.getMessage());
+            return false; // Return false on error
         }
     }
 }

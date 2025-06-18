@@ -43,8 +43,10 @@ To establish a connection with the Outlook Extension, follow the steps below bas
 
 * Provide Email, Client ID, Client Secret and Tenant ID and click on **Test Connection**.
 
-  > **Note**: If the shared account ID is provided during setup, use the service account credentials in the Microsoft
-  login window.
+  > **Note**: 
+  > - If the shared account ID is provided during setup, use the service account credentials in the Microsoft login window.
+  > - The test connection process includes setting up **mail subscriptions** if mail alerts are enabled. This may take up to **60 seconds** as the system attempts **multiple retries** to ensure proper subscription creation.
+  > - If the subscription creation fails after multiple attempts, you will see a message indicating **"Connection successful but failed to create mail subscription"**. In this case, you may need to check your **network connectivity** or **Microsoft Graph API access permissions** or **retry the test connection**.
 
 
 * Once the Authentication is successful, click on **Save Changes**.

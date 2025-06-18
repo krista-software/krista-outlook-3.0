@@ -609,6 +609,24 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
+### Check If Triggered Mail Ids Exist
+
+- **Description**: Checks whether a specific message ID exists in the set of mail IDs that have already triggered alerts. This is useful for preventing duplicate processing of the same email in workflows.
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| MessageId          | Text               | Yes           | Message_ID_Value |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| IsExist            | Boolean            | true/false  |
+
+- **Note**: Returns `true` if the message ID has already triggered an alert and exists in the triggered mail IDs set, 
+otherwise returns `false`. This can be used to prevent duplicate processing of emails in workflows that use the "Mail Received Alert" request.
+
 ## Entity Requests
 
 The Outlook Extension supports the following entity requests.

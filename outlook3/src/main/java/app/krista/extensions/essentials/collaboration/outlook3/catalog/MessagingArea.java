@@ -9,6 +9,7 @@ import app.krista.extension.impl.anno.Domain;
 import app.krista.extension.impl.anno.Field;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
+import app.krista.extensions.essentials.collaboration.outlook3.api.OutlookApiResource;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
@@ -16,7 +17,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.*
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.Validator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
@@ -38,6 +38,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import static app.krista.extensions.essentials.collaboration.outlook3.api.OutlookApiResource.triggeredMailIds;
 
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",
         name = "Collaboration",
@@ -1012,6 +1014,35 @@ public class MessagingArea {
             return ExtensionResponseFactory.create("Error occurred while updating message category and status", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while updating message category and status", List.of())),
                     null, null);
+        }
+    }
+
+    @CatalogRequest(
+            id = "localDomainRequest_2a61e367-6599-4f66-addf-4dc4a5529b8d",
+            name = "Check If Triggered Mail Ids Exist",
+            description = "Checks whether a specific mail ID exists in the triggered mail IDs set.",
+            area = "Messaging",
+            type = CatalogRequest.Type.CHANGE_SYSTEM)
+    @Field.Boolean(name = "IsExist", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    public Boolean checkIfTriggeredMailIdsExist(
+            @Field.Text(name = "MessageId", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageId) {
+        try {
+            LOGGER.info("Checking if message ID exists in triggered mail IDs: {}", messageId);
+
+            if (messageId == null || messageId.trim().isEmpty()) {
+                LOGGER.error("Message ID is null or empty");
+                return false;
+            }
+
+            boolean exists = OutlookApiResource.isMessageIdTriggered(messageId);
+
+            LOGGER.info("Message ID {} {} in triggered mail IDs set",
+                    messageId, exists ? "exists" : "does not exist");
+
+            return exists;
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while checking triggered mail IDs: {}", cause.getMessage(), cause);
+            return false;
         }
     }
 

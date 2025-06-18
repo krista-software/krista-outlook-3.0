@@ -48,7 +48,7 @@ public final class OutlookApiResource {
 
     public static final String USER_AUTHENTICATED_SUCCESSFULLY_PLEASE_PROCEED_WITH_REQUEST = "User Authenticated Successfully. Please proceed with the request.";
     private static final Logger LOGGER = LoggerFactory.getLogger(OutlookApiResource.class);
-    private static final Set<String> triggeredMailIds = new LinkedHashSet<>();
+    public static final Set<String> triggeredMailIds = new LinkedHashSet<>();
     private static final int MESSAGE_ID_CAPACITY = 1000;
     private final OutlookAttributeStore outlookAttributeStore;
     private final RefreshTokenStore refreshTokenStore;
@@ -273,23 +273,37 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
-        LOGGER.info("Testing Connection.");
+        LOGGER.info("Testing connection with Microsoft Graph API");
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(outlookAttributes);
         String authUrl = null;
         try {
+            LOGGER.info("Verifying API access for email: {}", outlookAttributes.getEmail());
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+
             if (outlookAttributes.isAllowMailAlert()) {
-                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                LOGGER.info("Mail alerts enabled, creating subscription");
+                boolean subscriptionCreated = MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                if (!subscriptionCreated) {
+                    LOGGER.error("Failed to create mail subscription");
+                    return createTestConnectionResponse(false, "Connection successful but failed to create mail subscription.", null);
+                }
+                LOGGER.info("Mail subscription created successfully");
             } else {
-                MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                LOGGER.info("Mail alerts disabled, removing any existing subscriptions");
+                boolean subscriptionDeleted = MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                if (!subscriptionDeleted) {
+                    LOGGER.error("Failed to delete mail subscription");
+                }
             }
-            LOGGER.info("Test Connection successful.");
+
+            LOGGER.info("Test connection successful");
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Failed to get data from graph service client. : {}", cause.getMessage(), cause);
+            LOGGER.error("Graph API connection failed: {}", cause.getMessage());
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
+            LOGGER.info("Authorization required, generating auth URL");
             String state = createStateParameter(cause, outlookAttributes);
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
@@ -367,6 +381,16 @@ public final class OutlookApiResource {
     public Response clearListeners() {
         invoker.listEventListeners().forEach(l -> invoker.unregisterEventListener(l.getListenerId()));
         return Response.ok("Success").build();
+    }
+
+    /**
+     * Checks if a message ID exists in the triggered mail IDs set
+     *
+     * @param messageId The message ID to check
+     * @return true if the message ID exists in the set
+     */
+    public static boolean isMessageIdTriggered(String messageId) {
+        return triggeredMailIds.contains(messageId);
     }
 
 }
