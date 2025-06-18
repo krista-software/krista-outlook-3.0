@@ -48,7 +48,7 @@ public final class OutlookApiResource {
 
     public static final String USER_AUTHENTICATED_SUCCESSFULLY_PLEASE_PROCEED_WITH_REQUEST = "User Authenticated Successfully. Please proceed with the request.";
     private static final Logger LOGGER = LoggerFactory.getLogger(OutlookApiResource.class);
-    public static final Set<String> triggeredMailIds = new LinkedHashSet<>();
+    private static final Set<String> triggeredMailIds = new LinkedHashSet<>();
     private static final int MESSAGE_ID_CAPACITY = 1000;
     private final OutlookAttributeStore outlookAttributeStore;
     private final RefreshTokenStore refreshTokenStore;

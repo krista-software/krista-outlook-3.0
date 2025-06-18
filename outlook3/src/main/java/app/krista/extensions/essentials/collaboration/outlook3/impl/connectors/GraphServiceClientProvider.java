@@ -189,10 +189,6 @@ public class GraphServiceClientProvider {
         refreshTokenStore.put(Constants.DELTA_TOKEN, deltaToken);
     }
 
-    public void removeDeltaLink() {
-        refreshTokenStore.remove(DELTA_TOKEN);
-    }
-
     public static class GraphServiceClientAuthenticationProvider implements IAuthenticationProvider {
 
         private final String accessToken;
