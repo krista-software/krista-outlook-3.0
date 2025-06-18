@@ -88,4 +88,6 @@ public interface Account {
     List<String> getCategoryNames();
 
     OutlookCategory createCategory(String category);
+
+    List<String> fetchNotificationDeltaQuery();
 }

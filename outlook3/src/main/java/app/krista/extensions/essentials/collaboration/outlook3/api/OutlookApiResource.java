@@ -206,16 +206,21 @@ public final class OutlookApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response subscriptionNotification(JsonObject notification) {
         JsonArray array = notification.get(Constants.VALUE).getAsJsonArray();
+        LOGGER.info("Krista received a new alert to process: {} ", array);
+
         for (int i = 0; i < array.size(); i++) {
             String messageId = array.get(i).getAsJsonObject().get(Constants.RESOURCE_DATA).getAsJsonObject().get(Constants.ID).getAsString();
             if (isDuplicateMessageID(messageId)) {
+                LOGGER.info("Duplicate alert detected, rejecting: {} ", messageId);
                 break;
             }
             FreeForm freeForm = new FreeForm();
             freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, messageId);
+            LOGGER.info("New email received, forwarding to Krista: {} ", messageId);
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
         }
         MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
+        LOGGER.info("Acknowledgement sent...");
         return Response.status(200).build();
     }
 
@@ -254,7 +259,7 @@ public final class OutlookApiResource {
             boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
             return isSaved
                     ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
-                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null)) ;
+                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
         } catch (Exception cause) {
             LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
             return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
@@ -268,23 +273,37 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
-        LOGGER.info("Testing Connection.");
+        LOGGER.info("Testing connection with Microsoft Graph API");
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(outlookAttributes);
         String authUrl = null;
         try {
+            LOGGER.info("Verifying API access for email: {}", outlookAttributes.getEmail());
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+
             if (outlookAttributes.isAllowMailAlert()) {
-                MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                LOGGER.info("Mail alerts enabled, creating subscription");
+                boolean subscriptionCreated = MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                if (!subscriptionCreated) {
+                    LOGGER.error("Failed to create mail subscription");
+                    return createTestConnectionResponse(false, "Connection successful but failed to create mail subscription.", null);
+                }
+                LOGGER.info("Mail subscription created successfully");
             } else {
-                MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                LOGGER.info("Mail alerts disabled, removing any existing subscriptions");
+                boolean subscriptionDeleted = MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
+                if (!subscriptionDeleted) {
+                    LOGGER.error("Failed to delete mail subscription");
+                }
             }
-            LOGGER.info("Test Connection successful.");
+
+            LOGGER.info("Test connection successful");
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Failed to get data from graph service client. : {}", cause.getMessage(), cause);
+            LOGGER.error("Graph API connection failed: {}", cause.getMessage());
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
+            LOGGER.info("Authorization required, generating auth URL");
             String state = createStateParameter(cause, outlookAttributes);
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
@@ -362,6 +381,16 @@ public final class OutlookApiResource {
     public Response clearListeners() {
         invoker.listEventListeners().forEach(l -> invoker.unregisterEventListener(l.getListenerId()));
         return Response.ok("Success").build();
+    }
+
+    /**
+     * Checks if a message ID exists in the triggered mail IDs set
+     *
+     * @param messageId The message ID to check
+     * @return true if the message ID exists in the set
+     */
+    public static boolean isMessageIdTriggered(String messageId) {
+        return triggeredMailIds.contains(messageId);
     }
 
 }

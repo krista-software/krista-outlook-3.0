@@ -1,10 +1,17 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
 import app.krista.extension.executor.ExtensionResponse;
+import app.krista.extension.executor.Invoker;
+import app.krista.extension.request.RoutingInfo;
+import app.krista.extension.request.protos.http.HttpProtocol;
+import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.MessagingArea;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.util.EventHandler;
@@ -12,7 +19,9 @@ import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.context.RequestContext;
 import app.krista.ksdk.entities.Entities;
 import app.krista.model.base.File;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockSettings;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,21 +33,90 @@ import static org.mockito.Mockito.*;
 
 public class MessagingAreaTest {
 
-    Account account = mock(Account.class);
-    RequestContext requestContext = mock(RequestContext.class);
-    AuthorizationContext authorizationContext = mock(AuthorizationContext.class);
-    EventHandler eventHandler = mock(EventHandler.class);
-    MailHandler mailHandler = mock(MailHandler.class);
-    MessagingAreaImpl messagingAreaImpl2 = mock(MessagingAreaImpl.class);
-    ExtensionResponseGenerator responseGenerator = mock(ExtensionResponseGenerator.class);
-    ErrorHandlingStateManager internalStateManager = mock(ErrorHandlingStateManager.class);
-    ValidationOrchestrator validationOrchestrator = mock(ValidationOrchestrator.class);
-    Entities registry = mock(Entities.class);
+    // Your actual base URL and callback path
+    private static final String BASE_URL = "https://extension.solution.eng.krista.app/extension/api/xAcwhzRYmXuSToCNf4ropQ_e_e";
+    private static final String CALLBACK_PATH = "/rest/outlook/callback";
+    private static final String FULL_CALLBACK_URL = BASE_URL + CALLBACK_PATH;
 
-    MessagingArea messagingArea = new MessagingArea(account, requestContext, authorizationContext, eventHandler, mailHandler, messagingAreaImpl2, responseGenerator, internalStateManager, validationOrchestrator);
-    MessagingAreaImpl messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
+    // Use instance variables for mocks that are initialized in setup()
+    private Account account;
+    private RequestContext requestContext;
+    private AuthorizationContext authorizationContext;
+    private EventHandler eventHandler;
+    private MailHandler mailHandler;
+    private MessagingAreaImpl messagingAreaImpl2;
+    private ExtensionResponseGenerator responseGenerator;
+    private ErrorHandlingStateManager internalStateManager;
+    private ValidationOrchestrator validationOrchestrator;
+    private Entities registry;
+    private GraphServiceClientProviderFactory providerFactory;
+    private Invoker invoker;
+    private RoutingInfo routingInfo;
+    private GraphServiceClientProvider graphServiceClientProvider;
 
-    @Test()
+    private MessagingArea messagingArea;
+    private MessagingAreaImpl messagingAreaImpl;
+
+    @BeforeEach
+    public void setup() {
+        // Create mocks with settings to avoid inline mocking
+        MockSettings settings = withSettings().stubOnly();
+
+        account = mock(Account.class, settings);
+        requestContext = mock(RequestContext.class, settings);
+        authorizationContext = mock(AuthorizationContext.class, settings);
+        eventHandler = mock(EventHandler.class, settings);
+        mailHandler = mock(MailHandler.class, settings);
+        messagingAreaImpl2 = mock(MessagingAreaImpl.class, settings);
+        responseGenerator = mock(ExtensionResponseGenerator.class, settings);
+        internalStateManager = mock(ErrorHandlingStateManager.class, settings);
+        validationOrchestrator = mock(ValidationOrchestrator.class, settings);
+        registry = mock(Entities.class, settings);
+        providerFactory = mock(GraphServiceClientProviderFactory.class, settings);
+        invoker = mock(Invoker.class, settings);
+        routingInfo = mock(RoutingInfo.class, settings);
+        graphServiceClientProvider = mock(GraphServiceClientProvider.class, settings);
+
+        // Setup the routing info mock
+        when(invoker.getRoutingInfo()).thenReturn(routingInfo);
+        when(routingInfo.getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE))
+                .thenReturn(BASE_URL);
+        when(invoker.getInvokerId()).thenReturn("xAcwhzRYmXuSToCNf4ropQ_e_e");
+
+        // Setup the provider factory mock with your credentials
+        OutlookAttributes attributes = new OutlookAttributes(
+                "ec0745c8-7635-4b31-97cc-d217944dd620",  // Client ID
+                "REDACTED_SECRET",  // Client Secret
+                "3694f6b4-b5f1-47ef-852f-a0b4a459ab44",  // Tenant ID
+                "service.automation@kristasoft.com",  // Email
+                true,  // Allow mail alert
+                Constants.PRIVATE,  // Auth type
+                BASE_URL  // Routing URL
+        );
+
+        when(graphServiceClientProvider.getOutlookAttributes()).thenReturn(attributes);
+        when(providerFactory.create()).thenReturn(graphServiceClientProvider);
+        when(providerFactory.create(anyString())).thenReturn(graphServiceClientProvider);
+
+        // Initialize the objects under test
+        messagingArea = new MessagingArea(
+                account,
+                requestContext,
+                authorizationContext,
+                eventHandler,
+                mailHandler,
+                messagingAreaImpl2,
+                responseGenerator,
+                internalStateManager,
+                validationOrchestrator,
+                providerFactory,
+                invoker
+        );
+
+        messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     public void testFetchAllLabels() {
         List<String> labels = Arrays.asList("Archive", "Conversation History", "Deleted Items", "Drafts", "Inbox", "Junk Email", "Outbox", "Sent Items");
@@ -51,12 +129,11 @@ public class MessagingAreaTest {
 
     @Test
     public void testReplyToAll() {
-        String messageID = null;
+        String messageID = UUID.randomUUID().toString();
         String message = null;
         String bodyType = "HTML";
         List<File> attachments = null;
-        messageID = UUID.randomUUID().toString();
-        Email email = mock(EmailImpl.class);
+        Email email = mock(EmailImpl.class, withSettings().stubOnly());
         when(account.getEmail(messageID)).thenReturn(email);
         ExtensionResponse response4 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
         assertEquals(response4.getResponseValue().get("Is Successful"), true);
@@ -115,3 +192,5 @@ public class MessagingAreaTest {
     }
 
 }
+
+

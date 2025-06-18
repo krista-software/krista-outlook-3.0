@@ -23,6 +23,10 @@ public final class RefreshTokenStore {
         return keyValueStore.get(key, String.class);
     }
 
+    public Object getDeltaLink(String key) {
+        return keyValueStore.get(key);
+    }
+
     public void remove(String key) {
         keyValueStore.remove(key);
     }

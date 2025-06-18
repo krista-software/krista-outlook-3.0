@@ -134,6 +134,7 @@ public class Constants {
     public static final String FAILED_TO_SAVE_ATTRIBUTES = "Failed to save attributes";
     public static final String IS_SUCCESSFUL = "Is Successful";
     public static final String IS_FORWARDED = "Is Forwarded";
+    public static final String DELTA_TOKEN = "Delta Token";
 
 
     private Constants() {

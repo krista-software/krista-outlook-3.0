@@ -529,7 +529,7 @@ The Outlook Extension supports the following catalog requests.
 | Attachments        | File               | No                                 | file.xlsx                 |
 | BodyType           | PickOne            | No                                 | Text OR HTML              |
 
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma seperated emails. If any invalid email address is given
+- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
   then it will be skipped.
 
 - **Output Parameters**:
@@ -559,6 +559,73 @@ The Outlook Extension supports the following catalog requests.
 | **Parameter Name** | **Parameter Type** | **Example**                          |
 |--------------------|--------------------|--------------------------------------|
 | Category Names     | List&lt;Text>      | [Red category, Orange category, ...] |
+
+### Get Notification Delta
+
+- **Description**: This request is used to retrieve delta notifications that were missed by the alert event.
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example**                 |
+|--------------------|--------------------|-----------------------------|
+| Messages Ids       | List&lt;Text>      | [Random id, Random id, ...] |
+
+- **Note**: This request retrieves all notifications, and it is the user's responsibility to track the processed ones to identify any that were missed. 
+- After each successful execution, Microsoft returns a checkpoint link that can be used to fetch only the new notifications from that point onward.
+- When integrating both "Mail Received Alert" and this request in the same workflow, it is recommended to add a delay of at least 15 seconds after the request get called for optimal performance.
+
+### Send Alert Using Notification Delta
+
+- **Description**: This request is used to send an alert to the Mail Received Alert request and accepts the Message ID as input.
+
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| Message Id         | Text               | Random id   |
+
+- **Note**: This request takes input of message id to send the alert to "Mail Received Alert" request which will help to execute system trigger conversation using alert request.
+
+### Update Message Category And Status
+
+- **Description**: Accepts message ID, label, and category as input. Updates the read/unread status and adds/removes category for the specified message.
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| Message ID         | Text               | Yes           | Message_ID_Value |
+| Label              | PickOne            | No            | Read/Unread      |
+| Category           | Text               | No            | Krista           |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| Response           | Text               | Success     |
+
+- **Validation Fields**
+
+| Input Parameter | Valid Data        | Invalid Data                                                              |
+|-----------------|-------------------|---------------------------------------------------------------------------|
+| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
+
+### Check If Triggered Mail Ids Exist
+
+- **Description**: Checks whether a specific message ID exists in the set of mail IDs that have already triggered alerts. This is useful for preventing duplicate processing of the same email in workflows.
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
+|--------------------|--------------------|---------------|------------------|
+| MessageId          | Text               | Yes           | Message_ID_Value |
+
+- **Output Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Example** |
+|--------------------|--------------------|-------------|
+| IsExist            | Boolean            | true/false  |
+
+- **Note**: Returns `true` if the message ID has already triggered an alert and exists in the triggered mail IDs set, 
+otherwise returns `false`. This can be used to prevent duplicate processing of emails in workflows that use the "Mail Received Alert" request.
 
 ## Entity Requests
 

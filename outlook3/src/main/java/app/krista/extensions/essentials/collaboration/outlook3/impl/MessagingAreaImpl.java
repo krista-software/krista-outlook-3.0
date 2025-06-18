@@ -323,4 +323,48 @@ public class MessagingAreaImpl {
     public static String getBodyType(String bodyType) {
         return (bodyType == null) ? Constants.HTML : bodyType;
     }
+
+    public ExtensionResponse fetchNotificationDelta() {
+        return ExtensionResponseFactory.create(Map.of("Message Ids", account.fetchNotificationDeltaQuery()));
+    }
+
+    public ExtensionResponse markMessageCategoryAndStatus(String messageID, String label, String category) {
+        try {
+            Email email = account.getEmail(messageID);
+            if (email == null) {
+                return ExtensionResponseFactory.create("Unable to update message, no email found with messageID : " + messageID, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to update message, no email found with messageID : " + messageID, List.of())),
+                        null, Map.of());
+            }
+
+            // Update category if provided
+            if (category != null && !category.isEmpty()) {
+                boolean categoryAdded = email.addCategory(category);
+                if (!categoryAdded) {
+                    LOGGER.error("Failed to add category {} to message {}", category, messageID);
+                } else {
+                    LOGGER.info("Added category {} to message {}", category, messageID);
+                }
+            }
+
+            // Update read/unread status if provided
+            if (label != null) {
+                if (label.equalsIgnoreCase(Constants.READ)) {
+                    email.markAsRead();
+                    LOGGER.info("Marked message {} for messageID {}", label, messageID);
+                } else if (label.equalsIgnoreCase(Constants.UNREAD)) {
+                    email.markAsUnread();
+                    LOGGER.info("Marked message {} for messageID {}", label, messageID);
+                } else {
+                    LOGGER.error("Invalid label {} for messageID {}", label, messageID);
+                }
+            }
+
+            return ExtensionResponseFactory.create(Map.of("Response", Constants.SUCCESS));
+        } catch (GraphServiceException graphServiceException) {
+            return ExtensionResponseFactory.create("Failed to update message category and status", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to update message category and status", List.of())),
+                    null, Map.of());
+        }
+    }
 }

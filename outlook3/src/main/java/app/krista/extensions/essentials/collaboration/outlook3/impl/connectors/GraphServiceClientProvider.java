@@ -27,8 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.PRIVATE;
-import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.PUBLIC;
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
 public class GraphServiceClientProvider {
 
@@ -179,6 +178,15 @@ public class GraphServiceClientProvider {
         } else {
             return userId + Constants.UNDER_SCORE + attributes.getClientId() + Constants.UNDER_SCORE + attributes.getAuthType();
         }
+    }
+
+    public String getDeltaLink() {
+        Object deltaLink = refreshTokenStore.getDeltaLink(Constants.DELTA_TOKEN);
+        return (String) deltaLink;
+    }
+
+    public void storeDeltaLink(String deltaToken) {
+        refreshTokenStore.put(Constants.DELTA_TOKEN, deltaToken);
     }
 
     public static class GraphServiceClientAuthenticationProvider implements IAuthenticationProvider {
