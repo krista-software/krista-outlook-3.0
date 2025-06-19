@@ -107,8 +107,8 @@ test {
 }
 
 dependencies {
-    annotationProcessor 'app.krista:extension-impl-anno-processors:1.0.114'
-    implementation 'app.krista:krista-apis:1.0.114'
+    annotationProcessor 'app.krista:extension-impl-anno-processors:1.0.115-rc3'
+    implementation 'app.krista:krista-apis:1.0.115-rc3'
     implementation 'org.glassfish.hk2:hk2-api:3.0.3'
     implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
 
