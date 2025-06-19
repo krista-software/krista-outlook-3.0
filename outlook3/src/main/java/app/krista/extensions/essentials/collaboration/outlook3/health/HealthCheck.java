@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.health;
 
+import app.krista.extension.impl.anno.InvokerRequest;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
@@ -41,7 +42,7 @@ public class HealthCheck {
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheck.class);
 
     /** Timestamp when the service was started, used for uptime calculation. */
-    private static final Instant START_TIME = Instant.now();
+    private static Instant START_TIME = Instant.now();
 
     // Metric names
     private static final String HEALTH_CHECK_REQUEST_COUNT = "health_check_request_count";
@@ -57,7 +58,6 @@ public class HealthCheck {
     private static final String OUTLOOK_ACTIVE_THREADS = "outlook_active_threads";
     private static final String OUTLOOK_UPTIME_HOURS = "outlook_uptime_hours";
     private static final String OUTLOOK_AUTH_STATUS = "outlook_auth_status";
-
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore attributeStore;
     private final RefreshTokenStore refreshTokenStore;
@@ -86,6 +86,10 @@ public class HealthCheck {
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
 
+    @InvokerRequest(InvokerRequest.Type.INVOKER_LOADED)
+    public void registerInvokerUptime() {
+        START_TIME = Instant.now();
+    }
     /**
      * Checks the health of the authentication services.
      * <p>
@@ -134,14 +138,14 @@ public class HealthCheck {
             // Load attributes
             OutlookAttributes attributes = attributeStore.load(invokerId);
             if (attributes == null) {
-                healthData.put("authStatus", "NOT_CONFIGURED");
-                healthData.put("message", "Outlook is not configured");
+                healthData.put("Status", "NOT_CONFIGURED");
+                healthData.put("Message", "Outlook is not configured");
                 
                 // Add system metrics even for not configured state
                 addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
                         cpuUsage, threadCount, uptimeHours);
                 
-                healthData.put("lastHealthCheckTime", System.currentTimeMillis());
+                healthData.put("LastHealthCheckTime", System.currentTimeMillis());
 
                 // Record telemetry for not configured state
                 telemetryMetrics.incrementCounter(OUTLOOK_AUTH_STATUS, 1,
@@ -163,10 +167,10 @@ public class HealthCheck {
             String authStatus = hasRefreshToken || !Constants.PRIVATE.equals(authType) ? "HEALTHY" : "DEGRADED";
             
             // Populate health data
-            healthData.put("authStatus", authStatus);
-            healthData.put("authType", authType);
-            healthData.put("email", attributes.getEmail());
-            healthData.put("hasRefreshToken", hasRefreshToken);
+            healthData.put("Status", authStatus);
+            healthData.put("AuthType", authType);
+            healthData.put("Email", attributes.getEmail());
+            healthData.put("HasRefreshToken", hasRefreshToken);
             
             // Add system metrics
             addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
@@ -174,11 +178,11 @@ public class HealthCheck {
             
             // Add token metrics if available
             if (hasRefreshToken) {
-                healthData.put("tokenValid", true);
-                healthData.put("tokenLatencyMs", 0.0); // No actual token fetch is performed
+                healthData.put("TokenValid", true);
+                healthData.put("TokenLatencyMs", 0.0); // No actual token fetch is performed
             }
             
-            healthData.put("lastHealthCheckTime", System.currentTimeMillis());
+            healthData.put("LastHealthCheckTime", System.currentTimeMillis());
 
             // Record telemetry metrics
             try {
@@ -188,7 +192,7 @@ public class HealthCheck {
                 telemetryMetrics.observeGauge(OUTLOOK_ACTIVE_THREADS, threadCount);
                 telemetryMetrics.observeGauge(OUTLOOK_UPTIME_HOURS, uptimeHours);
                 telemetryMetrics.incrementCounter(OUTLOOK_AUTH_STATUS, 1,
-                        Map.of("status", authStatus, "auth_type", authType));
+                        Map.of("status", authStatus, "Auth_type", authType));
             } catch (Exception e) {
                 // Log but don't fail the health check if telemetry recording fails
                 LOGGER.warn("Error recording telemetry metrics: {}", e.getMessage());
@@ -224,10 +228,10 @@ public class HealthCheck {
                     operationId, e.getMessage(), e);
             
             Map<String, Object> errorData = new HashMap<>();
-            errorData.put("authStatus", "ERROR");
-            errorData.put("errorMessage", e.getMessage());
-            errorData.put("errorType", e.getClass().getSimpleName());
-            errorData.put("lastHealthCheckTime", System.currentTimeMillis());
+            errorData.put("Status", "ERROR");
+            errorData.put("ErrorMessage", e.getMessage());
+            errorData.put("ErrorType", e.getClass().getSimpleName());
+            errorData.put("LastHealthCheckTime", System.currentTimeMillis());
             
             return errorData;
         }
@@ -239,16 +243,16 @@ public class HealthCheck {
     private void addSystemMetrics(Map<String, Object> healthData, long usedMemory, 
                                  long availableMemory, long maxMemory, double cpuUsage, 
                                  int threadCount, double uptimeHours) {
-        healthData.put("currentMemoryUsageMB", (double) usedMemory);
-        healthData.put("availableMemoryMB", (double) availableMemory);
-        healthData.put("totalMemoryMB", (double) maxMemory);
-        healthData.put("cpuUsagePercentage", cpuUsage);
-        healthData.put("activeThreads", (double) threadCount);
-        healthData.put("uptimeHours", uptimeHours);
+        healthData.put("CurrentMemoryUsageMB", (double) usedMemory);
+        healthData.put("AvailableMemoryMB", (double) availableMemory);
+        healthData.put("TotalMemoryMB", (double) maxMemory);
+        healthData.put("CpuUsagePercentage", cpuUsage);
+        healthData.put("ActiveThreads", (double) threadCount);
+        healthData.put("UptimeHours", uptimeHours);
         
         // Determine system status based on resource usage
         String systemStatus = determineSystemStatus(cpuUsage, usedMemory, maxMemory);
-        healthData.put("systemStatus", systemStatus);
+        healthData.put("SystemStatus", systemStatus);
     }
 
     /**
