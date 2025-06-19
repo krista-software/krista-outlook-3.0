@@ -31,7 +31,7 @@ if (rootProject.file('builder.txt').canRead()) {
 }
 
 node {
-    version = '16.14.0'
+    version = '24.2.0'
     npmVersion = '7.0.8'
     yarnVersion = '1.22.17'
     download = true
@@ -217,7 +217,7 @@ import java.util.regex.Pattern
     ecosystem.name=<ecosystem>
     Every extension developer should update extensionFile and areaFileName with relative path.
  */
-abstract class GenerateReleasePropertiesTask extends DefaultTask {
+abstract class  GenerateReleasePropertiesTask extends DefaultTask {
     @TaskAction
     def generateProperties() {
         def extensionFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/OutlookExtension.java'
@@ -305,6 +305,32 @@ tasks.named("jar") {
 jar {
     // Without this dependency, the jar task may use the fallback "local" value if the file is not available during configuration.
     archiveBaseName.set(computedBaseName)
+
+    doFirst {
+        // Wait for half a second to ensure generateReleaseProperties file is fully generated
+        println "Waiting half second for generateReleaseProperties to complete..."
+        Thread.sleep(500)
+        println "Wait complete, proceeding with jar creation..."
+
+        // Re-read the release.properties file at execution time to get the correct values
+        def jarReleasePropsFile = file('release.properties')
+        if (jarReleasePropsFile.exists()) {
+            def props = new Properties()
+            jarReleasePropsFile.withInputStream { stream -> props.load(stream) }
+            // Use extension.name if available, otherwise fall back to default
+            def actualBaseName = (props['extension.name'] ?: "OutlookV3").replaceAll(/\s+/, "")
+            def actualVersion = props['extension.version'] ?: "local"
+
+            println "Using jar name from release.properties: ${actualBaseName}-${actualVersion}.jar"
+
+            // Update the archive base name and version at execution time
+            archiveBaseName.set(actualBaseName)
+            archiveVersion.set(actualVersion)
+        } else {
+            println "release.properties not found, using fallback values"
+        }
+    }
+
     manifest {}
     from {
         configurations.implementation.collect {
