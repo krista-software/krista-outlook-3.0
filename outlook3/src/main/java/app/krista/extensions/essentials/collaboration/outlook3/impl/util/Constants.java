@@ -137,15 +137,15 @@ public class Constants {
     public static final String DELTA_TOKEN = "Delta Token";
 
     // Error messages for ExtensionResponse
-    public static final String USER_DELETED_ERROR = "Your Microsoft 365 account no longer exists. Please contact your administrator.";
-    public static final String USER_DISABLED_ERROR = "Your Microsoft 365 account has been blocked or locked. Please contact your administrator.";
-    public static final String APP_NOT_FOUND_ERROR = "We couldn’t find the application in your Microsoft 365 setup. Please contact your administrator.";
-    public static final String PERMISSIONS_REVOKED_ERROR = "Your access to Microsoft 365 has been removed. Please contact your administrator.";
+    public static final String USER_DELETED_ERROR = "Your Microsoft account no longer exists. Please contact your administrator.";
+    public static final String USER_DISABLED_ERROR = "Your Microsoft account has been blocked or locked. Please contact your administrator.";
+    public static final String APP_NOT_FOUND_ERROR = "We couldn’t find the application in your Microsoft setup. Please contact your administrator.";
+    public static final String PERMISSIONS_REVOKED_ERROR = "Your access to Microsoft has been removed. Please contact your administrator.";
     public static final String REFRESH_TOKEN_EXPIRED_ERROR = "Your session has expired. Please contact your administrator.";
-    public static final String TENANT_NOT_FOUND_ERROR = "We couldn’t find your Microsoft 365 organization. Please contact your administrator.";
-    public static final String SERVICE_UNAVAILABLE_ERROR = "Microsoft 365 is temporarily unavailable. Please contact your administrator.";
+    public static final String TENANT_NOT_FOUND_ERROR = "We couldn’t find your Microsoft organization. Please contact your administrator.";
+    public static final String SERVICE_UNAVAILABLE_ERROR = "Microsoft is temporarily unavailable. Please contact your administrator.";
     public static final String INVALID_CLIENT_SECRET_ERROR = "Something’s wrong with the application’s connection. Please contact your administrator.";
-    public static final String PASSWORD_CHANGED_ERROR = "Your Microsoft 365 password was changed. Please contact your administrator.";
+    public static final String PASSWORD_CHANGED_ERROR = "Your Microsoft password was changed. Please contact your administrator.";
 
     // Error codes
     public static final String USER_DELETED_CODE = "AADSTS50020";

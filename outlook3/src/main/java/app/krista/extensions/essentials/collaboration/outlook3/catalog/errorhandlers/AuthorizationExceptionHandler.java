@@ -4,11 +4,15 @@ import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.ExtensionResponse;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.RemediationActionFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.SubCatalogConstants;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.model.field.NamedValuedField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.catalog.MessagingAreaSubCatalogRequests.CONFIRM_REENTER_AUTHORIZATION;
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
@@ -21,6 +25,8 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 public class AuthorizationExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizationExceptionHandler.class);
+    private final static ErrorHandlingStateManager internalStateManager = null;
+
 
     // Centralized list of error messages with user guidance
     private static final List<NamedValuedField> GENERAL_GUIDANCE = List.of(
@@ -86,35 +92,38 @@ public class AuthorizationExceptionHandler {
     public static ExtensionResponse handleAuthorizationException(MustAuthorizeException exception) {
         LOGGER.error("Authorization exception: {}", exception.getMessage());
         String errorMessage = exception.getMessage();
+//        String stateId = UUID.randomUUID().toString();
+//        internalStateManager.put(stateId, GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, null)));
 
         // 1. Refresh Token Expiration
         if (errorMessage.contains(REFRESH_TOKEN_EXPIRED)) {
             return ExtensionResponseFactory.create(REFRESH_TOKEN_EXPIRED, ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(REFRESH_TOKEN_EXPIRED_ERROR, REFRESH_TOKEN_EXPIRED_GUIDANCE)),
-                    CONFIRM_REENTER_AUTHORIZATION, null, ExtensionResponse.Result.SUCCESS);
+                    CONFIRM_REENTER_AUTHORIZATION, Map.of(), ExtensionResponse.Result.SUCCESS);
         }
         // 2. Password Changed or Reset
         else if (errorMessage.contains(PASSWORD_CHANGED_ERROR)) {
             return ExtensionResponseFactory.create(PASSWORD_CHANGED_ERROR, ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(PASSWORD_CHANGED_ERROR, PASSWORD_CHANGED_GUIDANCE)),
-                    CONFIRM_REENTER_AUTHORIZATION, null, ExtensionResponse.Result.SUCCESS);
+                    CONFIRM_REENTER_AUTHORIZATION, Map.of(), ExtensionResponse.Result.SUCCESS);
         }
         // 3. User Deleted in Domain
         else if (errorMessage.contains(USER_DELETED_ERROR)) {
             return ExtensionResponseFactory.create(USER_DELETED_ERROR, ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(USER_DELETED_ERROR, USER_DELETED_GUIDANCE)),
-                    CONFIRM_REENTER_AUTHORIZATION, null, ExtensionResponse.Result.SUCCESS);
+                    CONFIRM_REENTER_AUTHORIZATION, Map.of(), ExtensionResponse.Result.SUCCESS);
         }
         // 4. User Disabled
         else if (errorMessage.contains(USER_DISABLED_ERROR)) {
             return ExtensionResponseFactory.create(USER_DISABLED_ERROR, ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
-                    List.of(), null, null, ExtensionResponse.Result.SUCCESS);
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(USER_DISABLED_ERROR, USER_DISABLED_GUIDANCE)),
+                    CONFIRM_REENTER_AUTHORIZATION, Map.of(), ExtensionResponse.Result.FAILURE);
         }
         // 5. Permission Revoked
         else if (errorMessage.contains(PERMISSIONS_REVOKED_ERROR)) {
             return ExtensionResponseFactory.create(PERMISSIONS_REVOKED_ERROR, ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(PERMISSIONS_REVOKED_ERROR, PERMISSIONS_REVOKED_GUIDANCE)),
-                    CONFIRM_REENTER_AUTHORIZATION, null, ExtensionResponse.Result.SUCCESS);
+                    CONFIRM_REENTER_AUTHORIZATION, Map.of(), ExtensionResponse.Result.SUCCESS);
         }
         // 6. Application Not Found
         else if (errorMessage.contains(APP_NOT_FOUND_ERROR)) {

@@ -3,6 +3,9 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl;
 import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.ExtensionResponse;
 import app.krista.extension.executor.ExtensionResponseBuilder;
+import app.krista.extension.executor.Invoker;
+import app.krista.extension.request.RoutingInfo;
+import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
@@ -13,6 +16,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constan
 import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import com.microsoft.graph.http.GraphServiceException;
+import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +28,7 @@ import java.util.Optional;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
+@Service
 public class TestConnectionServiceImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestConnectionServiceImpl.class);
 
@@ -34,10 +39,10 @@ public class TestConnectionServiceImpl {
     @Inject
     public TestConnectionServiceImpl(GraphServiceClientProviderFactory providerFactory,
                                      OutlookAttributeStore outlookAttributeStore,
-                                     String baseRoutingUrl) {
+                                     Invoker invoker) {
         this.providerFactory = providerFactory;
         this.outlookAttributeStore = outlookAttributeStore;
-        this.baseRoutingUrl = baseRoutingUrl;
+        this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
     }
 
     public String testConnection(OutlookAttributes outlookAttributes) {
@@ -130,7 +135,7 @@ public class TestConnectionServiceImpl {
         String testConnectionJsonResponse = testConnection(outlookAttributes);
         AuthenticationResponse authenticationResponse = GSON.fromJson(testConnectionJsonResponse, AuthenticationResponse.class);
         if (authenticationResponse.isSuccess()) {
-            return createSuccessResponse(email, allowMailAlert, tenantID, clientID, startTime);
+            return createSuccessResponse(email, allowMailAlert, outlookAttributes.getTenantId(), outlookAttributes.getClientId(), startTime, outlookAttributes.getAuthType());
         }
         return createFailureResponse(authenticationResponse, startTime, email, allowMailAlert, tenantID, clientID);
     }
@@ -159,21 +164,25 @@ public class TestConnectionServiceImpl {
                 testConnectionResponse, error, null, null);
     }
 
-    private ExtensionResponse createSuccessResponse(String email, Boolean allowMailAlert, String tenantID, String clientID, long startTime) {
-        Map<String, Object> testConnectionResponse = new HashMap<>(Map.of("Is Connection Successful", true,
-                "Summary", "Connection tested successfully.",
-                "Email", email, "Allow Mail Alert",
-                allowMailAlert == null || allowMailAlert ? "Not Verified" : "Successfully Verified",
-                "Tenant ID", tenantID,
-                "Client ID", clientID,
-                "Mailbox Accessible", true));
-
+    private ExtensionResponse createSuccessResponse(String email, Boolean allowMailAlert, String tenantID, String clientID, long startTime, String authType) {
+        LOGGER.info("Connection tested successfully in {} ms", (System.currentTimeMillis() - startTime));
+        LOGGER.info(" email : {} , allowMailAlert : {} , tenantID : {} , clientID : {} ", email, allowMailAlert, tenantID, clientID);
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
         extensionResponseMeta.message = "Connection tested successfully.";
         extensionResponseMeta.technicalDetailedErrorReport = "";
         extensionResponseMeta.responseType = "SUCCESS";
         extensionResponseMeta.timeTakenInSeconds = (double) (System.currentTimeMillis() - startTime) / 1000;
-        testConnectionResponse.put("Extension Response Meta", extensionResponseMeta);
+
+        Map<String, Object> testConnectionResponse = Map.of("Is Connection Successful", true,
+                "Summary", "Connection tested successfully.",
+                "Email", email, "Allow Mail Alert",
+                allowMailAlert == null || allowMailAlert ? "Not Verified" : "Successfully Verified",
+                "Tenant ID", tenantID == null ? "Not Verified" : "Successfully Verified",
+                "Client ID", clientID,
+                "Auth Type", authType,
+                "Extension Response Meta", extensionResponseMeta,
+                "Mailbox Accessible", true);
+
         ExtensionResponse extensionResponse = new ExtensionResponseBuilder().success(testConnectionResponse).build();
         LOGGER.info("Extension response created successfully in {} ms", (System.currentTimeMillis() - startTime));
         return extensionResponse;
