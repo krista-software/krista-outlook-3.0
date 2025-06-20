@@ -39,6 +39,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.AuthorizationExceptionHandler.*;
+
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",
         name = "Collaboration",
         ecosystemId = "catEntryEcosystem_84b53163-327b-4b1b-8c96-9334d292f9f5",
@@ -124,8 +126,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL, Map.of(OutlookResources.STATE_ID, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch mail by message id :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while fetch mail by message id", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -151,6 +152,7 @@ public class MessagingArea {
                             Validator.ValidationResource.FOLDER_NAME, folderName));
 
             if (validationResults.isEmpty()) {
+                // TODO - Error Handling Needed For Email & Folder Name
                 Email email = account.getEmail(messageID);
                 Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
                 return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
@@ -163,8 +165,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while moving message to folder :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while moving message to folder", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -207,8 +208,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To All With CC and BCC :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Reply To All With CC and BCC", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -245,8 +245,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL, StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To All  :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Reply To All", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -283,8 +282,7 @@ public class MessagingArea {
                 }
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch sent:{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while fetch sent", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -324,8 +322,7 @@ public class MessagingArea {
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL, StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while forward mail :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while forward mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -349,8 +346,7 @@ public class MessagingArea {
             List<MailDetails> response = emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
             return ExtensionResponseFactory.create(Map.of("Mails", response));
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
@@ -358,6 +354,7 @@ public class MessagingArea {
         }
     }
 
+    // TODO - Need to check if To Email is correct and if not then it will show all the fields with given values
     @CatalogRequest(
             id = "localDomainRequest_6d34be22-e420-4087-b55d-0659f899b140",
             name = "Send Mail",
@@ -391,8 +388,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL, StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while send mail :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while send mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -436,8 +432,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE, StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Send Mail With Table :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Send Mail With Table", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -474,8 +469,7 @@ public class MessagingArea {
                 }
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -521,8 +515,7 @@ public class MessagingArea {
                 }
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -569,8 +562,7 @@ public class MessagingArea {
                                 , OutlookResources.LABEL, label, OutlookResources.MESSAGE_ID, messageID));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while mark message :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while mark message ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -613,8 +605,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To Mail With CC and BCC :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail With CC and BCC ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -650,8 +641,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL, StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To Mail  :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -752,8 +742,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL, StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Fetch Mails By Label  :{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Fetch Mails By Label", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -792,8 +781,7 @@ public class MessagingArea {
                 throw new IllegalStateException();
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Mail Received Alert:{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Mail Received Alert", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -830,8 +818,7 @@ public class MessagingArea {
                         null, null);
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Fetch Latest Mail:{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -855,8 +842,7 @@ public class MessagingArea {
             LOGGER.info("listCategories(): {}", categoryNames);
             return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
             return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
@@ -892,8 +878,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE, StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Add Category To Message:{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Add Category To Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -927,8 +912,7 @@ public class MessagingArea {
                         SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.CATEGORY, category));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Remove Category From Message:{}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while Remove Category From Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -943,13 +927,12 @@ public class MessagingArea {
             description = "This request is used to retrieve delta notifications that were missed by the alert event.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Desc(name = "Message Ids", type = "[ Text ]",required = false)
+    @Field.Desc(name = "Message Ids", type = "[ Text ]", required = false)
     public ExtensionResponse getNotificationDelta() {
         try {
             return messagingAreaImpl.fetchNotificationDelta();
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetching notification delta:{}", cause.getMessage());
             return new ExtensionResponse(ExtensionResponse.Result.SUCCESS, Map.of("Message Ids", List.of()), null, null, null);
@@ -986,7 +969,7 @@ public class MessagingArea {
     @Field.Text(name = "Response", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     public ExtensionResponse markMessageCategoryAndStatus(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
-            @Field.PickOne(name = "Label", values = {"Read","Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String label,
+            @Field.PickOne(name = "Label", values = {"Read", "Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String label,
             @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
         try {
             List<ValidationOrchestrator.ValidationResult> validationResults =
@@ -1005,8 +988,7 @@ public class MessagingArea {
                                 OutlookResources.MESSAGE_ID, messageID));
             }
         } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage());
-            throw cause;
+            return handleAuthorizationException(cause);
         } catch (Exception cause) {
             LOGGER.error("Error occurred while updating message category and status: {}", cause.getMessage());
             return ExtensionResponseFactory.create("Error occurred while updating message category and status", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -1034,9 +1016,7 @@ public class MessagingArea {
 
             boolean exists = OutlookApiResource.isMessageIdTriggered(messageId);
 
-            LOGGER.info("Message ID {} {} in triggered mail IDs set",
-                    messageId, exists ? "exists" : "does not exist");
-
+            LOGGER.info("Message ID {} {} in triggered mail IDs set", messageId, exists ? "exists" : "does not exist");
             return exists;
         } catch (Exception cause) {
             LOGGER.error("Error occurred while checking triggered mail IDs: {}", cause.getMessage(), cause);

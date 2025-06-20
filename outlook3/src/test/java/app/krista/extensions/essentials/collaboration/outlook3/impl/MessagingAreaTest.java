@@ -31,6 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+/**
+ * Tests for the MessagingArea implementation.
+ *
+ * IMPORTANT: The credentials used in this test class (Client ID, Client Secret, Tenant ID, Email)
+ * are for testing purposes only. These may be valid or invalid depending on your environment.
+ * To run these tests successfully, please replace them with your own valid credentials
+ * in the setup() method where OutlookAttributes is instantiated.
+ */
 public class MessagingAreaTest {
 
     // Your actual base URL and callback path

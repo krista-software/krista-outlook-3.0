@@ -109,7 +109,9 @@ public class GraphServiceClientProvider {
                     .authenticationProvider(new GraphServiceClientAuthenticationProvider(authenticationResult.accessToken()))
                     .buildClient();
         } catch (ClientException | ExecutionException | MalformedURLException cause) {
-            throw createMustAuthorizationException(refreshTokenStoreKey, true);
+            handleAuthenticationError(cause, refreshTokenStoreKey);
+            // This line will never be reached as handleAuthenticationError always throws an exception
+            return null;
         } catch (InterruptedException cause) {
             Thread.currentThread().interrupt();
             throw createMustAuthorizationException(refreshTokenStoreKey, true);
@@ -207,4 +209,79 @@ public class GraphServiceClientProvider {
         }
     }
 
+    private List<NamedValuedField> createAuthDetails(String userId) {
+        List<NamedValuedField> details = new ArrayList<>();
+        NamedValuedField userIdField = new NamedValuedField(USER_ID, TEXT, userId, new HashMap<>(), new HashMap<>());
+        details.add(userIdField);
+        if (authContextId != null) {
+            NamedValuedField contextIdField = new NamedValuedField(AUTH_CONTEXT_ID, TEXT, authContextId, new HashMap<>(), new HashMap<>());
+            details.add(contextIdField);
+        }
+        return details;
+    }
+
+    /**
+     * Handles authentication errors and throws appropriate MustAuthorizeException
+     *
+     * @param cause                The exception that occurred during authentication
+     * @param refreshTokenStoreKey The key used to store the refresh token
+     * @throws MustAuthorizeException with appropriate error message based on the cause
+     */
+    private void handleAuthenticationError(Exception cause, String refreshTokenStoreKey) {
+        String errorMessage = cause.getMessage();
+        if (errorMessage != null) {
+            // Password changed or reset
+            if (errorMessage.contains(PASSWORD_CHANGED_CODE) || errorMessage.contains(KEYWORD_PASSWORD_CHANGED)) {
+                // Remove the refresh token to force re-authentication
+                refreshTokenStore.remove(refreshTokenStoreKey);
+                throw new MustAuthorizeException(PASSWORD_CHANGED_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // User doesn't exist
+            if (errorMessage.contains(USER_DELETED_CODE) || errorMessage.contains(KEYWORD_USER_DELETED)) {
+                throw new MustAuthorizeException(USER_DELETED_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // User disabled
+            if (errorMessage.contains(USER_DISABLED_CODE) || errorMessage.contains(ACCOUNT_LOCKED_CODE) ||
+                    errorMessage.contains(PASSWORD_EXPIRED_CODE) || errorMessage.contains(KEYWORD_ACCOUNT_DISABLED)) {
+                throw new MustAuthorizeException(USER_DISABLED_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // Application not found
+            if (errorMessage.contains(APP_NOT_FOUND_CODE)) {
+                throw new MustAuthorizeException(APP_NOT_FOUND_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // Permission revoked
+            if (errorMessage.contains(CONSENT_REVOKED_CODE) || errorMessage.contains(CONSENT_REQUIRED_CODE) ||
+                    errorMessage.contains(ROLE_NOT_FOUND_CODE) || errorMessage.contains(KEYWORD_INSUFFICIENT_SCOPE) ||
+                    errorMessage.contains(KEYWORD_ACCESS_DENIED)) {
+
+                // Remove the refresh token to force re-authentication
+                refreshTokenStore.remove(refreshTokenStoreKey);
+                throw new MustAuthorizeException(PERMISSIONS_REVOKED_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // Tenant not found
+            if (errorMessage.contains(TENANT_NOT_FOUND_CODE) || errorMessage.contains(KEYWORD_TENANT_NOT_FOUND)) {
+                throw new MustAuthorizeException(TENANT_NOT_FOUND_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // Service unavailable
+            if (errorMessage.contains(SERVICE_UNAVAILABLE_CODE) || errorMessage.contains(KEYWORD_SERVICE_UNAVAILABLE) ||
+                    errorMessage.contains(KEYWORD_NETWORK_ERROR)) {
+                throw new MustAuthorizeException(SERVICE_UNAVAILABLE_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+
+            // Invalid client secret
+            if (errorMessage.contains(INVALID_CLIENT_SECRET_CODE) || errorMessage.contains(KEYWORD_INVALID_CLIENT_SECRET) ||
+                    errorMessage.contains(KEYWORD_INVALID_CLIENT)) {
+                throw new MustAuthorizeException(INVALID_CLIENT_SECRET_ERROR, createAuthDetails(refreshTokenStoreKey));
+            }
+        }
+
+        // Default case - refresh token expired or other unspecified error
+        throw createMustAuthorizationException(refreshTokenStoreKey, true);
+    }
 }

@@ -1,5 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
+import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.ExtensionResponse;
 import app.krista.extension.impl.anno.Attribute;
 import app.krista.extension.impl.anno.CatalogRequest;
@@ -30,6 +31,8 @@ import javax.inject.Inject;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.PASSWORD_CHANGED_ERROR;
+
 @Service
 public class MessagingAreaSubCatalogRequests {
     public static final String HANDLE_REENTER_REPLY_TO_ALL_WITH_FIELDS = "handleReenterReplyToAllWithFields";
@@ -43,6 +46,7 @@ public class MessagingAreaSubCatalogRequests {
     public static final String HANDLE_REENTER_UPDATE_MESSAGE = "handleReenterUpdateMessage";
     public static final String REENTER = "Reenter";
     public static final String REENTER_WAS_TRUE_HENCE_CONTINUING = "Reenter was true. Hence continuing.";
+    public static final String CONFIRM_REENTER_AUTHORIZATION = "confirmReenterAuthorization";
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaSubCatalogRequests.class);
     private final MailHandler mailHandler;
     private final Account account;
@@ -859,5 +863,15 @@ public class MessagingAreaSubCatalogRequests {
         }
     }
 
-
+    @SubCatalogRequest(
+            name = CONFIRM_REENTER_AUTHORIZATION,
+            description = "Checks if user wants to re-authenticate after an authorization error",
+            type = CatalogRequest.Type.QUERY_SYSTEM
+    )
+    @SuppressWarnings("unchecked")
+    public ExtensionResponse confirmReenterAuthorization(@Field.Desc(name = "inputMap",
+            type = "{ Reenter: Boolean, stateId: Text, errorType: Text }", required = true) Map<String, Object> map) {
+        LOGGER.info("SubCatalogRequest confirmReenterAuthorization start: {}", map);
+        throw new MustAuthorizeException(PASSWORD_CHANGED_ERROR);
+    }
 }

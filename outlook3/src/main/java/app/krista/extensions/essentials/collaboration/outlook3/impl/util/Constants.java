@@ -136,6 +136,42 @@ public class Constants {
     public static final String IS_FORWARDED = "Is Forwarded";
     public static final String DELTA_TOKEN = "Delta Token";
 
+    // Error messages for ExtensionResponse
+    public static final String USER_DELETED_ERROR = "Your Microsoft 365 account no longer exists. Please contact your administrator.";
+    public static final String USER_DISABLED_ERROR = "Your Microsoft 365 account has been blocked or locked. Please contact your administrator.";
+    public static final String APP_NOT_FOUND_ERROR = "We couldn’t find the application in your Microsoft 365 setup. Please contact your administrator.";
+    public static final String PERMISSIONS_REVOKED_ERROR = "Your access to Microsoft 365 has been removed. Please contact your administrator.";
+    public static final String REFRESH_TOKEN_EXPIRED_ERROR = "Your session has expired. Please contact your administrator.";
+    public static final String TENANT_NOT_FOUND_ERROR = "We couldn’t find your Microsoft 365 organization. Please contact your administrator.";
+    public static final String SERVICE_UNAVAILABLE_ERROR = "Microsoft 365 is temporarily unavailable. Please contact your administrator.";
+    public static final String INVALID_CLIENT_SECRET_ERROR = "Something’s wrong with the application’s connection. Please contact your administrator.";
+    public static final String PASSWORD_CHANGED_ERROR = "Your Microsoft 365 password was changed. Please contact your administrator.";
+
+    // Error codes
+    public static final String USER_DELETED_CODE = "AADSTS50020";
+    public static final String USER_DISABLED_CODE = "AADSTS50057";
+    public static final String ACCOUNT_LOCKED_CODE = "AADSTS50053";
+    public static final String PASSWORD_EXPIRED_CODE = "AADSTS50055";
+    public static final String CONSENT_REVOKED_CODE = "AADSTS65001";
+    public static final String CONSENT_REQUIRED_CODE = "AADSTS70019";
+    public static final String ROLE_NOT_FOUND_CODE = "AADSTS90094";
+    public static final String APP_NOT_FOUND_CODE = "AADSTS700016";
+    public static final String TENANT_NOT_FOUND_CODE = "AADSTS90002";
+    public static final String SERVICE_UNAVAILABLE_CODE = "AADSTS50000";
+    public static final String INVALID_CLIENT_SECRET_CODE = "AADSTS7000215";
+    public static final String PASSWORD_CHANGED_CODE = "AADSTS50173";
+
+    // Authentication error keywords for detection
+    public static final String KEYWORD_USER_DELETED = "user has been deleted";
+    public static final String KEYWORD_ACCOUNT_DISABLED = "account is disabled";
+    public static final String KEYWORD_TENANT_NOT_FOUND = "tenant not found";
+    public static final String KEYWORD_SERVICE_UNAVAILABLE = "service unavailable";
+    public static final String KEYWORD_NETWORK_ERROR = "network error";
+    public static final String KEYWORD_INVALID_CLIENT_SECRET = "invalid client secret";
+    public static final String KEYWORD_INVALID_CLIENT = "invalid_client";
+    public static final String KEYWORD_INSUFFICIENT_SCOPE = "insufficient_scope";
+    public static final String KEYWORD_ACCESS_DENIED = "access_denied";
+    public static final String KEYWORD_PASSWORD_CHANGED = "changed or reset their password";
 
     private Constants() {
     }
