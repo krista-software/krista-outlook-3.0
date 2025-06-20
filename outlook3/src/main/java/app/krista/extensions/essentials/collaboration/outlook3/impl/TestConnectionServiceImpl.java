@@ -132,12 +132,7 @@ public class TestConnectionServiceImpl {
                                             String clientSecret) {
         long startTime = System.currentTimeMillis();
         OutlookAttributes outlookAttributes = getOutlookAttributes(useStoredConfiguration, invokerId, email, allowMailAlert, tenantID, clientID, clientSecret);
-        String testConnectionJsonResponse = testConnection(outlookAttributes);
-        AuthenticationResponse authenticationResponse = GSON.fromJson(testConnectionJsonResponse, AuthenticationResponse.class);
-        if (authenticationResponse.isSuccess()) {
-            return createSuccessResponse(email, allowMailAlert, outlookAttributes.getTenantId(), outlookAttributes.getClientId(), startTime, outlookAttributes.getAuthType());
-        }
-        return createFailureResponse(authenticationResponse, startTime, email, allowMailAlert, tenantID, clientID);
+        return getExtensionResponse(outlookAttributes, startTime);
     }
 
     private ExtensionResponse createFailureResponse(AuthenticationResponse authenticationResponse, long startTime,
@@ -154,7 +149,7 @@ public class TestConnectionServiceImpl {
                 "Email", email, "Allow Mail Alert",
                 allowMailAlert == null || allowMailAlert ? "Not Verified" :
                         allowMailAlertIsSuccessful ? "Successfully Verified" : "Failed to Verify",
-                "Tenant ID", tenantID,
+                "Tenant ID", tenantID == null ? "Not Verified" : "Successfully Verified",
                 "Client ID", clientID,
                 "Mailbox Accessible", true));
         testConnectionResponse.put("Extension Response Meta", extensionResponseMeta);
@@ -166,6 +161,7 @@ public class TestConnectionServiceImpl {
 
     private ExtensionResponse createSuccessResponse(String email, Boolean allowMailAlert, String tenantID, String clientID, long startTime, String authType) {
         LOGGER.info("Connection tested successfully in {} ms", (System.currentTimeMillis() - startTime));
+
         LOGGER.info(" email : {} , allowMailAlert : {} , tenantID : {} , clientID : {} ", email, allowMailAlert, tenantID, clientID);
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
         extensionResponseMeta.message = "Connection tested successfully.";
@@ -173,8 +169,8 @@ public class TestConnectionServiceImpl {
         extensionResponseMeta.responseType = "SUCCESS";
         extensionResponseMeta.timeTakenInSeconds = (double) (System.currentTimeMillis() - startTime) / 1000;
 
-        Map<String, Object> testConnectionResponse = Map.of("Is Connection Successful", true,
-                "Summary", "Connection tested successfully.",
+
+        Map<String, Object> summary = Map.of("Summary", "Connection tested successfully.",
                 "Email", email, "Allow Mail Alert",
                 allowMailAlert == null || allowMailAlert ? "Not Verified" : "Successfully Verified",
                 "Tenant ID", tenantID == null ? "Not Verified" : "Successfully Verified",
@@ -182,6 +178,10 @@ public class TestConnectionServiceImpl {
                 "Auth Type", authType,
                 "Extension Response Meta", extensionResponseMeta,
                 "Mailbox Accessible", true);
+
+        Map<String, Object> testConnectionResponse = Map.of("Is Connection Successful", true,
+                "Test Connection Summary", summary,
+                "Extension Response Meta", extensionResponseMeta);
 
         ExtensionResponse extensionResponse = new ExtensionResponseBuilder().success(testConnectionResponse).build();
         LOGGER.info("Extension response created successfully in {} ms", (System.currentTimeMillis() - startTime));
@@ -196,5 +196,27 @@ public class TestConnectionServiceImpl {
             outlookAttributes = new OutlookAttributes(clientID, clientSecret, tenantID, email, allowMailAlert, Constants.PUBLIC, baseRoutingUrl);
         }
         return outlookAttributes;
+    }
+
+    /**
+     * Tests the connection to Microsoft Graph API using the provided Outlook attributes.
+     * Verifies API access, manages mail alert subscriptions based on configuration, and handles authorization requirements.
+     *
+     * @param invokerId invokerID
+     * @return a JSON string representing the result of the connection test, including success status, error message, and authorization URL if needed
+     */
+    public ExtensionResponse testConnection(String invokerId) {
+        long startTime = System.currentTimeMillis();
+        OutlookAttributes outlookAttributes = outlookAttributeStore.load(invokerId);
+        return getExtensionResponse(outlookAttributes, startTime);
+    }
+
+    private ExtensionResponse getExtensionResponse(OutlookAttributes outlookAttributes, long startTime) {
+        String testConnectionJsonResponse = testConnection(outlookAttributes);
+        AuthenticationResponse authenticationResponse = GSON.fromJson(testConnectionJsonResponse, AuthenticationResponse.class);
+        if (authenticationResponse.isSuccess()) {
+            return createSuccessResponse(outlookAttributes.getEmail(), outlookAttributes.isAllowMailAlert(), outlookAttributes.getTenantId(), outlookAttributes.getClientId(), startTime, outlookAttributes.getAuthType());
+        }
+        return createFailureResponse(authenticationResponse, startTime, outlookAttributes.getEmail(), outlookAttributes.isAllowMailAlert(), outlookAttributes.getTenantId(), outlookAttributes.getClientId());
     }
 }

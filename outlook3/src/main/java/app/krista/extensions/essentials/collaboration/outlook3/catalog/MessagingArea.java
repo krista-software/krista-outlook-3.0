@@ -1029,6 +1029,7 @@ public class MessagingArea {
         }
     }
 
+
     @CatalogRequest(
             id = "localDomainRequest_946ac0ec-e822-4911-9edd-c4b1b985b69c",
             name = "Test Connection",
@@ -1036,15 +1037,10 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Boolean(name = "Is Connection Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if all connection tests passed successfully, including OAuth authentication, API connectivity, and mailbox access.'")}, options = {})
-    @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)", required = false)
-    public ExtensionResponse testConnection(
-            @Field.Boolean(name = "Use Stored Configuration", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Whether to use the previously saved configuration for testing (default: true). When enabled, uses stored OAuth settings. Set to false to test with new configuration parameters.'")}, options = {}) Boolean useStoredConfiguration,
-            @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "M"), @Attribute(name = "toolTip", value = "'User email address todo mailbox actions.'")}, options = {}) String email,
-            @Field.Boolean(name = "Allow Mail Alert", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Allow extension to receive mail alerts. Default false'")}, options = {}) Boolean allowMailAlert,
-            @Field.Text(name = "Tenant ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'Tenant identifier (GUID format) for the organization. This should be provided only when the \\'Use Stored Configuration\\' flag is disabled.'")}, options = {}) String tenantID,
-            @Field.Text(name = "Client ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'Application (client) ID from app registration. This should be provided only when the \\'Use Stored Configuration\\' flag is disabled.'")}, options = {}) String clientID,
-            @Field.Text(name = "Client Secret", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'Application client secret for authentication. This should be provided only when the \\'Use Stored Configuration\\' flag is disabled.'")}, options = {}) String clientSecret) {
-        return testConnectionService.testConnection(useStoredConfiguration, invoker.getInvokerId(), email, allowMailAlert, tenantID, clientID, clientSecret);
+    @Field.Desc(name = "Test Connection Summary", type = "{ Summary: Text, Email: Text, Allow Mail Alert: Text, Tenant ID: Text, Client ID: Text, Auth Type: Text, Mailbox Accessible: Text }",required = false)
+    @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)",required = false)
+    public ExtensionResponse testConnection() {
+        return testConnectionService.testConnection(invoker.getInvokerId());
     }
 
 }
