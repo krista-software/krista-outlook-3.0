@@ -1,11 +1,11 @@
 package app.krista.extensions.essentials.collaboration.outlook3.api;
 
-import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.Invoker;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
@@ -19,7 +19,6 @@ import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.authentication.AuthorizationListener;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.model.base.FreeForm;
-import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.exceptions.OAuthException;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.oauth.OAuth20Service;
@@ -60,11 +59,13 @@ public final class OutlookApiResource {
     private final String baseRoutingUrl;
     private final String invokerId;
     private final Invoker invoker;
+    private final TestConnectionServiceImpl testConnectionService;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
                               GraphServiceClientProviderFactory providerFactory, EventHandler eventHandler,
-                              Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener) {
+                              Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener,
+                              TestConnectionServiceImpl testConnectionService) {
         this.outlookAttributeStore = outlookAttributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.providerFactory = providerFactory;
@@ -75,6 +76,7 @@ public final class OutlookApiResource {
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
         this.invoker = invoker;
+        this.testConnectionService = testConnectionService;
     }
 
     @GET
@@ -273,72 +275,8 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
-        LOGGER.info("Testing connection with Microsoft Graph API");
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        String authContextId = providerFactory.createAttributes(outlookAttributes);
-        String authUrl = null;
-        try {
-            LOGGER.info("Verifying API access for email: {}", outlookAttributes.getEmail());
-            providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
-
-            if (outlookAttributes.isAllowMailAlert()) {
-                LOGGER.info("Mail alerts enabled, creating subscription");
-                boolean subscriptionCreated = MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
-                if (!subscriptionCreated) {
-                    LOGGER.error("Failed to create mail subscription");
-                    return createTestConnectionResponse(false, "Connection successful but failed to create mail subscription.", null);
-                }
-                LOGGER.info("Mail subscription created successfully");
-            } else {
-                LOGGER.info("Mail alerts disabled, removing any existing subscriptions");
-                boolean subscriptionDeleted = MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
-                if (!subscriptionDeleted) {
-                    LOGGER.error("Failed to delete mail subscription");
-                }
-            }
-
-            LOGGER.info("Test connection successful");
-            return createTestConnectionResponse(true, null, null);
-        } catch (GraphServiceException cause) {
-            LOGGER.error("Graph API connection failed: {}", cause.getMessage());
-            return createTestConnectionResponse(false, "An error occurred during test connection.", null);
-        } catch (MustAuthorizeException cause) {
-            LOGGER.info("Authorization required, generating auth URL");
-            String state = createStateParameter(cause, outlookAttributes);
-            OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
-            authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
-            return createTestConnectionResponse(false, AUTHORIZATION_PROMPT, authUrl);
-        } finally {
-            if (authUrl == null) {
-                outlookAttributeStore.remove(authContextId);
-            }
-        }
-    }
-
-    private String createTestConnectionResponse(boolean isSuccess, String errorMessage, String url) {
-        if (isSuccess) {
-            return GSON.toJson(new AuthenticationResponse(true, null, null));
-        } else if (url != null) {
-            return GSON.toJson(new AuthenticationResponse(false, errorMessage, url));
-        } else
-            return GSON.toJson(new AuthenticationResponse(false,
-                    Objects.requireNonNullElse(errorMessage, "Unknown Error"), null));
-    }
-
-    private String createStateParameter(MustAuthorizeException cause, OutlookAttributes outlookAttributes) {
-        String userId = (String) cause.getDetails().get(0).getValue();
-        Optional<NamedValuedField> authContextIdField = cause.getDetails().stream()
-                .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
-                .findFirst();
-        String state = userId;
-        if (authContextIdField.isPresent()) {
-            String authContextId = (String) authContextIdField.get().getValue();
-            state += Constants.HASH + authContextId;
-        }
-        if (Constants.PUBLIC.equals(outlookAttributes.getAuthType())) {
-            state += Constants.HASH + outlookAttributes.getForwardPath();
-        }
-        return state;
+        return testConnectionService.testConnection(outlookAttributes);
     }
 
     @GET

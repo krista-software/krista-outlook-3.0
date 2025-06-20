@@ -56,6 +56,7 @@ public class MessagingAreaTest {
 
     private MessagingArea messagingArea;
     private MessagingAreaImpl messagingAreaImpl;
+    private TestConnectionServiceImpl testConnectionService;
 
     @BeforeEach
     public void setup() {
@@ -76,6 +77,7 @@ public class MessagingAreaTest {
         invoker = mock(Invoker.class, settings);
         routingInfo = mock(RoutingInfo.class, settings);
         graphServiceClientProvider = mock(GraphServiceClientProvider.class, settings);
+        testConnectionService = mock(TestConnectionServiceImpl.class, settings);
 
         // Setup the routing info mock
         when(invoker.getRoutingInfo()).thenReturn(routingInfo);
@@ -110,7 +112,8 @@ public class MessagingAreaTest {
                 internalStateManager,
                 validationOrchestrator,
                 providerFactory,
-                invoker
+                invoker,
+                testConnectionService
         );
 
         messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);

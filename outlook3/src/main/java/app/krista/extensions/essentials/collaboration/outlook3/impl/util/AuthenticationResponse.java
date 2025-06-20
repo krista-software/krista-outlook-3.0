@@ -18,4 +18,8 @@ public class AuthenticationResponse {
     public boolean isSuccess() {
         return isSuccess;
     }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
 }
