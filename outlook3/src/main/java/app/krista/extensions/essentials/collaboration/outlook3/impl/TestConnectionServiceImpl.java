@@ -125,7 +125,8 @@ public class TestConnectionServiceImpl {
 
     @NotNull
     private static Map<String, Object> createTestConnectionResponse(AuthenticationResponse authenticationResponse, OutlookAttributes outlookAttributes, long startTime) {
-        boolean allowMailAlertIsSuccessful = authenticationResponse.getErrorMessage().contains("Connection successful but failed to create mail subscription");
+        boolean allowMailAlertIsSuccessful = !authenticationResponse.isSuccess() && authenticationResponse.getErrorMessage() != null &&
+                authenticationResponse.getErrorMessage().contains("Connection successful but failed to create mail subscription");
 
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
         extensionResponseMeta.message = authenticationResponse.isSuccess() ? "Connection successful" : "Connection failed";
