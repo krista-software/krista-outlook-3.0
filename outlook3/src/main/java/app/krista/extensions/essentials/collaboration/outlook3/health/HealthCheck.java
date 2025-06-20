@@ -3,12 +3,12 @@ package app.krista.extensions.essentials.collaboration.outlook3.health;
 import app.krista.extension.executor.ExtensionResponse;
 import app.krista.extension.executor.ExtensionResponseBuilder;
 import app.krista.extension.executor.Invoker;
-import app.krista.extension.impl.anno.InvokerRequest;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.ksdk.telemetry.TelemetryMetrics;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
@@ -68,6 +68,8 @@ public class HealthCheck {
     private final RefreshTokenStore refreshTokenStore;
     private final String invokerId;
     private final TelemetryMetrics telemetryMetrics;
+    private final Account account;
+
 
     /**
      * Constructor for AuthenticationHealthCheck.
@@ -81,12 +83,13 @@ public class HealthCheck {
             GraphServiceClientProviderFactory providerFactory,
             OutlookAttributeStore attributeStore,
             RefreshTokenStore refreshTokenStore,
-            Invoker invoker, TelemetryMetrics telemetryMetrics) {
+            Invoker invoker, TelemetryMetrics telemetryMetrics, Account account) {
         this.providerFactory = providerFactory;
         this.attributeStore = attributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.invokerId = invoker.getInvokerId();
         this.telemetryMetrics = telemetryMetrics;
+        this.account = account;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
 
@@ -162,12 +165,14 @@ public class HealthCheck {
             healthData.put("Status", authStatus);
             healthData.put("AuthType", authType);
             healthData.put("Email", attributes.getEmail());
+            account.getFolderNames();
+            hasRefreshToken = true;
             healthData.put("HasRefreshToken", hasRefreshToken);
-            
+
             // Add system metrics
             addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
                     cpuUsage, threadCount, uptimeHours);
-            
+
             // Add token metrics if available
             if (hasRefreshToken) {
                 healthData.put("Token Valid", true);
@@ -331,36 +336,6 @@ public class HealthCheck {
     }
 
     /**
-     * Helper method to convert Object to Double safely.
-     *
-     * @param value Object to convert
-     * @return Double value, or 0.0 if conversion fails
-     */
-
-
-    /**
-     * Helper method to convert Object to Integer safely.
-     *
-     * @param value Object to convert
-     * @return Integer value, or 0 if conversion fails
-     */
-    public static Integer convertToInteger(Object value) {
-        if (value == null) {
-            return 0;
-        }
-
-        if (value instanceof Number) {
-            return ((Number) value).intValue();
-        }
-
-        try {
-            return Integer.parseInt(value.toString());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    /**
      * Converts the health data map to an ExtensionResponse object.
      * <p>
      * This method creates a HealthStatus entity from the health data map
@@ -394,6 +369,7 @@ public class HealthCheck {
             healthStatus.email = (String) healthData.getOrDefault("Email", "UNKNOWN");
             healthStatus.hasRefreshToken = (Boolean) healthData.getOrDefault("HasRefreshToken", false);
             healthStatus.tokenValid = (Boolean) healthData.getOrDefault("TokenValid", false);
+
             
             // Determine if the system is healthy
             boolean isHealthy = "HEALTHY".equals(healthStatus.systemStatus);
