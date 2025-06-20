@@ -46,6 +46,7 @@ public class MessagingAreaSubCatalogRequests {
     public static final String REENTER = "Reenter";
     public static final String REENTER_WAS_TRUE_HENCE_CONTINUING = "Reenter was true. Hence continuing.";
     public static final String CONFIRM_REENTER_AUTHORIZATION = "confirmReenterAuthorization";
+    public static final String HANDLE_REENTER_AUTHORIZATION = "handleReenterAuthorization";
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaSubCatalogRequests.class);
     private final MailHandler mailHandler;
     private final Account account;
@@ -869,8 +870,52 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterAuthorization(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, errorType: Text }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text }", required = true) Map<String, Object> map) {
         LOGGER.info("SubCatalogRequest confirmReenterAuthorization start: {}", map);
-        throw new MustAuthorizeException(PASSWORD_CHANGED_ERROR);
+        Boolean reenter = (Boolean) map.get(REENTER);
+        String stateId = (String) map.get(OutlookResources.STATE_ID);
+
+        if (Boolean.FALSE.equals(reenter)) {
+            // User chose not to re-authenticate
+            return ExtensionResponseFactory.create("Authentication required to continue",
+                    ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(
+                            "The operation was canceled because authentication is required.", List.of())),
+                    null, null);
+        }
+
+        LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
+        // User chose to re-authenticate, forward to the handler
+        return responseGenerator.generateFetchResponse(
+                ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
+                List.of(),
+                HANDLE_REENTER_AUTHORIZATION,
+                Map.of(OutlookResources.STATE_ID, stateId));
+    }
+
+    @SubCatalogRequest(
+            name = HANDLE_REENTER_AUTHORIZATION,
+            description = "Handles re-authentication after an authorization error",
+            type = CatalogRequest.Type.CHANGE_SYSTEM)
+    @Field(name = "Authentication Status", type = "Text", required = false)
+    public ExtensionResponse handleReenterAuthorization(
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text }") Map<String, Object> map) {
+        LOGGER.info("SubCatalogRequest handleReenterAuthorization start: {}", map);
+        String stateId = (String) map.get(OutlookResources.STATE_ID);
+
+        try {
+            // Here you would implement the actual re-authentication logic
+            // This might involve redirecting to an OAuth flow or other authentication mechanism
+
+            // For example, you might call a method on your account service:
+            // account.refreshAuthentication();
+
+            // Return success response
+            return ExtensionResponseFactory.create(Map.of("Authentication Status", "Successfully re-authenticated"));
+        } catch (Exception cause) {
+            LOGGER.error("Failed to re-authenticate: {}", cause.getMessage(), cause);
+            return ExtensionResponseFactory.create(cause, "Failed to re-authenticate",
+                    ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR);
+        }
     }
 }
