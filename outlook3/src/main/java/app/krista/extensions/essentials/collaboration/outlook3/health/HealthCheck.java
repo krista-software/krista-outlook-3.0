@@ -9,7 +9,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.Outlo
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
-import app.krista.ksdk.telemetry.TelemetryMetrics;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +66,7 @@ public class HealthCheck {
     private final OutlookAttributeStore attributeStore;
     private final RefreshTokenStore refreshTokenStore;
     private final String invokerId;
-    private final TelemetryMetrics telemetryMetrics;
+   // private final TelemetryMetrics telemetryMetrics;
     private final Account account;
 
 
@@ -83,12 +82,12 @@ public class HealthCheck {
             GraphServiceClientProviderFactory providerFactory,
             OutlookAttributeStore attributeStore,
             RefreshTokenStore refreshTokenStore,
-            Invoker invoker, TelemetryMetrics telemetryMetrics, Account account) {
+            Invoker invoker, Account account) {
         this.providerFactory = providerFactory;
         this.attributeStore = attributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.invokerId = invoker.getInvokerId();
-        this.telemetryMetrics = telemetryMetrics;
+        //this.telemetryMetrics = telemetryMetrics;
         this.account = account;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
@@ -106,7 +105,7 @@ public class HealthCheck {
         LOGGER.debug("Performing authentication health check with operation ID: {}", operationId);
 
         // Increment request counter
-        telemetryMetrics.incrementCounter(HEALTH_CHECK_REQUEST_COUNT);
+      //  telemetryMetrics.incrementCounter(HEALTH_CHECK_REQUEST_COUNT);
 
         try {
             Map<String, Object> healthData = new HashMap<>();
@@ -133,7 +132,6 @@ public class HealthCheck {
             OutlookAttributes attributes = attributeStore.load(invokerId);
             if (attributes == null) {
                 // Set status for not configured state
-                healthData.put("Status", "NOT_CONFIGURED");
                 healthData.put("Message", "Outlook is not configured");
                 
                 // Add system metrics even for not configured state
@@ -143,67 +141,49 @@ public class HealthCheck {
                 healthData.put("LastHealthCheckTime", System.currentTimeMillis());
 
                 // Record telemetry for not configured state
-                telemetryMetrics.incrementCounter(OUTLOOK_AUTH_STATUS, 1,
-                        Map.of("status", "NOT_CONFIGURED"));
+//                telemetryMetrics.incrementCounter(OUTLOOK_AUTH_STATUS, 1,
+//                        Map.of("status", "NOT_CONFIGURED"));
 
                 return toExtensionResponse(healthData);
             }
 
             // Check if refresh token exists for private auth
             String authType = attributes.getAuthType();
-            boolean hasRefreshToken = false;
-            
-            if (Constants.PRIVATE.equals(authType)) {
-                String refreshToken = refreshTokenStore.get(attributes.getEmail());
-                hasRefreshToken = refreshToken != null && !refreshToken.isEmpty();
-            }
+            boolean hasRefreshToken;
 
-            // Determine overall authentication status based on configuration
-            String authStatus = hasRefreshToken || !Constants.PRIVATE.equals(authType) ? "HEALTHY" : "DEGRADED";
-            
-            // Populate health data
-            healthData.put("Status", authStatus);
             healthData.put("AuthType", authType);
             healthData.put("Email", attributes.getEmail());
             account.getFolderNames();
             hasRefreshToken = true;
             healthData.put("HasRefreshToken", hasRefreshToken);
-
+            healthData.put("TokenValid", true);
             // Add system metrics
             addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
                     cpuUsage, threadCount, uptimeHours);
 
             // Add token metrics if available
-            if (hasRefreshToken) {
-                healthData.put("Token Valid", true);
-                healthData.put("TokenLatencyMs", 0.0); // No actual token fetch is performed
-            }
+
             
             healthData.put("LastHealthCheckTime", System.currentTimeMillis());
 
             // Record telemetry metrics
-            try {
-                telemetryMetrics.observeGauge(OUTLOOK_MEMORY_USAGE_MB, usedMemory);
-                telemetryMetrics.observeGauge(OUTLOOK_MEMORY_AVAILABLE_MB, availableMemory);
-                telemetryMetrics.observeGauge(OUTLOOK_CPU_USAGE_PERCENTAGE, cpuUsage);
-                telemetryMetrics.observeGauge(OUTLOOK_ACTIVE_THREADS, threadCount);
-                telemetryMetrics.observeGauge(OUTLOOK_UPTIME_HOURS, uptimeHours);
-                telemetryMetrics.incrementCounter(OUTLOOK_AUTH_STATUS, 1,
-                        Map.of("status", authStatus, "Auth_type", authType));
-            } catch (Exception e) {
-                // Log but don't fail the health check if telemetry recording fails
-                LOGGER.warn("Error recording telemetry metrics: {}", e.getMessage());
-            }
+//            try {
+//                telemetryMetrics.observeGauge(OUTLOOK_MEMORY_USAGE_MB, usedMemory);
+//                telemetryMetrics.observeGauge(OUTLOOK_MEMORY_AVAILABLE_MB, availableMemory);
+//                telemetryMetrics.observeGauge(OUTLOOK_CPU_USAGE_PERCENTAGE, cpuUsage);
+//                telemetryMetrics.observeGauge(OUTLOOK_ACTIVE_THREADS, threadCount);
+//                telemetryMetrics.observeGauge(OUTLOOK_UPTIME_HOURS, uptimeHours);
+//            } catch (Exception e) {
+//                // Log but don't fail the health check if telemetry recording fails
+//                LOGGER.warn("Error recording telemetry metrics: {}", e.getMessage());
+//            }
 
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
 
             // Record success metrics
-            telemetryMetrics.incrementCounter(HEALTH_CHECK_SUCCESS_COUNT);
-            telemetryMetrics.recordDuration(HEALTH_CHECK_LATENCY_MS, duration);
-
-            LOGGER.info("Authentication health check completed in {} ms. Auth status: {}",
-                    duration, authStatus);
+//            telemetryMetrics.incrementCounter(HEALTH_CHECK_SUCCESS_COUNT);
+//            telemetryMetrics.recordDuration(HEALTH_CHECK_LATENCY_MS, duration);
 
             return toExtensionResponse(healthData);
         } catch (Exception e) {
@@ -211,15 +191,15 @@ public class HealthCheck {
             long duration = endTime - startTime;
 
             // Record failure metrics
-            try {
-                telemetryMetrics.incrementCounter(HEALTH_CHECK_FAILURE_COUNT);
-                telemetryMetrics.incrementCounter(HEALTH_CHECK_ERROR_TYPE, 1,
-                        Map.of("error_type", e.getClass().getSimpleName()));
-                telemetryMetrics.recordDuration(HEALTH_CHECK_LATENCY_MS, duration);
-            } catch (Exception telemetryError) {
-                // Log but don't suppress the original exception if telemetry recording fails
-                LOGGER.warn("Error recording failure telemetry: {}", telemetryError.getMessage());
-            }
+//            try {
+//                telemetryMetrics.incrementCounter(HEALTH_CHECK_FAILURE_COUNT);
+//                telemetryMetrics.incrementCounter(HEALTH_CHECK_ERROR_TYPE, 1,
+//                        Map.of("error_type", e.getClass().getSimpleName()));
+//                telemetryMetrics.recordDuration(HEALTH_CHECK_LATENCY_MS, duration);
+//            } catch (Exception telemetryError) {
+//                // Log but don't suppress the original exception if telemetry recording fails
+//                LOGGER.warn("Error recording failure telemetry: {}", telemetryError.getMessage());
+//            }
 
             LOGGER.error("Authentication health check failed for operation {}: {}",
                     operationId, e.getMessage(), e);
