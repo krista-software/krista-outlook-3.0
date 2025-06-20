@@ -17,7 +17,7 @@ public class ExtensionResponseMeta {
 
     @Searchable
     @ToString
-    @Field.Text(name = "Message", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Detailed message on extension response'")}, options = {})
+    @Field.Text(name = "Message", required = true, attributes = {@Attribute(name = "visualWidth", value = "M"), @Attribute(name = "toolTip", value = "'Detailed message on extension response'")}, options = {})
     public String message;
 
     @Field(name = "Technical Detailed Error Report", type = "RichText", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'The system showed some error details to help the technical team understand what went wrong.'")}, options = {})

@@ -135,10 +135,10 @@ public class TestConnectionServiceImpl {
         extensionResponseMeta.timeTakenInSeconds = (double) (System.currentTimeMillis() - startTime) / 1000;
 
         Map<String, Object> testConnectionSummary = Map.of(
-                "Summary", authenticationResponse.isSuccess() ? "Connection successful" : "Connection failed",
+                "Summary", authenticationResponse.isSuccess() ? "Connection successful" : authenticationResponse.getErrorMessage(),
                 "Email", outlookAttributes.getEmail(),
                 "Allow Mail Alert", outlookAttributes.isAllowMailAlert(),
-                "Tenant ID", outlookAttributes.getTenantId(),
+                "Tenant ID", outlookAttributes.getTenantId() == null ? "Krista Public Tenant" : outlookAttributes.getTenantId(),
                 "Client ID", outlookAttributes.getClientId(),
                 "Auth Type", outlookAttributes.getAuthType(),
                 "Mailbox Accessible", authenticationResponse.isSuccess(),
