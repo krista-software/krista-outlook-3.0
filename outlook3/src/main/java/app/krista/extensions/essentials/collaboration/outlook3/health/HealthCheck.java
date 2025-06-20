@@ -2,6 +2,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.health;
 
 import app.krista.extension.executor.ExtensionResponse;
 import app.krista.extension.executor.ExtensionResponseBuilder;
+import app.krista.extension.executor.Invoker;
 import app.krista.extension.impl.anno.InvokerRequest;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
@@ -72,26 +73,21 @@ public class HealthCheck {
      * @param providerFactory The GraphServiceClientProviderFactory
      * @param attributeStore The OutlookAttributeStore
      * @param refreshTokenStore The RefreshTokenStore
-     * @param invokerId The invoker ID
      */
     @Inject
     public HealthCheck(
             GraphServiceClientProviderFactory providerFactory,
             OutlookAttributeStore attributeStore,
             RefreshTokenStore refreshTokenStore,
-            String invokerId, TelemetryMetrics telemetryMetrics) {
+            Invoker invoker, TelemetryMetrics telemetryMetrics) {
         this.providerFactory = providerFactory;
         this.attributeStore = attributeStore;
         this.refreshTokenStore = refreshTokenStore;
-        this.invokerId = invokerId;
+        this.invokerId = invoker.getInvokerId();
         this.telemetryMetrics = telemetryMetrics;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
 
-    @InvokerRequest(InvokerRequest.Type.INVOKER_LOADED)
-    public void registerInvokerUptime() {
-        START_TIME = Instant.now();
-    }
 
     /**
      * Checks the health of the authentication services.

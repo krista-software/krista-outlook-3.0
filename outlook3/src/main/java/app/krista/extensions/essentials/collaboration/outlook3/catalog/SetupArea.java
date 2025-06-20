@@ -8,7 +8,7 @@ import app.krista.extension.impl.anno.*;
 import app.krista.extensions.essentials.collaboration.outlook3.health.HealthCheck;
 import app.krista.ksdk.entities.EntityReference;
 import app.krista.model.base.*;
-import jakarta.inject.Inject;
+import javax.inject.Inject;
 
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",
         name = "Collaboration",
@@ -18,6 +18,7 @@ import jakarta.inject.Inject;
 public class SetupArea {
 
     private final HealthCheck healthCheck;
+
     @Inject
     public SetupArea(HealthCheck healthCheck) {
         this.healthCheck = healthCheck;
