@@ -51,7 +51,7 @@ public class MessagingAreaImpl {
 
 
     public ExtensionResponse replyToAllWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType) {
-        try{
+        try {
             Email email = account.getEmail(messageId);
             if (email == null) {
                 LOGGER.error(Constants.INVALID_MESSAGE_ID);
@@ -65,7 +65,7 @@ public class MessagingAreaImpl {
             email.replyToAll(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
-        }catch (Exception cause){
+        } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc and Bcc",
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR);
         }
@@ -85,7 +85,7 @@ public class MessagingAreaImpl {
             LOGGER.info(SENDING_MESSAGE, message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
-        }catch (Exception cause){
+        } catch (Exception cause) {
             return ExtensionResponseFactory.create("Failed to reply all", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to reply all", List.of())),
                     null, Map.of());
@@ -124,13 +124,12 @@ public class MessagingAreaImpl {
 
     public ExtensionResponse sendMail(String subject, String message, List<File> attachments, String to, String cc, String bcc, String replyTo, String bodyType) {
         try {
-            LOGGER.info("Sending email to {}; with body: {}", to, message);
+            LOGGER.info("Sending email to {}", to);
 
             EmailBuilder builder = account.newEmail();
             builder.withText(subject);
             bodyType = getBodyType(bodyType);
             message = getFormattedMessage(message, bodyType);
-            LOGGER.info(SENDING_MESSAGE, message);
             builder.withContent(bodyType, message);
             builder.withTo(toEmailAddresses(to));
             builder.withCc(toEmailAddresses(cc));
