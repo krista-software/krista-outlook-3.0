@@ -18,6 +18,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.validator
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.Validator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
@@ -62,13 +63,15 @@ public class MessagingArea {
     private final GraphServiceClientProviderFactory providerFactory;
 
     private final String baseRoutingUrl;
+    private final TestConnectionServiceImpl testConnectionService;
+    private final Invoker invoker;
 
     @Inject
     public MessagingArea(Account account, RequestContext requestContext, AuthorizationContext authorizationContext,
                          EventHandler eventHandler, MailHandler mailHandler,
                          MessagingAreaImpl messagingAreaImpl, ExtensionResponseGenerator responseGenerator,
                          ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator,
-                         GraphServiceClientProviderFactory providerFactory, Invoker invoker) {
+                         GraphServiceClientProviderFactory providerFactory, Invoker invoker, TestConnectionServiceImpl testConnectionService) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
@@ -79,7 +82,9 @@ public class MessagingArea {
         this.internalStateManager = internalStateManager;
         this.validationOrchestrator = validationOrchestrator;
         this.providerFactory = providerFactory;
+        this.invoker = invoker;
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        this.testConnectionService = testConnectionService;
     }
 
     private static String validateString(String input) {
@@ -1022,6 +1027,24 @@ public class MessagingArea {
             LOGGER.error("Error occurred while checking triggered mail IDs: {}", cause.getMessage(), cause);
             return false;
         }
+    }
+
+    @CatalogRequest(
+            id = "localDomainRequest_946ac0ec-e822-4911-9edd-c4b1b985b69c",
+            name = "Test Connection",
+            description = "This test connection request validates the connection using stored or provided configuration parameters. It performs comprehensive connectivity tests including OAuth token acquisition, mailbox connectivity, and scope validation to ensure the integration is working properly.",
+            area = "Messaging",
+            type = CatalogRequest.Type.QUERY_SYSTEM)
+    @Field.Boolean(name = "Is Connection Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if all connection tests passed successfully, including OAuth authentication, API connectivity, and mailbox access.'")}, options = {})
+    @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)", required = false)
+    public ExtensionResponse testConnection(
+            @Field.Boolean(name = "Use Stored Configuration", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Whether to use the previously saved configuration for testing (default: true). When enabled, uses stored OAuth settings. Set to false to test with new configuration parameters.'")}, options = {}) Boolean useStoredConfiguration,
+            @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "M"), @Attribute(name = "toolTip", value = "'User email address todo mailbox actions.'")}, options = {}) String email,
+            @Field.Boolean(name = "Allow Mail Alert", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Allow extension to receive mail alerts. Default false'")}, options = {}) Boolean allowMailAlert,
+            @Field.Text(name = "Tenant ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'Tenant identifier (GUID format) for the organization. This should be provided only when the \\'Use Stored Configuration\\' flag is disabled.'")}, options = {}) String tenantID,
+            @Field.Text(name = "Client ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'Application (client) ID from app registration. This should be provided only when the \\'Use Stored Configuration\\' flag is disabled.'")}, options = {}) String clientID,
+            @Field.Text(name = "Client Secret", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'Application client secret for authentication. This should be provided only when the \\'Use Stored Configuration\\' flag is disabled.'")}, options = {}) String clientSecret) {
+        return testConnectionService.testConnection(useStoredConfiguration, invoker.getInvokerId(), email, allowMailAlert, tenantID, clientID, clientSecret);
     }
 
 }
