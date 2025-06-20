@@ -23,6 +23,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.HealthStatus;
 
 /**
  * Service for checking the health of Outlook authentication services.
@@ -91,16 +93,6 @@ public class HealthCheck {
 
     /**
      * Checks the health of the authentication services.
-     * <p>
-     * This method gathers various authentication metrics including:
-     * <ul>
-     *   <li>Authentication configuration status</li>
-     *   <li>Token validity</li>
-     *   <li>Memory usage</li>
-     *   <li>CPU utilization</li>
-     *   <li>Thread count</li>
-     *   <li>System uptime</li>
-     * </ul>
      *
      * @return ExtensionResponse containing health metrics and status information
      */
@@ -137,6 +129,7 @@ public class HealthCheck {
             // Load attributes
             OutlookAttributes attributes = attributeStore.load(invokerId);
             if (attributes == null) {
+                // Set status for not configured state
                 healthData.put("Status", "NOT_CONFIGURED");
                 healthData.put("Message", "Outlook is not configured");
                 
@@ -156,31 +149,31 @@ public class HealthCheck {
             // Check if refresh token exists for private auth
             String authType = attributes.getAuthType();
             boolean hasRefreshToken = false;
-
+            
             if (Constants.PRIVATE.equals(authType)) {
                 String refreshToken = refreshTokenStore.get(attributes.getEmail());
                 hasRefreshToken = refreshToken != null && !refreshToken.isEmpty();
             }
-
+            
             // Determine overall authentication status based on configuration
             String authStatus = hasRefreshToken || !Constants.PRIVATE.equals(authType) ? "HEALTHY" : "DEGRADED";
-
+            
             // Populate health data
             healthData.put("Status", authStatus);
             healthData.put("AuthType", authType);
             healthData.put("Email", attributes.getEmail());
             healthData.put("HasRefreshToken", hasRefreshToken);
-
+            
             // Add system metrics
-            addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory,
+            addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
                     cpuUsage, threadCount, uptimeHours);
-
+            
             // Add token metrics if available
             if (hasRefreshToken) {
                 healthData.put("TokenValid", true);
                 healthData.put("TokenLatencyMs", 0.0); // No actual token fetch is performed
             }
-
+            
             healthData.put("LastHealthCheckTime", System.currentTimeMillis());
 
             // Record telemetry metrics
@@ -225,13 +218,13 @@ public class HealthCheck {
 
             LOGGER.error("Authentication health check failed for operation {}: {}",
                     operationId, e.getMessage(), e);
-
+            
             Map<String, Object> errorData = new HashMap<>();
             errorData.put("Status", "ERROR");
             errorData.put("ErrorMessage", e.getMessage());
             errorData.put("ErrorType", e.getClass().getSimpleName());
             errorData.put("LastHealthCheckTime", System.currentTimeMillis());
-
+            
             return toExtensionResponse(errorData);
         }
     }
@@ -343,21 +336,7 @@ public class HealthCheck {
      * @param value Object to convert
      * @return Double value, or 0.0 if conversion fails
      */
-    public static Double convertToDouble(Object value) {
-        if (value == null) {
-            return 0.0;
-        }
 
-        if (value instanceof Number) {
-            return ((Number) value).doubleValue();
-        }
-
-        try {
-            return Double.parseDouble(value.toString());
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
-    }
 
     /**
      * Helper method to convert Object to Integer safely.
@@ -387,17 +366,6 @@ public class HealthCheck {
      * This method creates a HealthStatus entity from the health data map
      * and wraps it in an ExtensionResponse along with a success/failure indicator
      * and a message. The response is suitable for returning from catalog requests.
-     * <p>
-     * The method handles exceptions gracefully, ensuring that even if there's an error
-     * processing the health data, a meaningful error response is returned rather than
-     * throwing an exception.
-     * <p>
-     * The ExtensionResponse includes:
-     * <ul>
-     *   <li>A HealthStatus entity with detailed system metrics</li>
-     *   <li>A boolean indicating whether the system is healthy</li>
-     *   <li>An ExtensionResponse entity with a user-friendly message</li>
-     * </ul>
      *
      * @param healthData Map containing health metrics and status information
      * @return ExtensionResponse containing the health status and success indicator
@@ -407,29 +375,43 @@ public class HealthCheck {
         String operationId = "health_response_" + startTime;
 
         LOGGER.debug("Creating extension response for health data with operation ID: {}", operationId);
-
+        
         try {
-            String systemStatus = (String) healthData.getOrDefault("SystemStatus", "UNKNOWN");
-            boolean isHealthy = "HEALTHY".equals(systemStatus);
-
+            // Create HealthStatus entity from health data
+            HealthStatus healthStatus = new HealthStatus();
+            healthStatus.extensionName = "Outlook";
+            healthStatus.lastHealthCheckTime = (Long) healthData.getOrDefault("LastHealthCheckTime", System.currentTimeMillis());
+            
+            // Map system metrics
+            healthStatus.currentMemoryUsageMB = convertToDouble(healthData.get("CurrentMemoryUsageMB"));
+            healthStatus.availableMemoryMB = convertToDouble(healthData.get("AvailableMemoryMB"));
+            healthStatus.totalMemoryMB = convertToDouble(healthData.get("TotalMemoryMB"));
+            healthStatus.cPUUsagePercentage = convertToDouble(healthData.get("CpuUsagePercentage"));
+            healthStatus.activeThreads = convertToDouble(healthData.get("ActiveThreads"));
+            healthStatus.uptimeHours = convertToDouble(healthData.get("UptimeHours"));
+            healthStatus.systemStatus = (String) healthData.getOrDefault("SystemStatus", "UNKNOWN");
+            
+            // Determine if the system is healthy
+            boolean isHealthy = "HEALTHY".equals(healthStatus.systemStatus);
+            
             double timeTakenInSeconds = (System.currentTimeMillis() - startTime) / 1000.0;
-
-            Map<String, Object> extensionResponse = getExtensionResponse(isHealthy, healthData, timeTakenInSeconds);
-
+            
+            Map<String, Object> extensionResponse = getExtensionResponse(isHealthy, healthStatus, timeTakenInSeconds);
+            
             long endTime = System.currentTimeMillis();
             LOGGER.info("Extension response created successfully in {} ms", (endTime - startTime));
-
+            
             return new ExtensionResponseBuilder().success(extensionResponse).build();
         } catch (Exception e) {
             LOGGER.error("Error creating extension response for operation {}: {}",
                     operationId, e.getMessage(), e);
-
+            
             String errorDetails = String.format(
                     "Operation ID: %s, Error Type: %s, Message: %s",
                     operationId,
                     e.getClass().getSimpleName(),
                     e.getMessage());
-
+            
             // Create a proper error object
             ExtensionResponse.Error error = new ExtensionResponse.Error(
                     "Error processing health check data: " + e.getMessage(),
@@ -437,31 +419,67 @@ public class HealthCheck {
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     errorDetails
             );
-
+            
+            // Create a default health status for error case
+            HealthStatus healthStatus = new HealthStatus();
+            healthStatus.extensionName = "Outlook";
+            healthStatus.systemStatus = "ERROR";
+            healthStatus.lastHealthCheckTime = System.currentTimeMillis();
+            
             long endTime = System.currentTimeMillis();
-            Map<String, Object> extensionResponse = getExtensionResponse(false, healthData, (endTime - startTime) / 1000.0);
-
+            Map<String, Object> extensionResponse = getExtensionResponse(false, healthStatus, (endTime - startTime) / 1000.0);
+            
             // Use the error object directly
             return new ExtensionResponse(ExtensionResponse.Result.FAILURE, extensionResponse, error, null, null);
         }
     }
 
-    private Map<String, Object> getExtensionResponse(boolean isHealthy, Map<String, Object> healthData, double timeTakenInSeconds) {
+    /**
+     * Helper method to convert an object to a double value.
+     * 
+     * @param value The object to convert
+     * @return The double value, or 0.0 if conversion fails
+     */
+    private double convertToDouble(Object value) {
+        if (value == null) {
+            return 0.0;
+        }
+        
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        }
+        
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (Exception e) {
+            LOGGER.warn("Failed to convert value to double: {}", value);
+            return 0.0;
+        }
+    }
+
+    /**
+     * Creates a standardized extension response map.
+     * 
+     * @param isHealthy Whether the system is healthy
+     * @param healthStatus The health status entity
+     * @param timeTakenInSeconds Time taken to perform the health check
+     * @return A map containing the extension response
+     */
+    private Map<String, Object> getExtensionResponse(boolean isHealthy, HealthStatus healthStatus, double timeTakenInSeconds) {
         String responseMessage = isHealthy
                 ? "Health check completed successfully. All systems operational."
-                : "Health check completed with issues. System status: " + healthData.getOrDefault("SystemStatus", "UNKNOWN");
-
-        Map<String, Object> extensionResponseMeta = Map.of(
-                "message", responseMessage,
-                "technicalDetails", "",
-                "status", isHealthy ? "SUCCESS" : "FAILED",
-                "timeTakenInSeconds", timeTakenInSeconds
-        );
-
+                : "Health check completed with issues. System status: " + healthStatus.systemStatus;
+        
+        ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
+        extensionResponseMeta.message = responseMessage;
+        extensionResponseMeta.technicalDetailedErrorReport = "";
+        extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "FAILED";
+        extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
+        
         return Map.of(
-                "Health Status", healthData,
+                "Health Status", healthStatus,
                 "Is Healthy", isHealthy,
-                "Extension Response", extensionResponseMeta
+                "Extension Response Meta", extensionResponseMeta
         );
     }
 }

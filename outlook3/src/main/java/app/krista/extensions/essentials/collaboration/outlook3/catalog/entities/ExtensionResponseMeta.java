@@ -12,7 +12,7 @@ import app.krista.model.base.*;
         ecosystemId = "catEntryEcosystem_84b53163-327b-4b1b-8c96-9334d292f9f5",
         ecosystemName = "Essentials",
         ecosystemVersion ="6072dcfd-83e6-436c-b1f7-0239a34bcf74")
-@Entity(name = "Extension Response Meta", id = "localDomainEntity_415a46c3-047d-4caf-9169-5f2413759b34", primaryKey = "", supportStore = false, options = {})
+@Entity(name = "Extension Response Meta", id = "localDomainEntity_415a46c3-047d-4caf-9169-5f2413759b34", primaryKey = "Message", supportStore = false, options = {})
 public class ExtensionResponseMeta {
 
     @Searchable
