@@ -154,7 +154,7 @@ public class HealthCheck {
                 String refreshToken = refreshTokenStore.get(attributes.getEmail());
                 hasRefreshToken = refreshToken != null && !refreshToken.isEmpty();
             }
-            
+
             // Determine overall authentication status based on configuration
             String authStatus = hasRefreshToken || !Constants.PRIVATE.equals(authType) ? "HEALTHY" : "DEGRADED";
             
@@ -170,7 +170,7 @@ public class HealthCheck {
             
             // Add token metrics if available
             if (hasRefreshToken) {
-                healthData.put("TokenValid", true);
+                healthData.put("Token Valid", true);
                 healthData.put("TokenLatencyMs", 0.0); // No actual token fetch is performed
             }
             
@@ -390,6 +390,10 @@ public class HealthCheck {
             healthStatus.activeThreads = convertToDouble(healthData.get("ActiveThreads"));
             healthStatus.uptimeHours = convertToDouble(healthData.get("UptimeHours"));
             healthStatus.systemStatus = (String) healthData.getOrDefault("SystemStatus", "UNKNOWN");
+            healthStatus.authType = (String) healthData.getOrDefault("AuthType", "UNKNOWN");
+            healthStatus.email = (String) healthData.getOrDefault("Email", "UNKNOWN");
+            healthStatus.hasRefreshToken = (Boolean) healthData.getOrDefault("HasRefreshToken", false);
+            healthStatus.tokenValid = (Boolean) healthData.getOrDefault("TokenValid", false);
             
             // Determine if the system is healthy
             boolean isHealthy = "HEALTHY".equals(healthStatus.systemStatus);
@@ -472,7 +476,7 @@ public class HealthCheck {
         
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
         extensionResponseMeta.message = responseMessage;
-        extensionResponseMeta.technicalDetailedErrorReport = "";
+        extensionResponseMeta.technicalDetailedErrorReport = isHealthy ? "" : "System is not healthy";
         extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "FAILED";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
         
