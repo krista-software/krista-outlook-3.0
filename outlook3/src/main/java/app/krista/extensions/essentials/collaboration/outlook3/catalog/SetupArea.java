@@ -30,8 +30,10 @@ public class SetupArea {
             description = "Request Description",
             area = "Setup",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)", required = false)
-    public ExtensionResponse healthCheck() {
+    @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)",required = false)
+    @Field.Desc(name = "Health Status", type = "Entity(Health Status)",required = false)
+    @Field.Boolean(name = "Is Healthy", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if the appliance health check is successful and all systems are operating normally, otherwise false with details'")}, options = {})
+    public ExtensionResponse healthCheck()  {
         return healthCheck.checkHealth();
     }
 }
