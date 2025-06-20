@@ -128,7 +128,7 @@ public class TestConnectionServiceImpl {
         boolean allowMailAlertIsSuccessful = authenticationResponse.getErrorMessage().contains("Connection successful but failed to create mail subscription");
 
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
-        extensionResponseMeta.message = authenticationResponse.getErrorMessage();
+        extensionResponseMeta.message = authenticationResponse.isSuccess() ? "Connection successful" : "Connection failed";
         extensionResponseMeta.technicalDetailedErrorReport = "";
         extensionResponseMeta.responseType = authenticationResponse.isSuccess() ? "SUCCESS" : "FAILED";
         extensionResponseMeta.timeTakenInSeconds = (double) (System.currentTimeMillis() - startTime) / 1000;
