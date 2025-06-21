@@ -50,7 +50,7 @@ public class MessageIdValidator implements Validator {
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Message ID: %s does not exist.", resourceId);
+        return String.format("We couldn't find an email with the Message ID: %s. Please check and enter a valid Message ID.", resourceId);
     }
 
     @Override

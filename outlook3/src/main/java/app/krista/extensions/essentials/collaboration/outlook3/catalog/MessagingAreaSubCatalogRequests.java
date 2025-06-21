@@ -146,7 +146,8 @@ public class MessagingAreaSubCatalogRequests {
             }
             return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to fetch mail by message id",
+            return ExtensionResponseFactory.create(cause, "We couldn't fetch the email because the message ID appears to " +
+                            "be incorrect. Please check the message ID and try again.",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -200,7 +201,8 @@ public class MessagingAreaSubCatalogRequests {
             }
             return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Move Message",
+            return ExtensionResponseFactory.create(cause, "We couldn't move the message because either the message ID " +
+                            "is incorrect or the folder doesn't exist. Please check and try again.",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -341,7 +343,8 @@ public class MessagingAreaSubCatalogRequests {
 
             return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Forward Mail",
+            return ExtensionResponseFactory.create(cause, "We couldn't forward the email because the message ID or " +
+                            "recipient email address seems to be incorrect. Please double-check and try again.",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -759,7 +762,8 @@ public class MessagingAreaSubCatalogRequests {
             List<Email> emails = account.getInboxFolder(null, null).getEmails(pageNumber, pageSize);
             return ExtensionResponseFactory.create(Map.of("Inbox Mails", emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to fetch Inbox",
+            return ExtensionResponseFactory.create(cause, "We couldn’t fetch your inbox because the page number " +
+                            "or page size is invalid. Please enter a number between 1 and 15.",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
