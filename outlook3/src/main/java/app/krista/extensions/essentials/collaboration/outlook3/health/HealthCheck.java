@@ -58,10 +58,9 @@ public class HealthCheck {
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore attributeStore;
     private final RefreshTokenStore refreshTokenStore;
-    private final String invokerId;
     private final Account account;
     private final MessagingAreaImpl messagingAreaImpl;
-
+private final Invoker invoker;
 
     /**
      * Constructor for AuthenticationHealthCheck.
@@ -79,9 +78,9 @@ public class HealthCheck {
         this.providerFactory = providerFactory;
         this.attributeStore = attributeStore;
         this.refreshTokenStore = refreshTokenStore;
-        this.invokerId = invoker.getInvokerId();
         this.account = account;
         this.messagingAreaImpl = messagingAreaImpl;
+        this.invoker = invoker;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
 
@@ -103,7 +102,7 @@ public class HealthCheck {
             healthSummaryMessage = healthSummaryMessage + "Collected system metrics.\n";
             healthData.put("LastHealthCheckTime", lastHealthCheckTime);
             // Load attributes
-            OutlookAttributes attributes = attributeStore.load(invokerId);
+            OutlookAttributes attributes = attributeStore.load(invoker.getInvokerId());
             if (attributes == null) {
                 // Set status for not configured state
                 healthData.put("Message", "Outlook is not configured");
@@ -358,10 +357,9 @@ public class HealthCheck {
         extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "UNHEALTHY";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
         if (!isHealthy) {
-            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + " for " + healthStatus.extensionName + " with Invoker Id : " + invokerId + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport;
+            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + " for " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport;
             messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "srushti.ekmode@kristasoft.com", null, null, null, "Text");
         }
-
         return Map.of(
                 "Health Status", healthStatus,
                 "Is Healthy", isHealthy,
