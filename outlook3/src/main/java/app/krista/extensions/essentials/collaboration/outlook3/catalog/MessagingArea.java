@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.beans.Introspector;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -446,6 +447,7 @@ public class MessagingArea {
         }
     }
 
+    // TODO - Error handling required if passed 0 as page number
     @CatalogRequest(
             id = "localDomainRequest_bbdc1184-9dc1-4448-8bdb-ec6c9ee913a7",
             name = "Fetch Inbox",
@@ -467,7 +469,16 @@ public class MessagingArea {
                     return fetchInboxResponse(pageNumber, pageSize);
                 } else {
                     String stateId = UUID.randomUUID().toString();
-                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    // Store both pageNumber and pageSize in the state, even if only one is invalid
+                    Map<String, Object> stateMap = new HashMap<>();
+                    stateMap.put(SubCatalogConstants.VALIDATION_RESULTS, validationResults);
+                    if (pageNumber != null) {
+                        stateMap.put(OutlookResources.PAGE_NUMBER, pageNumber);
+                    }
+                    if (pageSize != null) {
+                        stateMap.put(OutlookResources.PAGE_SIZE, pageSize);
+                    }
+                    internalStateManager.put(stateId, Constants.GSON.toJson(stateMap));
                     return responseGenerator.generateConfirmationResponse(
                             ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                             SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
