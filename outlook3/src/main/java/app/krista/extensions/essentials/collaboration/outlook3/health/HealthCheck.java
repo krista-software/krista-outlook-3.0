@@ -6,6 +6,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.HealthStatus;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
@@ -43,10 +44,14 @@ import java.util.Map;
  */
 @Service
 public class HealthCheck {
-    /** Logger for this class. */
+    /**
+     * Logger for this class.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheck.class);
 
-    /** Timestamp when the service was started, used for uptime calculation. */
+    /**
+     * Timestamp when the service was started, used for uptime calculation.
+     */
     private static Instant START_TIME = Instant.now();
 
     private static long lastHealthCheckTime = 0;
@@ -54,15 +59,15 @@ public class HealthCheck {
     private final OutlookAttributeStore attributeStore;
     private final RefreshTokenStore refreshTokenStore;
     private final String invokerId;
-   // private final TelemetryMetrics telemetryMetrics;
     private final Account account;
+    private final MessagingAreaImpl messagingAreaImpl;
 
 
     /**
      * Constructor for AuthenticationHealthCheck.
      *
-     * @param providerFactory The GraphServiceClientProviderFactory
-     * @param attributeStore The OutlookAttributeStore
+     * @param providerFactory   The GraphServiceClientProviderFactory
+     * @param attributeStore    The OutlookAttributeStore
      * @param refreshTokenStore The RefreshTokenStore
      */
     @Inject
@@ -70,12 +75,13 @@ public class HealthCheck {
             GraphServiceClientProviderFactory providerFactory,
             OutlookAttributeStore attributeStore,
             RefreshTokenStore refreshTokenStore,
-            Invoker invoker, Account account) {
+            Invoker invoker, Account account, MessagingAreaImpl messagingAreaImpl) {
         this.providerFactory = providerFactory;
         this.attributeStore = attributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.invokerId = invoker.getInvokerId();
         this.account = account;
+        this.messagingAreaImpl = messagingAreaImpl;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
 
@@ -158,8 +164,8 @@ public class HealthCheck {
      * Helper method to add system metrics to the health data map.
      */
     private void addSystemMetrics(Map<String, Object> healthData, long usedMemory,
-                                 long availableMemory, long maxMemory, double cpuUsage,
-                                 int threadCount, double uptimeHours) {
+                                  long availableMemory, long maxMemory, double cpuUsage,
+                                  int threadCount, double uptimeHours) {
         healthData.put("CurrentMemoryUsageMB", (double) usedMemory);
         healthData.put("AvailableMemoryMB", (double) availableMemory);
         healthData.put("TotalMemoryMB", (double) maxMemory);
@@ -182,9 +188,9 @@ public class HealthCheck {
      *   <li>UNHEALTHY - One or more metrics have exceeded critical thresholds</li>
      * </ul>
      *
-     * @param cpuUsage CPU usage as a percentage
+     * @param cpuUsage   CPU usage as a percentage
      * @param usedMemory Used memory in megabytes
-     * @param maxMemory Maximum available memory in megabytes
+     * @param maxMemory  Maximum available memory in megabytes
      * @return A string representing the system status
      */
     private String determineSystemStatus(double cpuUsage, long usedMemory, long maxMemory) {
@@ -310,7 +316,7 @@ public class HealthCheck {
 
     /**
      * Helper method to convert an object to a double value.
-     * 
+     *
      * @param value The object to convert
      * @return The double value, or 0.0 if conversion fails
      */
@@ -318,11 +324,11 @@ public class HealthCheck {
         if (value == null) {
             return 0.0;
         }
-        
+
         if (value instanceof Number) {
             return ((Number) value).doubleValue();
         }
-        
+
         try {
             return Double.parseDouble(value.toString());
         } catch (Exception e) {
@@ -351,7 +357,11 @@ public class HealthCheck {
         extensionResponseMeta.technicalDetailedErrorReport = exception != null ? Arrays.toString(exception.getStackTrace()) : "";
         extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "UNHEALTHY";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
-        
+        if (!isHealthy) {
+            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + " for " + healthStatus.extensionName + " with Invoker Id : " + invokerId + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport;
+            messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "srushti.ekmode@kristasoft.com", null, null, null, "Text");
+        }
+
         return Map.of(
                 "Health Status", healthStatus,
                 "Is Healthy", isHealthy,
