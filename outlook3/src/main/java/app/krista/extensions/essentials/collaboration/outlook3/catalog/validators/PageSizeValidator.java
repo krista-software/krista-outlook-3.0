@@ -19,7 +19,8 @@ public class PageSizeValidator implements Validator {
     }
 
     private Boolean isNumberValid(String resourceId) {
-        return Double.parseDouble(resourceId) <= 15; // Maximum Limit for Page size
+        double value = Double.parseDouble(resourceId);
+        return value > 0 && value <= 15; // Valid range: greater than 0 and less than or equal to 15
     }
 
     @Override
@@ -39,12 +40,14 @@ public class PageSizeValidator implements Validator {
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Page size : %s should be less than 15.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
+        return String.format("The provided Page size : %s should be greater than 0 and less than or equal to 15.",
+                EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 
     @Override
     public String getErrMessage(String resourceId) {
-        return String.format("The provided Page size : %s should be less than 15.", EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
+        return String.format("The provided Page size : %s should be greater than 0 and less than or equal to 15.",
+                EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 
 }

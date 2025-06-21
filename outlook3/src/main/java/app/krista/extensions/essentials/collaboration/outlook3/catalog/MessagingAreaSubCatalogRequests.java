@@ -488,7 +488,7 @@ public class MessagingAreaSubCatalogRequests {
         try {
             return messagingAreaImpl.markMessage(messageID, label);
         } catch (Exception cause) {
-            return ExtensionResponseFactory.create(cause, "Failed to Mark Message",
+            return ExtensionResponseFactory.create(cause, "We couldn't process the message because it seems the message ID is incorrect or missing",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
         }
     }
@@ -740,7 +740,7 @@ public class MessagingAreaSubCatalogRequests {
         }
         LOGGER.info(REENTER_WAS_TRUE_HENCE_CONTINUING);
         return responseGenerator.generateFetchResponse(ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                validationResults, "handleReenterFetchInbox", Map.of()
+                validationResults, "handleReenterFetchInbox", map
         );
     }
 
