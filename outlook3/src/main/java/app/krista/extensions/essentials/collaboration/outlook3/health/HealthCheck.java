@@ -1,14 +1,16 @@
 package app.krista.extensions.essentials.collaboration.outlook3.health;
 
 import app.krista.extension.executor.ExtensionResponse;
-import app.krista.extension.executor.ExtensionResponseBuilder;
 import app.krista.extension.executor.Invoker;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.HealthStatus;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import org.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +22,9 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.ThreadMXBean;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
-import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.HealthStatus;
 
 /**
  * Service for checking the health of Outlook authentication services.
@@ -48,20 +49,7 @@ public class HealthCheck {
     /** Timestamp when the service was started, used for uptime calculation. */
     private static Instant START_TIME = Instant.now();
 
-    // Metric names
-    private static final String HEALTH_CHECK_REQUEST_COUNT = "health_check_request_count";
-    private static final String HEALTH_CHECK_SUCCESS_COUNT = "health_check_success_count";
-    private static final String HEALTH_CHECK_FAILURE_COUNT = "health_check_failure_count";
-    private static final String HEALTH_CHECK_LATENCY_MS = "health_check_latency_ms";
-    private static final String HEALTH_CHECK_ERROR_TYPE = "health_check_error_type";
-
-    // System Metrics
-    private static final String OUTLOOK_MEMORY_USAGE_MB = "outlook_memory_usage_mb";
-    private static final String OUTLOOK_MEMORY_AVAILABLE_MB = "outlook_memory_available_mb";
-    private static final String OUTLOOK_CPU_USAGE_PERCENTAGE = "outlook_cpu_usage_percentage";
-    private static final String OUTLOOK_ACTIVE_THREADS = "outlook_active_threads";
-    private static final String OUTLOOK_UPTIME_HOURS = "outlook_uptime_hours";
-    private static final String OUTLOOK_AUTH_STATUS = "outlook_auth_status";
+    private static long lastHealthCheckTime = 0;
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore attributeStore;
     private final RefreshTokenStore refreshTokenStore;
@@ -87,7 +75,6 @@ public class HealthCheck {
         this.attributeStore = attributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.invokerId = invoker.getInvokerId();
-        //this.telemetryMetrics = telemetryMetrics;
         this.account = account;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
@@ -101,117 +88,70 @@ public class HealthCheck {
     public ExtensionResponse checkHealth() {
         long startTime = System.currentTimeMillis();
         String operationId = "auth_health_check_" + startTime;
-
         LOGGER.debug("Performing authentication health check with operation ID: {}", operationId);
-
-        // Increment request counter
-      //  telemetryMetrics.incrementCounter(HEALTH_CHECK_REQUEST_COUNT);
-
+        lastHealthCheckTime = lastHealthCheckTime == 0 ? System.currentTimeMillis() : lastHealthCheckTime;
+        Map<String, Object> healthData = new HashMap<>();
+        String healthSummaryMessage = "";
         try {
-            Map<String, Object> healthData = new HashMap<>();
-
-            // Get memory metrics
-            MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-            long usedMemory = memoryBean.getHeapMemoryUsage().getUsed() / (1024 * 1024);
-            long maxMemory = memoryBean.getHeapMemoryUsage().getMax() / (1024 * 1024);
-            long availableMemory = maxMemory - usedMemory;
-
-            // Get CPU usage (approximate)
-            double cpuUsage = getApproximateCpuUsage();
-
-            // Get thread metrics
-            ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-            int threadCount = threadBean.getThreadCount();
-
-            // Calculate uptime
-            Duration uptime = Duration.between(START_TIME, Instant.now());
-            double uptimeHours = uptime.toMillis() / (1000.0 * 60 * 60);
-            uptimeHours = Math.round(uptimeHours * 100.0) / 100.0;
-
+            healthData = updateSystemMetrics();
+            healthSummaryMessage = healthSummaryMessage + "Collected system metrics.\n";
+            healthData.put("LastHealthCheckTime", lastHealthCheckTime);
             // Load attributes
             OutlookAttributes attributes = attributeStore.load(invokerId);
             if (attributes == null) {
                 // Set status for not configured state
                 healthData.put("Message", "Outlook is not configured");
-                
-                // Add system metrics even for not configured state
-                addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
-                        cpuUsage, threadCount, uptimeHours);
-                
-                healthData.put("LastHealthCheckTime", System.currentTimeMillis());
-
-                // Record telemetry for not configured state
-//                telemetryMetrics.incrementCounter(OUTLOOK_AUTH_STATUS, 1,
-//                        Map.of("status", "NOT_CONFIGURED"));
-
-                return toExtensionResponse(healthData);
+            } else {
+                // Check if refresh token exists for private auth
+                String authType = attributes.getAuthType();
+                boolean hasRefreshToken = isHasRefreshToken();
+                healthData.put("AuthType", authType);
+                healthData.put("Email", attributes.getEmail());
+                healthData.put("HasRefreshToken", hasRefreshToken);
+                healthData.put("TokenValid", hasRefreshToken);
             }
+            healthSummaryMessage = healthSummaryMessage + "Checked authentication configuration.\n";
+            return toExtensionResponse(healthData, null, startTime, healthSummaryMessage);
+        } catch (Exception exception) {
+            LOGGER.error("Authentication health check failed for operation {}: {}",
+                    operationId, exception.getMessage(), exception);
+            healthSummaryMessage = healthSummaryMessage + "Error message:" + exception.getMessage() + "\n";
+            return toExtensionResponse(healthData, exception, startTime, healthSummaryMessage);
+        }
+    }
 
-            // Check if refresh token exists for private auth
-            String authType = attributes.getAuthType();
-            boolean hasRefreshToken;
-
-            healthData.put("AuthType", authType);
-            healthData.put("Email", attributes.getEmail());
+    private boolean isHasRefreshToken() {
+        boolean hasRefreshToken;
+        try {
+            //verifying the refresh token will throw an exception if it's invalid
             account.getFolderNames();
             hasRefreshToken = true;
-            healthData.put("HasRefreshToken", hasRefreshToken);
-            healthData.put("TokenValid", true);
-            // Add system metrics
-            addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory, 
-                    cpuUsage, threadCount, uptimeHours);
-
-            // Add token metrics if available
-
-            
-            healthData.put("LastHealthCheckTime", System.currentTimeMillis());
-
-            // Record telemetry metrics
-//            try {
-//                telemetryMetrics.observeGauge(OUTLOOK_MEMORY_USAGE_MB, usedMemory);
-//                telemetryMetrics.observeGauge(OUTLOOK_MEMORY_AVAILABLE_MB, availableMemory);
-//                telemetryMetrics.observeGauge(OUTLOOK_CPU_USAGE_PERCENTAGE, cpuUsage);
-//                telemetryMetrics.observeGauge(OUTLOOK_ACTIVE_THREADS, threadCount);
-//                telemetryMetrics.observeGauge(OUTLOOK_UPTIME_HOURS, uptimeHours);
-//            } catch (Exception e) {
-//                // Log but don't fail the health check if telemetry recording fails
-//                LOGGER.warn("Error recording telemetry metrics: {}", e.getMessage());
-//            }
-
-            long endTime = System.currentTimeMillis();
-            long duration = endTime - startTime;
-
-            // Record success metrics
-//            telemetryMetrics.incrementCounter(HEALTH_CHECK_SUCCESS_COUNT);
-//            telemetryMetrics.recordDuration(HEALTH_CHECK_LATENCY_MS, duration);
-
-            return toExtensionResponse(healthData);
         } catch (Exception e) {
-            long endTime = System.currentTimeMillis();
-            long duration = endTime - startTime;
-
-            // Record failure metrics
-//            try {
-//                telemetryMetrics.incrementCounter(HEALTH_CHECK_FAILURE_COUNT);
-//                telemetryMetrics.incrementCounter(HEALTH_CHECK_ERROR_TYPE, 1,
-//                        Map.of("error_type", e.getClass().getSimpleName()));
-//                telemetryMetrics.recordDuration(HEALTH_CHECK_LATENCY_MS, duration);
-//            } catch (Exception telemetryError) {
-//                // Log but don't suppress the original exception if telemetry recording fails
-//                LOGGER.warn("Error recording failure telemetry: {}", telemetryError.getMessage());
-//            }
-
-            LOGGER.error("Authentication health check failed for operation {}: {}",
-                    operationId, e.getMessage(), e);
-            
-            Map<String, Object> errorData = new HashMap<>();
-            errorData.put("Status", "ERROR");
-            errorData.put("ErrorMessage", e.getMessage());
-            errorData.put("ErrorType", e.getClass().getSimpleName());
-            errorData.put("LastHealthCheckTime", System.currentTimeMillis());
-            
-            return toExtensionResponse(errorData);
+            hasRefreshToken = false;
         }
+        return hasRefreshToken;
+    }
+
+    private Map<String, Object> updateSystemMetrics() {
+        Map<String, Object> healthData = new HashMap<>();
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        long usedMemory = memoryBean.getHeapMemoryUsage().getUsed() / (1024 * 1024);
+        long maxMemory = memoryBean.getHeapMemoryUsage().getMax() / (1024 * 1024);
+        long availableMemory = maxMemory - usedMemory;
+
+        // Get CPU usage (approximate)
+        double cpuUsage = getApproximateCpuUsage();
+
+        // Get thread metrics
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        int threadCount = threadBean.getThreadCount();
+        // Calculate uptime
+        Duration uptime = Duration.between(START_TIME, Instant.now());
+        double uptimeHours = uptime.toMillis() / (1000.0 * 60 * 60);
+        uptimeHours = Math.round(uptimeHours * 100.0) / 100.0;
+        addSystemMetrics(healthData, usedMemory, availableMemory, maxMemory,
+                cpuUsage, threadCount, uptimeHours);
+        return healthData;
     }
 
     /**
@@ -228,8 +168,7 @@ public class HealthCheck {
         healthData.put("UptimeHours", uptimeHours);
 
         // Determine system status based on resource usage
-        String systemStatus = determineSystemStatus(cpuUsage, usedMemory, maxMemory);
-        healthData.put("SystemStatus", systemStatus);
+
     }
 
     /**
@@ -248,7 +187,7 @@ public class HealthCheck {
      * @param maxMemory Maximum available memory in megabytes
      * @return A string representing the system status
      */
-    String determineSystemStatus(double cpuUsage, long usedMemory, long maxMemory) {
+    private String determineSystemStatus(double cpuUsage, long usedMemory, long maxMemory) {
         // Memory usage percentage
         double memoryUsagePercent = (double) usedMemory / maxMemory * 100;
 
@@ -275,7 +214,7 @@ public class HealthCheck {
      *
      * @return CPU usage as a percentage (0-100)
      */
-    double getApproximateCpuUsage() {
+    private double getApproximateCpuUsage() {
         try {
             // Try to get CPU usage from OperatingSystemMXBean
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
@@ -322,76 +261,51 @@ public class HealthCheck {
      * and wraps it in an ExtensionResponse along with a success/failure indicator
      * and a message. The response is suitable for returning from catalog requests.
      *
-     * @param healthData Map containing health metrics and status information
+     * @param healthData           Map containing health metrics and status information
+     * @param healthSummaryMessage Summary of health check results
      * @return ExtensionResponse containing the health status and success indicator
      */
-    public ExtensionResponse toExtensionResponse(Map<String, Object> healthData) {
-        long startTime = System.currentTimeMillis();
+    private ExtensionResponse toExtensionResponse(Map<String, Object> healthData, Exception exception, long startTime, String healthSummaryMessage) {
         String operationId = "health_response_" + startTime;
-
+        Map<String, Object> extensionResponse = new HashMap<>();
+        HealthStatus healthStatus = getHealthStatus(healthData);
+        double timeTakenInSeconds = (System.currentTimeMillis() - startTime) / 1000.0;
         LOGGER.debug("Creating extension response for health data with operation ID: {}", operationId);
-        
         try {
-            // Create HealthStatus entity from health data
-            HealthStatus healthStatus = new HealthStatus();
-            healthStatus.extensionName = "Outlook";
-            healthStatus.lastHealthCheckTime = (Long) healthData.getOrDefault("LastHealthCheckTime", System.currentTimeMillis());
-            
-            // Map system metrics
-            healthStatus.currentMemoryUsageMB = convertToDouble(healthData.get("CurrentMemoryUsageMB"));
-            healthStatus.availableMemoryMB = convertToDouble(healthData.get("AvailableMemoryMB"));
-            healthStatus.totalMemoryMB = convertToDouble(healthData.get("TotalMemoryMB"));
-            healthStatus.cPUUsagePercentage = convertToDouble(healthData.get("CpuUsagePercentage"));
-            healthStatus.activeThreads = convertToDouble(healthData.get("ActiveThreads"));
-            healthStatus.uptimeHours = convertToDouble(healthData.get("UptimeHours"));
-            healthStatus.systemStatus = (String) healthData.getOrDefault("SystemStatus", "UNKNOWN");
-            healthStatus.authType = (String) healthData.getOrDefault("AuthType", "UNKNOWN");
-            healthStatus.email = (String) healthData.getOrDefault("Email", "UNKNOWN");
-            healthStatus.hasRefreshToken = (Boolean) healthData.getOrDefault("HasRefreshToken", false);
-            healthStatus.tokenValid = (Boolean) healthData.getOrDefault("TokenValid", false);
-
-            
             // Determine if the system is healthy
+            healthStatus.systemStatus = exception == null ? "HEALTHY" : "UNHEALTHY";
             boolean isHealthy = "HEALTHY".equals(healthStatus.systemStatus);
-            
-            double timeTakenInSeconds = (System.currentTimeMillis() - startTime) / 1000.0;
-            
-            Map<String, Object> extensionResponse = getExtensionResponse(isHealthy, healthStatus, timeTakenInSeconds);
-            
-            long endTime = System.currentTimeMillis();
-            LOGGER.info("Extension response created successfully in {} ms", (endTime - startTime));
-            
-            return new ExtensionResponseBuilder().success(extensionResponse).build();
-        } catch (Exception e) {
+            extensionResponse = getExtensionResponse(isHealthy, healthStatus, timeTakenInSeconds, exception, healthSummaryMessage);
+            LOGGER.info("Extension response created successfully in {} ms", timeTakenInSeconds);
+        } catch (Exception exception1) {
             LOGGER.error("Error creating extension response for operation {}: {}",
-                    operationId, e.getMessage(), e);
-            
-            String errorDetails = String.format(
-                    "Operation ID: %s, Error Type: %s, Message: %s",
-                    operationId,
-                    e.getClass().getSimpleName(),
-                    e.getMessage());
-            
-            // Create a proper error object
-            ExtensionResponse.Error error = new ExtensionResponse.Error(
-                    "Error processing health check data: " + e.getMessage(),
-                    System.currentTimeMillis(),
-                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    errorDetails
-            );
-            
-            // Create a default health status for error case
-            HealthStatus healthStatus = new HealthStatus();
-            healthStatus.extensionName = "Outlook";
-            healthStatus.systemStatus = "ERROR";
-            healthStatus.lastHealthCheckTime = System.currentTimeMillis();
-            
-            long endTime = System.currentTimeMillis();
-            Map<String, Object> extensionResponse = getExtensionResponse(false, healthStatus, (endTime - startTime) / 1000.0);
-            
-            // Use the error object directly
-            return new ExtensionResponse(ExtensionResponse.Result.FAILURE, extensionResponse, error, null, null);
+                    operationId, exception1.getMessage(), exception1);
+            extensionResponse = getExtensionResponse(false, healthStatus, timeTakenInSeconds, exception1, healthSummaryMessage);
         }
+        return ExtensionResponseFactory.create(extensionResponse);
+
+    }
+
+    @NotNull
+    private HealthStatus getHealthStatus(Map<String, Object> healthData) {
+        // Create HealthStatus entity from health data
+        HealthStatus healthStatus = new HealthStatus();
+        healthStatus.extensionName = "Outlook";
+        healthStatus.lastHealthCheckTime = (Long) healthData.getOrDefault("LastHealthCheckTime", System.currentTimeMillis());
+
+        // Map system metrics
+        healthStatus.currentMemoryUsageMB = convertToDouble(healthData.get("CurrentMemoryUsageMB"));
+        healthStatus.availableMemoryMB = convertToDouble(healthData.get("AvailableMemoryMB"));
+        healthStatus.totalMemoryMB = convertToDouble(healthData.get("TotalMemoryMB"));
+        healthStatus.cPUUsagePercentage = convertToDouble(healthData.get("CpuUsagePercentage"));
+        healthStatus.activeThreads = convertToDouble(healthData.get("ActiveThreads"));
+        healthStatus.uptimeHours = convertToDouble(healthData.get("UptimeHours"));
+        healthStatus.systemStatus = (String) healthData.getOrDefault("SystemStatus", "UNKNOWN");
+        healthStatus.authType = (String) healthData.getOrDefault("AuthType", "UNKNOWN");
+        healthStatus.email = (String) healthData.getOrDefault("Email", "UNKNOWN");
+        healthStatus.hasRefreshToken = (Boolean) healthData.getOrDefault("HasRefreshToken", false);
+        healthStatus.tokenValid = (Boolean) healthData.getOrDefault("TokenValid", false);
+        return healthStatus;
     }
 
     /**
@@ -419,21 +333,23 @@ public class HealthCheck {
 
     /**
      * Creates a standardized extension response map.
-     * 
-     * @param isHealthy Whether the system is healthy
-     * @param healthStatus The health status entity
-     * @param timeTakenInSeconds Time taken to perform the health check
+     *
+     * @param isHealthy            Whether the system is healthy
+     * @param healthStatus         The health status entity
+     * @param timeTakenInSeconds   Time taken to perform the health check
+     * @param exception
+     * @param healthSummaryMessage
      * @return A map containing the extension response
      */
-    private Map<String, Object> getExtensionResponse(boolean isHealthy, HealthStatus healthStatus, double timeTakenInSeconds) {
+    private Map<String, Object> getExtensionResponse(boolean isHealthy, HealthStatus healthStatus, double timeTakenInSeconds, Exception exception, String healthSummaryMessage) {
         String responseMessage = isHealthy
                 ? "Health check completed successfully. All systems operational."
-                : "Health check completed with issues. System status: " + healthStatus.systemStatus;
+                : "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage;
         
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
         extensionResponseMeta.message = responseMessage;
-        extensionResponseMeta.technicalDetailedErrorReport = isHealthy ? "" : "System is not healthy";
-        extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "FAILED";
+        extensionResponseMeta.technicalDetailedErrorReport = exception != null ? Arrays.toString(exception.getStackTrace()) : "";
+        extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "UNHEALTHY";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
         
         return Map.of(

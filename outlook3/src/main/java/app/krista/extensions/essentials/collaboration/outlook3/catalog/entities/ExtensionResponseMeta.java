@@ -1,11 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.entities;
 
 
-import java.util.Map;
-import java.util.List;
 import app.krista.extension.impl.anno.*;
-import app.krista.ksdk.entities.EntityReference;
-import app.krista.model.base.*;
 
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",
         name = "Collaboration",
@@ -17,7 +13,7 @@ public class ExtensionResponseMeta {
 
     @Searchable
     @ToString
-    @Field.Text(name = "Message", required = true, attributes = {@Attribute(name = "visualWidth", value = "M"), @Attribute(name = "toolTip", value = "'Detailed message on extension response'")}, options = {})
+    @Field(name = "Message", required = true, type = "RichText", attributes = {@Attribute(name = "visualWidth", value = "M"), @Attribute(name = "toolTip", value = "'Detailed message on extension response'")}, options = {})
     public String message;
 
     @Field(name = "Technical Detailed Error Report", type = "RichText", required = false, attributes = {@Attribute(name = "visualWidth", value = "L"), @Attribute(name = "toolTip", value = "'The system showed some error details to help the technical team understand what went wrong.'")}, options = {})
