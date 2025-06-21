@@ -285,6 +285,7 @@ private final Invoker invoker;
         } catch (Exception exception1) {
             LOGGER.error("Error creating extension response for operation {}: {}",
                     operationId, exception1.getMessage(), exception1);
+            healthStatus.systemStatus = "UNHEALTHY";
             extensionResponse = getExtensionResponse(false, healthStatus, timeTakenInSeconds, exception1, healthSummaryMessage);
         }
         return ExtensionResponseFactory.create(extensionResponse);
