@@ -60,7 +60,7 @@ public class HealthCheck {
     private final RefreshTokenStore refreshTokenStore;
     private final Account account;
     private final MessagingAreaImpl messagingAreaImpl;
-private final Invoker invoker;
+    private final Invoker invoker;
 
     /**
      * Constructor for AuthenticationHealthCheck.
@@ -351,14 +351,14 @@ private final Invoker invoker;
         String responseMessage = isHealthy
                 ? "Health check completed successfully. All systems operational."
                 : "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage;
-        
+
         ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
         extensionResponseMeta.message = responseMessage;
         extensionResponseMeta.technicalDetailedErrorReport = exception != null ? Arrays.toString(exception.getStackTrace()) : "";
         extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "UNHEALTHY";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
         if (!isHealthy) {
-            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + " for " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport;
+            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + "\n" + " For " + "Extension Name : " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport;
             messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "srushti.ekmode@kristasoft.com", null, null, null, "Text");
         }
         return Map.of(
