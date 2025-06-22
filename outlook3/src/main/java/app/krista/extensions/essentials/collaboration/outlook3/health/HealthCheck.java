@@ -358,8 +358,9 @@ public class HealthCheck {
         extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "UNHEALTHY";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
         if (!isHealthy) {
-            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + "\n" + " For " + "Extension Name : " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport;
-            messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "srushti.ekmode@kristasoft.com", null, null, null, "Text");
+            String errorMessage = exception != null ? exception.getMessage() : "";
+            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + "\n" + " For " + "Extension Name : " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport + "\n" + "\n" + "Error Message: " + errorMessage;
+            messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "service.automation@kristasoft.com", null, null, null, "Text");
         }
         return Map.of(
                 "Health Status", healthStatus,
