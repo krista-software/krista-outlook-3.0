@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Service for checking the health of Outlook authentication services.
@@ -106,6 +107,10 @@ public class HealthCheck {
             if (attributes == null) {
                 // Set status for not configured state
                 healthData.put("Message", "Outlook is not configured");
+                healthData.put("AuthType", "Not Configured");
+                healthData.put("Email", "Not Configured");
+                healthData.put("HasRefreshToken", false);
+                healthData.put("TokenValid", false);
             } else {
                 // Check if refresh token exists for private auth
                 String authType = attributes.getAuthType();
@@ -348,6 +353,20 @@ public class HealthCheck {
      * @return A map containing the extension response
      */
     private Map<String, Object> getExtensionResponse(boolean isHealthy, HealthStatus healthStatus, double timeTakenInSeconds, Exception exception, String healthSummaryMessage) {
+
+        if(healthStatus.email.equals("Not Configured")){
+            isHealthy = false;
+            ExtensionResponseMeta responseMeta = new ExtensionResponseMeta();
+            responseMeta.message = "Authentication failed.Attributes not found.";
+            responseMeta.technicalDetailedErrorReport = "Outlook is not configured";
+            responseMeta.responseType = "UNHEALTHY";
+            responseMeta.timeTakenInSeconds = timeTakenInSeconds;
+            return Map.of(
+                    "Health Status", healthStatus,
+                    "Is Healthy", isHealthy,
+                    "Extension Response Meta", responseMeta
+            );
+        }
         String responseMessage = isHealthy
                 ? "Health check completed successfully. All systems operational."
                 : "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage;
