@@ -158,7 +158,6 @@ public class MessagingArea {
                             Validator.ValidationResource.FOLDER_NAME, folderName));
 
             if (validationResults.isEmpty()) {
-                // TODO - Error Handling Needed For Email & Folder Name
                 Email email = account.getEmail(messageID);
                 Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
                 return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
@@ -360,7 +359,6 @@ public class MessagingArea {
         }
     }
 
-    // TODO - Need to check if To Email is correct and if not then it will show all the fields with given values
     @CatalogRequest(
             id = "localDomainRequest_6d34be22-e420-4087-b55d-0659f899b140",
             name = "Send Mail",
@@ -447,7 +445,6 @@ public class MessagingArea {
         }
     }
 
-    // TODO - Error handling required if passed 0 as page number
     @CatalogRequest(
             id = "localDomainRequest_bbdc1184-9dc1-4448-8bdb-ec6c9ee913a7",
             name = "Fetch Inbox",
