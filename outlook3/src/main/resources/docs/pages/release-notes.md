@@ -4,8 +4,8 @@
 
 - **Developer Name** : Aradhya Gudadhe, VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs Java** : 1.0.114
-- **Global Catalog Version** : 1.0.59
-- **Appliance Release Version** : 3.5.1
+- **Global Catalog Version** : 1.0.58
+- **Appliance Release Version** : 3.5.0
 
 ## Resolved Bugs
 
