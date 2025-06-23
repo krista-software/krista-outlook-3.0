@@ -686,6 +686,34 @@ The Outlook Extension supports the following catalog requests.
 - **Note**: Returns `true` if the message ID has already triggered an alert and exists in the triggered mail IDs set, 
 otherwise returns `false`. This can be used to prevent duplicate processing of emails in workflows that use the "Mail Received Alert" request.
 
+### Health Check
+
+- **Description**: This 'Health Check' request verifies the health status of the appliance by calling the health check API. It returns a boolean response indicating overall health status along with detailed system resource information including memory usage, CPU utilization, and other vital metrics.
+- **Input Parameters**: NA
+- **Output Parameters**:
+
+| **Parameter Name**      | **Parameter Type**              | **Example**                                                                                                                                                                                                                                                                                                                                                |
+|-------------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Extension Response Meta | Entity(Extension Response Meta) | {"message": "Health check completed successfully", "responseType": "SUCCESS", "timeTakenInSeconds": 0.35}                                                                                                                                                                                                                                                  |
+| Health Status           | Entity(Health Status)           | {"extensionName": "Outlook", "systemStatus": "HEALTHY", "currentMemoryUsageMB": 256.0, "availableMemoryMB": 768.0, "totalMemoryMB": 1024.0, "cPUUsagePercentage": 15.5, "activeThreads": 24.0, "uptimeHours": 72.5, "authType": "PRIVATE", "email": "user@example.com", "hasRefreshToken": true, "tokenValid": true, "lastHealthCheckTime": 1623456789000} |
+| Is Healthy              | Boolean                         | true                                                                                                                                                                                                                                                                                                                                                       |
+
+- **Note**: The Health Status entity includes information about system resources (memory, CPU), authentication status, and overall health classification (HEALTHY, DEGRADED, UNHEALTHY). When health issues are detected, an email notification is automatically sent with diagnostic details.
+
+### Test Connection
+
+- **Description**: This test connection request validates the connection using stored or provided configuration parameters. It performs comprehensive connectivity tests including OAuth token acquisition, mailbox connectivity, and scope validation to ensure the integration is working properly.
+- **Input Parameters**: NA
+- **Output Parameters**:
+
+| **Parameter Name**       | **Parameter Type**              | **Example**                                                                                                                                                                                                                                                                                       |
+|--------------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Is Connection Successful | Boolean                         | true                                                                                                                                                                                                                                                                                              |
+| Test Connection Summary  | MultiField                      | {"Summary": "Connection successful", "Email": "user@example.com", "Allow Mail Alert": true, "Tenant ID": "12345678-1234-1234-1234-123456789012", "Client ID": "87654321-4321-4321-4321-210987654321", "Auth Type": "PRIVATE", "Mailbox Accessible": true, "Allow Mail Alert Is Successful": true} |
+| Extension Response Meta  | Entity(Extension Response Meta) | {"message": "Connection test completed successfully", "responseType": "SUCCESS", "timeTakenInSeconds": 0.85}                                                                                                                                                                                      |
+
+- **Note**: The Test Connection Summary includes information about the connection status, email account, authentication type, and mailbox accessibility. If mail alerts are enabled, the test will also attempt to create or update the necessary mail subscription. This request is essential for verifying that your Outlook configuration is correctly set up and functioning.
+
 ## Authentication Error Handling
 
 The **Outlook3** extension handles Microsoft authentication errors with user-friendly messages for each catalog request:
