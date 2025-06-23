@@ -28,7 +28,10 @@ public class OutlookAttributeStore {
 
     @SuppressWarnings("unchecked")
     public OutlookAttributes load(String key) {
-        final String loadedAttributes = String.valueOf(store.get(key));
+        String loadedAttributes  = null ;
+        if(store.get(key) != null){
+            loadedAttributes =  (String)store.get(key);
+        }
         if (loadedAttributes == null || loadedAttributes.isBlank()) {
             return null;
         } else {

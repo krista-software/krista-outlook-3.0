@@ -8,6 +8,7 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
@@ -17,6 +18,7 @@ import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import com.microsoft.graph.http.GraphServiceException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,8 +161,37 @@ public class TestConnectionServiceImpl {
     public ExtensionResponse testConnection(String invokerId) {
         long startTime = System.currentTimeMillis();
         OutlookAttributes outlookAttributes = outlookAttributeStore.load(invokerId);
+        ExtensionResponseMeta extensionResponse = new ExtensionResponseMeta();
+        ExtensionResponse extensionResponseMeta = getExtensionResponse(outlookAttributes, extensionResponse, startTime);
+        if (extensionResponseMeta != null) {
+            return extensionResponseMeta;
+        }
         String testConnectionJsonResponse = testConnection(outlookAttributes);
         AuthenticationResponse authenticationResponse = GSON.fromJson(testConnectionJsonResponse, AuthenticationResponse.class);
         return createExtensionResponse(authenticationResponse, outlookAttributes, startTime);
+    }
+
+    @Nullable
+    private static ExtensionResponse getExtensionResponse(OutlookAttributes outlookAttributes, ExtensionResponseMeta extensionResponse, long startTime) {
+        if (outlookAttributes == null) {
+            extensionResponse.message = "Authentication failed.Attributes not found.";
+            extensionResponse.technicalDetailedErrorReport = "Outlook is not configured";
+            extensionResponse.responseType = "FAILED";
+            extensionResponse.timeTakenInSeconds = (double) (System.currentTimeMillis() - startTime) / 1000;
+            Map<String, Object> testConnectionSummary = Map.of(
+                    "Summary", "Outlook is not configured",
+                    "Email", "Not Configured",
+                    "Allow Mail Alert", "Not Configured",
+                    "Tenant ID", "Not Configured",
+                    "Client ID", "Not Configured",
+                    "Auth Type", "Not Configured",
+                    "Mailbox Accessible", "Not Configured",
+                    "Allow Mail Alert Is Successful", "Not Configured"
+            );
+            return ExtensionResponseFactory.create(Map.of("Extension Response Meta", extensionResponse,
+                    "Test Connection Summary", testConnectionSummary,
+                    "Is Connection Successful", false));
+        }
+        return null;
     }
 }
