@@ -191,11 +191,11 @@ public interface Email {
     boolean addCategory(String category);
 
     /**
-     * This method will remove category for the given message id.
-     * @param category
-     * @return
+     * Removes a category tag from the email
+     *
+     * @param category name of the category to be removed
+     * @return true if the category was successfully removed, false otherwise
      */
-
     boolean removeCategory(String category);
 
 }

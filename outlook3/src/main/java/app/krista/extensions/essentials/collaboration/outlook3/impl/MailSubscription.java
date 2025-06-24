@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * This class is used for Mail Alerts

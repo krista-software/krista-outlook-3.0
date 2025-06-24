@@ -1,13 +1,9 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
-import java.util.Map;
-import java.util.List;
 import app.krista.extension.executor.*;
 import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.*;
 import app.krista.extensions.essentials.collaboration.outlook3.health.HealthCheck;
-import app.krista.ksdk.entities.EntityReference;
-import app.krista.model.base.*;
 import javax.inject.Inject;
 
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",

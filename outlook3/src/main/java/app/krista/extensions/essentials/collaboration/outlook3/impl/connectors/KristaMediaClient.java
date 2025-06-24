@@ -123,8 +123,4 @@ public class KristaMediaClient {
             zipOut.closeEntry();
         }
     }
-
-    public String createMediaUrl(String workspaceId, String mediaId) {
-        return "/media/workspaces/" + workspaceId + "/" + mediaId;
-    }
 }

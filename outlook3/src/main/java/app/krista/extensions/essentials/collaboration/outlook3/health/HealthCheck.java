@@ -7,9 +7,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.HealthStatus;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import org.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
@@ -26,7 +24,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Service for checking the health of Outlook authentication services.
@@ -45,20 +42,14 @@ import java.util.Objects;
  */
 @Service
 public class HealthCheck {
-    /**
-     * Logger for this class.
-     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheck.class);
 
-    /**
-     * Timestamp when the service was started, used for uptime calculation.
-     */
+    // Timestamp when the service was started, used for uptime calculation.
     private static Instant START_TIME = Instant.now();
 
     private static long lastHealthCheckTime = 0;
-    private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore attributeStore;
-    private final RefreshTokenStore refreshTokenStore;
     private final Account account;
     private final MessagingAreaImpl messagingAreaImpl;
     private final Invoker invoker;
@@ -66,19 +57,12 @@ public class HealthCheck {
     /**
      * Constructor for AuthenticationHealthCheck.
      *
-     * @param providerFactory   The GraphServiceClientProviderFactory
-     * @param attributeStore    The OutlookAttributeStore
-     * @param refreshTokenStore The RefreshTokenStore
+     * @param attributeStore The OutlookAttributeStore
      */
     @Inject
-    public HealthCheck(
-            GraphServiceClientProviderFactory providerFactory,
-            OutlookAttributeStore attributeStore,
-            RefreshTokenStore refreshTokenStore,
-            Invoker invoker, Account account, MessagingAreaImpl messagingAreaImpl) {
-        this.providerFactory = providerFactory;
+    public HealthCheck(OutlookAttributeStore attributeStore, Invoker invoker,
+                       Account account, MessagingAreaImpl messagingAreaImpl) {
         this.attributeStore = attributeStore;
-        this.refreshTokenStore = refreshTokenStore;
         this.account = account;
         this.messagingAreaImpl = messagingAreaImpl;
         this.invoker = invoker;
@@ -102,17 +86,15 @@ public class HealthCheck {
             healthData = updateSystemMetrics();
             healthSummaryMessage = healthSummaryMessage + "Collected system metrics.\n";
             healthData.put("LastHealthCheckTime", lastHealthCheckTime);
-            // Load attributes
+
             OutlookAttributes attributes = attributeStore.load(invoker.getInvokerId());
             if (attributes == null) {
-                // Set status for not configured state
                 healthData.put("Message", "Outlook is not configured");
                 healthData.put("AuthType", "Not Configured");
                 healthData.put("Email", "Not Configured");
                 healthData.put("HasRefreshToken", false);
                 healthData.put("TokenValid", false);
             } else {
-                // Check if refresh token exists for private auth
                 String authType = attributes.getAuthType();
                 boolean hasRefreshToken = isHasRefreshToken();
                 healthData.put("AuthType", authType);
@@ -176,9 +158,6 @@ public class HealthCheck {
         healthData.put("CpuUsagePercentage", cpuUsage);
         healthData.put("ActiveThreads", (double) threadCount);
         healthData.put("UptimeHours", uptimeHours);
-
-        // Determine system status based on resource usage
-
     }
 
     /**
@@ -354,7 +333,7 @@ public class HealthCheck {
      */
     private Map<String, Object> getExtensionResponse(boolean isHealthy, HealthStatus healthStatus, double timeTakenInSeconds, Exception exception, String healthSummaryMessage) {
 
-        if(healthStatus.email.equals("Not Configured")){
+        if (healthStatus.email.equals("Not Configured")) {
             isHealthy = false;
             ExtensionResponseMeta responseMeta = new ExtensionResponseMeta();
             responseMeta.message = "Authentication failed.Attributes not found.";
