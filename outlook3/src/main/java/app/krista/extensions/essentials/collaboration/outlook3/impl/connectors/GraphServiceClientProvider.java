@@ -3,6 +3,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl.connectors;
 import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthErrorRule;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.context.RequestContext;
@@ -229,59 +230,18 @@ public class GraphServiceClientProvider {
      */
     private void handleAuthenticationError(Exception cause, String refreshTokenStoreKey) {
         String errorMessage = cause.getMessage();
+        LOGGER.error(" handleAuthenticationError() -> errorMessage ::: {} ", errorMessage);
         if (errorMessage != null) {
-            // Password changed or reset
-            if (errorMessage.contains(PASSWORD_CHANGED_CODE) || errorMessage.contains(KEYWORD_PASSWORD_CHANGED)) {
-                // Remove the refresh token to force re-authentication
-                refreshTokenStore.remove(refreshTokenStoreKey);
-                throw new MustAuthorizeException(PASSWORD_CHANGED_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // User doesn't exist
-            if (errorMessage.contains(USER_DELETED_CODE) || errorMessage.contains(KEYWORD_USER_DELETED)) {
-                throw new MustAuthorizeException(USER_DELETED_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // User disabled
-            if (errorMessage.contains(USER_DISABLED_CODE) || errorMessage.contains(ACCOUNT_LOCKED_CODE) ||
-                    errorMessage.contains(PASSWORD_EXPIRED_CODE) || errorMessage.contains(KEYWORD_ACCOUNT_DISABLED)) {
-                throw new MustAuthorizeException(USER_DISABLED_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // Application not found
-            if (errorMessage.contains(APP_NOT_FOUND_CODE)) {
-                throw new MustAuthorizeException(APP_NOT_FOUND_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // Permission revoked
-            if (errorMessage.contains(CONSENT_REVOKED_CODE) || errorMessage.contains(CONSENT_REQUIRED_CODE) ||
-                    errorMessage.contains(ROLE_NOT_FOUND_CODE) || errorMessage.contains(KEYWORD_INSUFFICIENT_SCOPE) ||
-                    errorMessage.contains(KEYWORD_ACCESS_DENIED)) {
-
-                // Remove the refresh token to force re-authentication
-                refreshTokenStore.remove(refreshTokenStoreKey);
-                throw new MustAuthorizeException(PERMISSIONS_REVOKED_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // Tenant not found
-            if (errorMessage.contains(TENANT_NOT_FOUND_CODE) || errorMessage.contains(KEYWORD_TENANT_NOT_FOUND)) {
-                throw new MustAuthorizeException(TENANT_NOT_FOUND_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // Service unavailable
-            if (errorMessage.contains(SERVICE_UNAVAILABLE_CODE) || errorMessage.contains(KEYWORD_SERVICE_UNAVAILABLE) ||
-                    errorMessage.contains(KEYWORD_NETWORK_ERROR)) {
-                throw new MustAuthorizeException(SERVICE_UNAVAILABLE_ERROR, createAuthDetails(refreshTokenStoreKey));
-            }
-
-            // Invalid client secret
-            if (errorMessage.contains(INVALID_CLIENT_SECRET_CODE) || errorMessage.contains(KEYWORD_INVALID_CLIENT_SECRET) ||
-                    errorMessage.contains(KEYWORD_INVALID_CLIENT)) {
-                throw new MustAuthorizeException(INVALID_CLIENT_SECRET_ERROR, createAuthDetails(refreshTokenStoreKey));
+            for (AuthErrorRule rule : AUTH_ERROR_RULES) {
+                if (rule.matches(errorMessage)) {
+                    if (rule.shouldRemoveToken()) {
+                        refreshTokenStore.remove(refreshTokenStoreKey);
+                    }
+                    throw new MustAuthorizeException(rule.getUserMessage(), createAuthDetails(refreshTokenStoreKey));
+                }
             }
         }
-
-        // Default case - refresh token expired or other unspecified error
+        // Default fallback
         throw createMustAuthorizationException(refreshTokenStoreKey, true);
     }
 }

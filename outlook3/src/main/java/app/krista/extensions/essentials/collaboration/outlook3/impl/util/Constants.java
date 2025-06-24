@@ -160,6 +160,9 @@ public class Constants {
     public static final String SERVICE_UNAVAILABLE_CODE = "AADSTS50000";
     public static final String INVALID_CLIENT_SECRET_CODE = "AADSTS7000215";
     public static final String PASSWORD_CHANGED_CODE = "AADSTS50173";
+    public static final String REFRESH_TOKEN_EXPIRED_CODE = "AADSTS700082";
+    public static final String REFRESH_TOKEN_REVOKED_CODE = "AADSTS700084";
+    public static final String PROOF_OF_POSSESSION_FAILED_CODE = "AADSTS54005";
 
     // Authentication error keywords for detection
     public static final String KEYWORD_USER_DELETED = "user has been deleted";
@@ -172,6 +175,19 @@ public class Constants {
     public static final String KEYWORD_INSUFFICIENT_SCOPE = "insufficient_scope";
     public static final String KEYWORD_ACCESS_DENIED = "access_denied";
     public static final String KEYWORD_PASSWORD_CHANGED = "changed or reset their password";
+    public static final String GENERIC_INVALID_GRANT_CODE = "invalid_grant";
+
+    public static final List<AuthErrorRule> AUTH_ERROR_RULES = List.of(
+            new AuthErrorRule(List.of(PASSWORD_CHANGED_CODE, KEYWORD_PASSWORD_CHANGED), PASSWORD_CHANGED_ERROR, true),
+            new AuthErrorRule(List.of(USER_DELETED_CODE, KEYWORD_USER_DELETED), USER_DELETED_ERROR, false),
+            new AuthErrorRule(List.of(USER_DISABLED_CODE, ACCOUNT_LOCKED_CODE, PASSWORD_EXPIRED_CODE, KEYWORD_ACCOUNT_DISABLED), USER_DISABLED_ERROR, false),
+            new AuthErrorRule(List.of(APP_NOT_FOUND_CODE), APP_NOT_FOUND_ERROR, false),
+            new AuthErrorRule(List.of(CONSENT_REVOKED_CODE, CONSENT_REQUIRED_CODE, ROLE_NOT_FOUND_CODE, KEYWORD_INSUFFICIENT_SCOPE, KEYWORD_ACCESS_DENIED), PERMISSIONS_REVOKED_ERROR, true),
+            new AuthErrorRule(List.of(TENANT_NOT_FOUND_CODE, KEYWORD_TENANT_NOT_FOUND), TENANT_NOT_FOUND_ERROR, false),
+            new AuthErrorRule(List.of(SERVICE_UNAVAILABLE_CODE, KEYWORD_SERVICE_UNAVAILABLE, KEYWORD_NETWORK_ERROR), SERVICE_UNAVAILABLE_ERROR, false),
+            new AuthErrorRule(List.of(INVALID_CLIENT_SECRET_CODE, KEYWORD_INVALID_CLIENT_SECRET, KEYWORD_INVALID_CLIENT), INVALID_CLIENT_SECRET_ERROR, false),
+            new AuthErrorRule(List.of(REFRESH_TOKEN_EXPIRED_CODE, REFRESH_TOKEN_REVOKED_CODE, PROOF_OF_POSSESSION_FAILED_CODE, GENERIC_INVALID_GRANT_CODE), REFRESH_TOKEN_EXPIRED_ERROR, true)
+    );
 
     private Constants() {
     }
