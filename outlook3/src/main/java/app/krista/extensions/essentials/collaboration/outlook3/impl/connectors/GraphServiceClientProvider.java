@@ -78,6 +78,7 @@ public class GraphServiceClientProvider {
             String userId = getUserId(useSetupEmail, accountID);
             String refreshTokenStoreKey = getRefTokenStoreKey(userId);
             String refreshToken = refreshTokenStore.get(refreshTokenStoreKey);
+            LOGGER.info(" refreshToken ::: {} ", refreshToken);
             if (refreshToken == null) {
                 throw createMustAuthorizationException(refreshTokenStoreKey, false);
             }
@@ -242,6 +243,6 @@ public class GraphServiceClientProvider {
             }
         }
         // Default fallback
-        throw createMustAuthorizationException(refreshTokenStoreKey, true);
+        throw createMustAuthorizationException(refreshTokenStoreKey, !requestContext.invokeAsUser());
     }
 }

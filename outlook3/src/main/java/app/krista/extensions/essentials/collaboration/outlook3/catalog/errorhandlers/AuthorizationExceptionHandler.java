@@ -20,37 +20,48 @@ public class AuthorizationExceptionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizationExceptionHandler.class);
 
     /**
-     * Handles the MustAuthorizeException by providing user-friendly error messages
+     * Handles the {@link MustAuthorizeException} by providing user-friendly error messages
      * and appropriate remediation actions based on the specific error type.
      *
-     * @param exception The MustAuthorizeException to handle.
-     * @return An ExtensionResponse with the appropriate error message and remediation action.
+     * <p>If the request is invoked in a user context, this method rethrows the exception.
+     * Otherwise, it handles the exception by generating an {@link ExtensionResponse}
+     * with a suitable error message and remediation instructions.
+     *
+     * @param exception      the {@code MustAuthorizeException} to handle
+     * @param requestContext {@code true} if the request is invoked as a user, otherwise {@code false}
+     * @return an {@link ExtensionResponse} containing the appropriate error message and remediation action
+     * @throws MustAuthorizeException if {@code requestContext} is {@code true}
      */
-    public static ExtensionResponse handleAuthorizationException(MustAuthorizeException exception) {
+    public static ExtensionResponse handleAuthorizationException(MustAuthorizeException exception, boolean requestContext) throws MustAuthorizeException {
         LOGGER.error("Authorization exception: {}", exception.getMessage());
-        String errorMessage = exception.getMessage();
 
-        if (containsAny(errorMessage, REFRESH_TOKEN_EXPIRED)) {
-            return buildAuthResponse(REFRESH_TOKEN_EXPIRED_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, PASSWORD_CHANGED_ERROR)) {
-            return buildAuthResponse(PASSWORD_CHANGED_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, USER_DELETED_ERROR)) {
-            return buildAuthResponse(USER_DELETED_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, USER_DISABLED_ERROR)) {
-            return buildAuthResponse(USER_DISABLED_ERROR, ExtensionResponse.Result.FAILURE);
-        } else if (containsAny(errorMessage, PERMISSIONS_REVOKED_ERROR)) {
-            return buildAuthResponse(PERMISSIONS_REVOKED_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, APP_NOT_FOUND_ERROR)) {
-            return buildAuthResponse(APP_NOT_FOUND_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, TENANT_NOT_FOUND_CODE, KEYWORD_TENANT_NOT_FOUND)) {
-            return buildAuthResponse(TENANT_NOT_FOUND_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, SERVICE_UNAVAILABLE_CODE, KEYWORD_SERVICE_UNAVAILABLE, KEYWORD_NETWORK_ERROR)) {
-            return buildAuthResponse(SERVICE_UNAVAILABLE_ERROR, ExtensionResponse.Result.SUCCESS);
-        } else if (containsAny(errorMessage, INVALID_CLIENT_SECRET_CODE, KEYWORD_INVALID_CLIENT_SECRET)) {
-            return buildAuthResponse(INVALID_CLIENT_SECRET_ERROR, ExtensionResponse.Result.SUCCESS);
+        if (requestContext) {
+            throw exception;
         }
 
-        return buildAuthResponse("Authentication error: " + errorMessage, ExtensionResponse.Result.SUCCESS);
+        String errorMessage = exception.getMessage();
+
+        // Mapping of keywords to user-friendly error messages
+        List<AuthErrorMapping> mappings = List.of(
+                new AuthErrorMapping(REFRESH_TOKEN_EXPIRED_ERROR, REFRESH_TOKEN_EXPIRED),
+                new AuthErrorMapping(PASSWORD_CHANGED_ERROR),
+                new AuthErrorMapping(USER_DELETED_ERROR),
+                new AuthErrorMapping(USER_DISABLED_ERROR),
+                new AuthErrorMapping(PERMISSIONS_REVOKED_ERROR),
+                new AuthErrorMapping(APP_NOT_FOUND_ERROR),
+                new AuthErrorMapping(TENANT_NOT_FOUND_ERROR, TENANT_NOT_FOUND_CODE, KEYWORD_TENANT_NOT_FOUND),
+                new AuthErrorMapping(SERVICE_UNAVAILABLE_ERROR, SERVICE_UNAVAILABLE_CODE, KEYWORD_SERVICE_UNAVAILABLE, KEYWORD_NETWORK_ERROR),
+                new AuthErrorMapping(INVALID_CLIENT_SECRET_ERROR, INVALID_CLIENT_SECRET_CODE, KEYWORD_INVALID_CLIENT_SECRET),
+                new AuthErrorMapping(AUTHORIZATION_PROMPT, AUTHORIZATION_PROMPT) // prompt used as both match and display
+        );
+
+        for (AuthErrorMapping mapping : mappings) {
+            if (mapping.matches(errorMessage)) {
+                return buildAuthResponse(mapping.messageToDisplay, ExtensionResponse.Result.FAILURE);
+            }
+        }
+
+        return buildAuthResponse("Authentication error: " + errorMessage, ExtensionResponse.Result.FAILURE);
     }
 
     private static boolean containsAny(String source, String... keywords) {
@@ -68,6 +79,20 @@ public class AuthorizationExceptionHandler {
                 ExtensionResponse.Error.ExceptionType.AUTHENTICATION_ERROR,
                 List.of(), null, null, result
         );
+    }
+
+    private static class AuthErrorMapping {
+        private final String messageToDisplay;
+        private final String[] keywords;
+
+        AuthErrorMapping(String messageToDisplay, String... keywords) {
+            this.messageToDisplay = messageToDisplay;
+            this.keywords = keywords.length > 0 ? keywords : new String[]{messageToDisplay}; // fallback
+        }
+
+        boolean matches(String source) {
+            return containsAny(source, keywords);
+        }
     }
 
 }

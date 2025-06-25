@@ -118,7 +118,7 @@ public class Constants {
     public static final String CLOSE_TD_TAG = "</td>";
     public static final String CLOSE_TABLE_TAG = "</table><br/>";
     public static final String CLOSE_BODY_TAG = "</body></html>";
-    public static final String AUTHORIZATION_PROMPT = "Authorize yourself and click Validate Attributes before saving changes to proceed further";
+    public static final String AUTHORIZATION_PROMPT = "Please authorize yourself and click 'Validate Attributes' before saving, so we can proceed safely.";
     public static final String LOCAL_EXTN_URL = "https://extension.local.eng.krista.app";
     public static final String DEFAULT_CALLBACK_PATH = "/extension/api/rest/v3/oauth/callback";
     public static final String LOCAL_EXTN_REPLACE_URL = "http://localhost:8765";
