@@ -12,6 +12,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscrip
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.ksdk.context.AuthorizationContext;
+import app.krista.ksdk.telemetry.TelemetryMetrics;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -24,12 +25,15 @@ public class OutlookExtension {
     private final OutlookRequestAuthenticator requestAuthenticator;
     private final GraphServiceClientProviderFactory providerFactory;
     private final String routingUrl;
+    private final TelemetryMetrics telemetryMetrics;
 
     @Inject
-    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore, GraphServiceClientProviderFactory providerFactory, AuthorizationContext authorizationContext) {
+    public OutlookExtension(Invoker invoker, OutlookAttributeStore attributeStore, GraphServiceClientProviderFactory providerFactory,
+                            AuthorizationContext authorizationContext, TelemetryMetrics telemetryMetrics) {
         this.requestAuthenticator = new OutlookRequestAuthenticator(attributeStore, invoker.getInvokerId(), authorizationContext);
         this.providerFactory = providerFactory;
         this.routingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        this.telemetryMetrics = telemetryMetrics;
     }
 
     @InvokerRequest(InvokerRequest.Type.AUTHENTICATOR)
@@ -39,6 +43,10 @@ public class OutlookExtension {
 
     @InvokerRequest(InvokerRequest.Type.CUSTOM_TABS)
     public Map<String, String> customTabs() {
+        telemetryMetrics.incrementCounter("outlook3.custom_tabs.opened", 1, Map.of(
+                "tab", "Documentation",
+                "action", "open"
+        ));
         return Map.of("Authentication", "rest/outlook/docs/", "Documentation", "static/docs");
     }
 
@@ -52,4 +60,11 @@ public class OutlookExtension {
         MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
     }
 
+    @InvokerRequest(InvokerRequest.Type.INVOKER_UPDATED)
+    public void attributesUpdated(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
+        telemetryMetrics.incrementCounter("outlook3.invoker_upgrade.count", 1, Map.of(
+                "invoker", "outlook3",
+                "upgraded", "ues"
+        ));
+    }
 }

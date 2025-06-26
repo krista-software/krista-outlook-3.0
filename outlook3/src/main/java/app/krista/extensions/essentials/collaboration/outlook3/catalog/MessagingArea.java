@@ -7,8 +7,6 @@ import app.krista.extension.impl.anno.Attribute;
 import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.Domain;
 import app.krista.extension.impl.anno.Field;
-import app.krista.extension.request.RoutingInfo;
-import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.api.OutlookApiResource;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.MailDetails;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
@@ -19,7 +17,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.validator
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailHandler;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
@@ -31,6 +28,7 @@ import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
 import app.krista.model.base.FreeForm;
 import com.kristasoft.common.holders.ThreadLocalProxy;
+import com.microsoft.graph.models.StagedFeatureName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.AuthorizationExceptionHandler.*;
+import static app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.TelemetryHelper.safeTagMap;
 
 @Domain(id = "catEntryDomain_5fa2fc97-4b17-44cf-b98f-aa91a459a091",
         name = "Collaboration",
@@ -48,8 +47,8 @@ import static app.krista.extensions.essentials.collaboration.outlook3.catalog.er
         ecosystemName = "Essentials",
         ecosystemVersion = "ef7472cb-3aaa-4570-965b-6b5b6a25e7de")
 public class MessagingArea {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingArea.class);
+
     private final Account account;
     private final EventHandler eventHandler;
     private final MailHandler mailHandler;
@@ -60,18 +59,16 @@ public class MessagingArea {
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     private RequestContext requestContext;
     private AuthorizationContext authorizationContext;
-    private final GraphServiceClientProviderFactory providerFactory;
-
-    private final String baseRoutingUrl;
     private final TestConnectionServiceImpl testConnectionService;
     private final Invoker invoker;
+    private final TelemetryHelper telemetryHelper;
 
     @Inject
     public MessagingArea(Account account, RequestContext requestContext, AuthorizationContext authorizationContext,
                          EventHandler eventHandler, MailHandler mailHandler,
                          MessagingAreaImpl messagingAreaImpl, ExtensionResponseGenerator responseGenerator,
                          ErrorHandlingStateManager internalStateManager, ValidationOrchestrator validationOrchestrator,
-                         GraphServiceClientProviderFactory providerFactory, Invoker invoker, TestConnectionServiceImpl testConnectionService) {
+                         Invoker invoker, TestConnectionServiceImpl testConnectionService, TelemetryHelper telemetryHelper) {
         this.account = account;
         this.requestContext = requestContext;
         this.authorizationContext = authorizationContext;
@@ -81,10 +78,9 @@ public class MessagingArea {
         this.responseGenerator = responseGenerator;
         this.internalStateManager = internalStateManager;
         this.validationOrchestrator = validationOrchestrator;
-        this.providerFactory = providerFactory;
         this.invoker = invoker;
-        this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.testConnectionService = testConnectionService;
+        this.telemetryHelper = telemetryHelper;
     }
 
     private static String validateString(String input) {
@@ -99,18 +95,32 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Labels", type = "[ Text ]", required = false)
     public ExtensionResponse fetchAllLabels() {
+        long startTime = System.currentTimeMillis();
         try {
-            return ExtensionResponseFactory.create(Map.of("Labels", account.getFolderNames()));
+            telemetryHelper.incrementCount("outlook3.fetchAllLabels");
+
+            List<String> labels = account.getFolderNames();
+            ExtensionResponse response = ExtensionResponseFactory.create(Map.of("Labels", labels));
+
+            telemetryHelper.recordSuccess("outlook3.fetchAllLabels", startTime,
+                    TelemetryHelper.safeTagMap("label_count", String.valueOf(labels != null ? labels.size() : 0)));
+
+            return response;
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchAllLabels", startTime, cause.getMessage(), Map.of());
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while fetching all labels :{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while fetching all labels", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch mail by message id", List.of())),
+            LOGGER.error("Error occurred while fetching all labels: {}", cause.getMessage());
+
+            telemetryHelper.recordError("outlook3.fetchAllLabels", startTime, cause, Map.of());
+            return ExtensionResponseFactory.create(
+                    "Error occurred while fetching all labels",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(
+                            "Error occurred while fetching mail by message ID", List.of())),
                     null, null);
         }
     }
-
 
     @CatalogRequest(
             id = "localDomainRequest_ac177adc-e633-4ca1-baf8-7ce7efc5c0e5",
@@ -121,7 +131,10 @@ public class MessagingArea {
     @Field.Desc(name = "Mail", type = "Entity(Mail Details)", required = false)
     public ExtensionResponse fetchMailByMessageId(
             @Field(name = "Message ID", type = "Text") String messageID) {
+        long startTime = System.currentTimeMillis();
         try {
+            telemetryHelper.incrementCount("outlook3.fetchMailByMessageId");
+
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
@@ -131,21 +144,41 @@ public class MessagingArea {
                     LOGGER.info("fetchMailByMessageId: ID {}, from {}, subject {}, timestamp {}",
                             mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
                 }
+
+                telemetryHelper.recordSuccess("outlook3.fetchMailByMessageId", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageID, "mail_found", String.valueOf(mailDetails != null)));
+
                 return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.fetchMailByMessageId", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageID, "validation_count", String.valueOf(validationResults.size())));
+
                 String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults), Map.class));
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                        OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults
+                ), Map.class));
+
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL, Map.of(OutlookResources.STATE_ID, stateId));
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL,
+                        Map.of(OutlookResources.STATE_ID, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchMailByMessageId", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageID));
+
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch mail by message id :{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while fetch mail by message id", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch mail by message id", List.of())),
+
+            telemetryHelper.recordError("outlook3.fetchMailByMessageId", startTime, cause,
+                    safeTagMap("message_id", messageID));
+
+            return ExtensionResponseFactory.create("Error occurred while fetch mail by message id",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(
+                            "Error occurred while fetch mail by message id", List.of())),
                     null, null);
         }
     }
@@ -160,33 +193,62 @@ public class MessagingArea {
     public ExtensionResponse moveMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Folder Name", type = "Text") String folderName) {
+        long startTime = System.currentTimeMillis();
         try {
             LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
-                            Validator.ValidationResource.FOLDER_NAME, folderName));
+
+            telemetryHelper.incrementCount("outlook3.moveMessage");
+
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(
+                    Validator.ValidationResource.MESSAGE_ID, messageID,
+                    Validator.ValidationResource.FOLDER_NAME, folderName));
 
             if (validationResults.isEmpty()) {
                 Email email = account.getEmail(messageID);
                 Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
+
+                telemetryHelper.recordSuccess("outlook3.moveMessage", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName));
+
                 return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.moveMessage", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName,
+                                "validation_count", String.valueOf(validationResults.size())));
+
                 String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                        OutlookResources.MESSAGE_ID, messageID,
                         SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
                 return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.FOLDER_NAME, folderName));
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE,
+                        Map.of(
+                                OutlookResources.STATE_ID, stateId,
+                                OutlookResources.MESSAGE_ID, messageID,
+                                OutlookResources.FOLDER_NAME, folderName));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.moveMessage", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageID, "folder_name", folderName));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
+
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while moving message to folder :{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while moving message to folder", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while moving message to folder", List.of())),
+            LOGGER.error("Error occurred while moving message to folder: {}", cause.getMessage());
+
+            telemetryHelper.recordError("outlook3.moveMessage", startTime, cause,
+                    safeTagMap("message_id", messageID, "folder_name", folderName));
+
+            return ExtensionResponseFactory.create("Error occurred while moving message to folder",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(
+                            "Error occurred while moving message to folder", List.of())),
                     null, null);
         }
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_02494c43-a71f-47bb-935a-37736a4ecac0",
@@ -203,33 +265,61 @@ public class MessagingArea {
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+
+        long startTime = System.currentTimeMillis();
         try {
             LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
+            telemetryHelper.incrementCount("outlook3.replyToAllWithCCAndBCC");
+
             List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
-                            Validator.ValidationResource.TO, validateString(to)
-                            , Validator.ValidationResource.CC, validateString(cc)
-                            , Validator.ValidationResource.BCC, validateString(bcc)
-                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+                    validationOrchestrator.validate(Map.of(
+                            Validator.ValidationResource.MESSAGE_ID, messageId,
+                            Validator.ValidationResource.TO, validateString(to),
+                            Validator.ValidationResource.CC, validateString(cc),
+                            Validator.ValidationResource.BCC, validateString(bcc),
+                            Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+                telemetryHelper.recordSuccess("outlook3.replyToAllWithCCAndBCC", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageId,
+                                "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty()),
+                                "body_type", bodyType));
+
+                return messagingAreaImpl.replyToAllWithCCAndBCC(
+                        attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.replyToAllWithCCAndBCC", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageId,
+                                "validation_count", String.valueOf(validationResults.size())));
+
                 String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                internalStateManager.put(stateId, Constants.GSON.toJson(
+                        Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
                 return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS,
+                        StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.replyToAllWithCCAndBCC", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageId));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To All With CC and BCC :{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while Reply To All With CC and BCC", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To All With CC and BCC", List.of())),
+            telemetryHelper.recordError("outlook3.replyToAllWithCCAndBCC", startTime, cause,
+                    safeTagMap("message_id", messageId));
+            return ExtensionResponseFactory.create("Error occurred while Reply To All With CC and BCC",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(
+                            "Error occurred while Reply To All With CC and BCC", List.of())),
                     null, null);
         }
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_19b1a828-2f61-49e7-a75a-9956f7d12c5c",
@@ -242,28 +332,49 @@ public class MessagingArea {
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+
+        long startTime = System.currentTimeMillis();
         try {
+            telemetryHelper.incrementCount("outlook3.replyToAll");
+
             LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId));
+
             if (validationResults.isEmpty()) {
+                telemetryHelper.recordSuccess("outlook3.replyToAll", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageId));
                 return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.replyToAll", startTime,
+                        TelemetryHelper.safeTagMap("message_id", messageId, "validation_count", String.valueOf(validationResults.size())));
+
                 String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageId,
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                        OutlookResources.MESSAGE_ID, messageId,
                         SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL, StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL,
+                        StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.replyToAll", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageId));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while Reply To All  :{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while Reply To All", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To All", List.of())),
+            LOGGER.error("Error occurred while Reply To All :{}", cause.getMessage());
+
+            telemetryHelper.recordError("outlook3.replyToAll", startTime, cause,
+                    safeTagMap("message_id", messageId));
+            return ExtensionResponseFactory.create("Error occurred while Reply To All",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+                    List.of(RemediationActionFactory.createInformActionALLParticipants(
+                            "Error occurred while Reply To All", List.of())),
                     null, null);
         }
     }
@@ -278,16 +389,30 @@ public class MessagingArea {
     public ExtensionResponse fetchSent(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
+        long startTime = System.currentTimeMillis();
         try {
+            telemetryHelper.incrementCount("outlook3.fetchSent");
             LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+
             Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
             if (validationResourceMap.isEmpty()) {
+                telemetryHelper.recordSuccess("outlook3.fetchSent", startTime,
+                        safeTagMap("page_number", String.valueOf(pageNumber),
+                                "page_size", String.valueOf(pageSize)));
                 return fetchSentResponse(pageNumber, pageSize);
             } else {
                 List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
                 if (validationResults.isEmpty()) {
+                    telemetryHelper.recordSuccess("outlook3.fetchSent", startTime,
+                            safeTagMap("page_number", String.valueOf(pageNumber),
+                                    "page_size", String.valueOf(pageSize),
+                                    "validation_skipped", "true"));
                     return fetchSentResponse(pageNumber, pageSize);
                 } else {
+                    telemetryHelper.recordRetryPrompted("outlook3.fetchSent", startTime,
+                            safeTagMap("page_number", String.valueOf(pageNumber),
+                                    "page_size", String.valueOf(pageSize),
+                                    "validation_count", String.valueOf(validationResults.size())));
                     String stateId = UUID.randomUUID().toString();
                     internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
                     return responseGenerator.generateConfirmationResponse(
@@ -296,9 +421,15 @@ public class MessagingArea {
                 }
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchSent", startTime, cause.getMessage(),
+                    safeTagMap("page_number", String.valueOf(pageNumber),
+                            "page_size", String.valueOf(pageSize)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch sent:{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.fetchSent", startTime, cause,
+                    safeTagMap("page_number", String.valueOf(pageNumber),
+                            "page_size", String.valueOf(pageSize)));
             return ExtensionResponseFactory.create("Error occurred while fetch sent", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch sent", List.of())),
                     null, null);
@@ -323,22 +454,35 @@ public class MessagingArea {
             @Field(name = "To", type = "Text") String to,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+        long startTime = System.currentTimeMillis();
         try {
+            telemetryHelper.incrementCount("outlook3.forwardMail");
+
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId, Validator.ValidationResource.TO, to));
 
             if (validationResults.isEmpty()) {
+                telemetryHelper.recordSuccess("outlook3.forwardMail", startTime,
+                        safeTagMap("message_id", messageId, "to", to));
                 return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.forwardMail", startTime,
+                        safeTagMap("message_id", messageId, "to", to,
+                                "validation_count", String.valueOf(validationResults.size())));
                 String stateId = UUID.randomUUID().toString();
                 internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
                 return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL, StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL,
+                        StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.forwardMail", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageId, "to", to));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while forward mail :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.forwardMail", startTime, cause,
+                    safeTagMap("message_id", messageId, "to", to));
             return ExtensionResponseFactory.create("Error occurred while forward mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while forward mail", List.of())),
                     null, null);
@@ -352,16 +496,21 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public ExtensionResponse fetchMailDetailsByQuery(
-            @Field(name = "Query", type = "Text") String query) {
+    public ExtensionResponse fetchMailDetailsByQuery(@Field(name = "Query", type = "Text") String query) {
+        long startTime = System.currentTimeMillis();
         try {
+            telemetryHelper.incrementCount("outlook3.fetchMailDetailsByQuery");
             LOGGER.info("fetchMailDetailsByQuery: {}", query);
             List<Email> emails = account.searchEmails(query);
             List<MailDetails> response = emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
+            telemetryHelper.recordSuccess("outlook3.fetchMailDetailsByQuery", startTime,
+                    safeTagMap("query", query, "result_count", String.valueOf(response.size())));
             return ExtensionResponseFactory.create(Map.of("Mails", response));
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchMailDetailsByQuery", startTime, cause.getMessage(), safeTagMap("query", query));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
+            telemetryHelper.recordError("outlook3.fetchMailDetailsByQuery", startTime, cause, safeTagMap("query", query));
             return ExtensionResponseFactory.create(cause, "Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
                     null, null);
@@ -384,26 +533,36 @@ public class MessagingArea {
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+        long startTime = System.currentTimeMillis();
         try {
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(
-                            Validator.ValidationResource.TO, to
-                            , Validator.ValidationResource.CC, validateString(cc)
-                            , Validator.ValidationResource.BCC, validateString(bcc)
-                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+            telemetryHelper.incrementCount("outlook3.sendMail");
+
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(
+                    Validator.ValidationResource.TO, to,
+                    Validator.ValidationResource.CC, validateString(cc),
+                    Validator.ValidationResource.BCC, validateString(bcc),
+                    Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
+                ExtensionResponse response = messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
+                telemetryHelper.recordSuccess("outlook3.sendMail", startTime, safeTagMap("to", to));
+                return response;
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.sendMail", startTime,
+                        safeTagMap("to", to, "validation_count", String.valueOf(validationResults.size())));
                 String stateId = UUID.randomUUID().toString();
                 internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL, StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL,
+                        StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.sendMail", startTime, cause.getMessage(), safeTagMap("to", to));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while send mail :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.sendMail", startTime, cause, safeTagMap("to", to));
             return ExtensionResponseFactory.create("Error occurred while send mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while send mail", List.of())),
                     null, null);
@@ -427,27 +586,37 @@ public class MessagingArea {
             @Field.Text(name = "Reply To", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String replyTo,
             @Field.Desc(name = "Entity List", type = "[ Entity ]") List<EntityValue> entityList,
             @Field.Desc(name = "Remove Entity Field From Table", type = "[ Text ]", required = false) List<String> removeEntityFieldFromTable) {
+        long startTime = System.currentTimeMillis();
         try {
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(
-                            Validator.ValidationResource.TO, to
-                            , Validator.ValidationResource.CC, validateString(cc)
-                            , Validator.ValidationResource.BCC, validateString(bcc)
-                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+            telemetryHelper.incrementCount("outlook3.sendMailWithTable");
+
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(
+                    Validator.ValidationResource.TO, to,
+                    Validator.ValidationResource.CC, validateString(cc),
+                    Validator.ValidationResource.BCC, validateString(bcc),
+                    Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
+                ExtensionResponse response = messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
+                telemetryHelper.recordSuccess("outlook3.sendMailWithTable", startTime, Map.of("to", to));
+                return response;
             } else {
+                telemetryHelper.recordRetryPrompted("outlook3.sendMailWithTable", startTime, safeTagMap(
+                        "to", to, "validation_count", String.valueOf(validationResults.size())));
                 String stateId = UUID.randomUUID().toString();
                 internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
                 internalStateManager.putMetaInfo(stateId, Map.of(OutlookResources.ENTITY_LIST, entityList));
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE, StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
+                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE,
+                        StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.sendMailWithTable", startTime, cause.getMessage(), safeTagMap("to", to));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Send Mail With Table :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.sendMailWithTable", startTime, cause, safeTagMap("to", to));
             return ExtensionResponseFactory.create("Error occurred while Send Mail With Table", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Send Mail With Table", List.of())),
                     null, null);
@@ -464,41 +633,47 @@ public class MessagingArea {
     public ExtensionResponse fetchInbox(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
+        long startTime = System.currentTimeMillis();
         try {
+            telemetryHelper.incrementCount("outlook3.fetchInbox");
             LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+
             Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
             if (validationResourceMap.isEmpty()) {
-                return fetchInboxResponse(pageNumber, pageSize);
-            } else {
-                List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
-                if (validationResults.isEmpty()) {
-                    return fetchInboxResponse(pageNumber, pageSize);
-                } else {
-                    String stateId = UUID.randomUUID().toString();
-                    // Store both pageNumber and pageSize in the state, even if only one is invalid
-                    Map<String, Object> stateMap = new HashMap<>();
-                    stateMap.put(SubCatalogConstants.VALIDATION_RESULTS, validationResults);
-                    if (pageNumber != null) {
-                        stateMap.put(OutlookResources.PAGE_NUMBER, pageNumber);
-                    }
-                    if (pageSize != null) {
-                        stateMap.put(OutlookResources.PAGE_SIZE, pageSize);
-                    }
-                    internalStateManager.put(stateId, Constants.GSON.toJson(stateMap));
-                    return responseGenerator.generateConfirmationResponse(
-                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                            SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
-                }
+                ExtensionResponse response = fetchInboxResponse(pageNumber, pageSize);
+                telemetryHelper.recordSuccess("outlook3.fetchInbox", startTime, Map.of("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
+                return response;
             }
+
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+            if (validationResults.isEmpty()) {
+                ExtensionResponse response = fetchInboxResponse(pageNumber, pageSize);
+                telemetryHelper.recordSuccess("outlook3.fetchInbox", startTime, Map.of("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
+                return response;
+            }
+
+            telemetryHelper.recordRetryPrompted("outlook3.fetchInbox", startTime, safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize), "validation_count", String.valueOf(validationResults.size())));
+            String stateId = UUID.randomUUID().toString();
+            Map<String, Object> stateMap = new HashMap<>();
+            stateMap.put(SubCatalogConstants.VALIDATION_RESULTS, validationResults);
+            if (pageNumber != null) stateMap.put(OutlookResources.PAGE_NUMBER, pageNumber);
+            if (pageSize != null) stateMap.put(OutlookResources.PAGE_SIZE, pageSize);
+            internalStateManager.put(stateId, Constants.GSON.toJson(stateMap));
+
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchInbox", startTime, cause.getMessage(), safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.fetchInbox", startTime, cause, safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox ", List.of())),
                     null, null);
         }
-
     }
 
     @CatalogRequest(
@@ -512,39 +687,75 @@ public class MessagingArea {
             @Field(name = "Page Number", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageSize,
             @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference) {
+
+        long startTime = System.currentTimeMillis();
+        telemetryHelper.incrementCount("outlook3.fetchInboxWithPreferences");
+
         if (preference == null || preference.isEmpty()) {
             preference = new HashMap<>();
             preference.put("Mail Body", "Html");
         }
+
         LOGGER.info("fetchInboxWithPreference: pageNumber: {}; pageSize: {}; preference: {}", pageNumber, pageSize, preference);
 
         try {
-            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil
-                    .prepareValidateFetchInboxMap(pageNumber, pageSize);
+            Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
+
             if (validationResourceMap.isEmpty()) {
-                return fetchInboxResponseWithPref(pageNumber, pageSize, preference);
-            } else {
-                List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
-                if (validationResults.isEmpty()) {
-                    return fetchInboxResponseWithPref(pageNumber, pageSize, preference);
-                } else {
-                    String stateId = UUID.randomUUID().toString();
-                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                    return responseGenerator.generateConfirmationResponse(
-                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                            SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
-                            StateMapperUtil.addFetchInboxWithPrefMetaDataToMap(pageNumber, pageSize, preference, stateId));
-                }
+                ExtensionResponse response = fetchInboxResponseWithPref(pageNumber, pageSize, preference);
+                telemetryHelper.recordSuccess("outlook3.fetchInboxWithPreferences", startTime, Map.of(
+                        "page_number", String.valueOf(pageNumber),
+                        "page_size", String.valueOf(pageSize),
+                        "preference", preference.toString()
+                ));
+                return response;
             }
+
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
+
+            if (validationResults.isEmpty()) {
+                ExtensionResponse response = fetchInboxResponseWithPref(pageNumber, pageSize, preference);
+                telemetryHelper.recordSuccess("outlook3.fetchInboxWithPreferences", startTime, Map.of(
+                        "page_number", String.valueOf(pageNumber),
+                        "page_size", String.valueOf(pageSize),
+                        "preference", preference.toString()
+                ));
+                return response;
+            }
+
+            telemetryHelper.recordRetryPrompted("outlook3.fetchInboxWithPreferences", startTime, safeTagMap(
+                    "page_number", String.valueOf(pageNumber),
+                    "page_size", String.valueOf(pageSize),
+                    "preference", preference.toString(),
+                    "validation_count", String.valueOf(validationResults.size())
+            ));
+
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
+                    StateMapperUtil.addFetchInboxWithPrefMetaDataToMap(pageNumber, pageSize, preference, stateId)
+            );
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchInboxWithPreferences", startTime, cause.getMessage(), safeTagMap(
+                    "page_number", String.valueOf(pageNumber),
+                    "page_size", String.valueOf(pageSize),
+                    "preference", preference.toString()
+            ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.fetchInboxWithPreferences", startTime, cause, safeTagMap(
+                    "page_number", String.valueOf(pageNumber),
+                    "page_size", String.valueOf(pageSize),
+                    "preference", preference.toString()
+            ));
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox with given preferences ", List.of())),
                     null, null);
         }
-
     }
 
     private ExtensionResponse fetchInboxResponse(Double pageNumber, Double pageSize) {
@@ -568,25 +779,52 @@ public class MessagingArea {
     public ExtensionResponse markMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label) {
+
+        long startTime = System.currentTimeMillis();
+        telemetryHelper.incrementCount("outlook3.markMessage");
+
         try {
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.markMessage(messageID, label);
-            } else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
-                                OutlookResources.STATE_ID, stateId
-                                , OutlookResources.LABEL, label, OutlookResources.MESSAGE_ID, messageID));
+                ExtensionResponse response = messagingAreaImpl.markMessage(messageID, label);
+                telemetryHelper.recordSuccess("outlook3.markMessage", startTime, Map.of(
+                        "message_id", messageID,
+                        "label", label
+                ));
+                return response;
             }
+
+            telemetryHelper.recordRetryPrompted("outlook3.markMessage", startTime, safeTagMap(
+                    "message_id", messageID,
+                    "label", label,
+                    "validation_count", String.valueOf(validationResults.size())
+            ));
+
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                    OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
+                            OutlookResources.STATE_ID, stateId,
+                            OutlookResources.LABEL, label,
+                            OutlookResources.MESSAGE_ID, messageID));
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.markMessage", startTime, cause.getMessage(), safeTagMap(
+                    "message_id", messageID,
+                    "label", label
+            ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while mark message :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.markMessage", startTime, cause, safeTagMap(
+                    "message_id", messageID,
+                    "label", label
+            ));
             return ExtensionResponseFactory.create("Error occurred while mark message ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while mark message ", List.of())),
                     null, null);
@@ -609,32 +847,57 @@ public class MessagingArea {
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+
+        long startTime = System.currentTimeMillis();
+        telemetryHelper.incrementCount("outlook3.replyToMailWithCCAndBCC");
+
         try {
-            LOGGER.info("markMessage: messageID: {}; category: {}", messageId, bodyType);
+            LOGGER.info("replyToMailWithCCAndBCC: messageId: {}; bodyType: {}", messageId, bodyType);
+
             List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId,
-                            Validator.ValidationResource.TO, validateString(to)
-                            , Validator.ValidationResource.CC, validateString(cc)
-                            , Validator.ValidationResource.BCC, validateString(bcc)
-                            , Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+                    validationOrchestrator.validate(Map.of(
+                            Validator.ValidationResource.MESSAGE_ID, messageId,
+                            Validator.ValidationResource.TO, validateString(to),
+                            Validator.ValidationResource.CC, validateString(cc),
+                            Validator.ValidationResource.BCC, validateString(bcc),
+                            Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
-            } else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS, StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                ExtensionResponse response = messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+                telemetryHelper.recordSuccess("outlook3.replyToMailWithCCAndBCC", startTime, Map.of(
+                        "message_id", messageId,
+                        "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty()),
+                        "to", to != null ? "true" : "false",
+                        "cc", cc != null ? "true" : "false",
+                        "bcc", bcc != null ? "true" : "false"
+                ));
+                return response;
             }
+
+            telemetryHelper.recordRetryPrompted("outlook3.replyToMailWithCCAndBCC", startTime, safeTagMap(
+                    "message_id", messageId,
+                    "validation_count", String.valueOf(validationResults.size())
+            ));
+
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS,
+                    StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.replyToMailWithCCAndBCC", startTime, cause.getMessage(), safeTagMap("message_id", messageId));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To Mail With CC and BCC :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.replyToMailWithCCAndBCC", startTime, cause, safeTagMap("message_id", messageId));
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail With CC and BCC ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail With CC and BCC ", List.of())),
-                    null, null);
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail With CC and BCC ", List.of())), null, null);
         }
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_c8485079-5592-4d29-9818-41d99368a35d",
@@ -648,27 +911,48 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+
+        long startTime = System.currentTimeMillis();
+        telemetryHelper.incrementCount("outlook3.replyToMail");
+
         try {
             LOGGER.info("replyToMail: messageID: {}; message: {}", messageID, message);
+
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
-            } else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL, StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+                ExtensionResponse response = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+                telemetryHelper.recordSuccess("outlook3.replyToMail", startTime, Map.of(
+                        "message_id", messageID,
+                        "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty())
+                ));
+                return response;
             }
+
+            telemetryHelper.recordRetryPrompted("outlook3.replyToMail", startTime, safeTagMap(
+                    "message_id", messageID,
+                    "validation_count", String.valueOf(validationResults.size())
+            ));
+
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                    OutlookResources.MESSAGE_ID, messageID,
+                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL,
+                    StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.replyToMail", startTime, cause.getMessage(), safeTagMap("message_id", messageID));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while Reply To Mail  :{}", cause.getMessage());
+            LOGGER.error("Error occurred while Reply To Mail :{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.replyToMail", startTime, cause, safeTagMap("message_id", messageID));
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail", List.of())),
-                    null, null);
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail", List.of())), null, null);
         }
     }
 
@@ -680,6 +964,9 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field(name = "Task ID", type = "Text", required = false)
     public String fetchInboxAsync() {
+        long startTime = System.currentTimeMillis();
+        telemetryHelper.incrementCount("outlook3.fetchInboxAsync");
+
         try {
             final String taskId = UUID.randomUUID().toString();
             boolean useSetupMail = !requestContext.invokeAsUser();
@@ -687,6 +974,7 @@ public class MessagingArea {
             Map<Class<?>, Object> threadLocals = ThreadLocalProxy.getAll();
 
             executorService.submit(() -> {
+                long asyncStartTime = System.currentTimeMillis();
                 try {
                     ThreadLocalProxy.setAll(threadLocals);
                     mailHandler.setAuthorizationContext(ThreadLocalProxy.getThreadLocal(AuthorizationContext.class).get());
@@ -696,26 +984,38 @@ public class MessagingArea {
                         LOGGER.info("Wait for event request running for email {}", email.getSubject());
                         return mailHandler.fromEmail(email, useSetupMail);
                     }).collect(Collectors.toList());
+
                     LOGGER.info("Completed wait for event request.");
                     FreeForm freeForm = new FreeForm();
                     freeForm.put(Constants.DATA, "[ Entity(Mail Details) ]", mailDetails);
-                    LOGGER.info("Adding fetched results to event handled.");
+                    LOGGER.info("Adding fetched results to event handler.");
                     eventHandler.handleEvent(taskId, freeForm);
+
+                    telemetryHelper.recordSuccess("outlook3.fetchInboxAsync", asyncStartTime, Map.of(
+                            "task_id", taskId,
+                            "email_count", String.valueOf(mailDetails.size())
+                    ));
                 } catch (MustAuthorizeException cause) {
-                    LOGGER.error(cause.getMessage());
+                    telemetryHelper.recordValidationError("outlook3.fetchInboxAsync", asyncStartTime, cause.getMessage(), safeTagMap("task_id", taskId));
+                    LOGGER.error("Authorization error: {}", cause.getMessage(), cause);
                     throw cause;
                 } catch (Exception cause) {
+                    telemetryHelper.recordError("outlook3.fetchInboxAsync", asyncStartTime, cause, safeTagMap("task_id", taskId));
+                    LOGGER.error("Unexpected error in async inbox fetch: {}", cause.getMessage(), cause);
                     throw new IllegalStateException(cause);
                 } finally {
                     ThreadLocalProxy.removeAll();
                 }
             });
+
             return taskId;
         } catch (IllegalStateException cause) {
-            LOGGER.error("Illegal state error: {}", cause.getMessage(), cause);
+            telemetryHelper.recordError("outlook3.fetchInboxAsync", startTime, cause, safeTagMap("phase", "submit"));
+            LOGGER.error("Illegal state during inbox fetch async: {}", cause.getMessage(), cause);
             throw new IllegalStateException(cause);
         }
     }
+
 
     @SuppressWarnings("unchecked")
     @CatalogRequest(
@@ -729,12 +1029,19 @@ public class MessagingArea {
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData,
             @Field(name = "Task ID", type = "Text") String taskID) {
-
         LOGGER.info("getResult: eventName: {}; eventData: {}; taskID: {}", eventName, eventData, taskID);
+
+        long startTime = System.currentTimeMillis();
+
         if (eventName.equals(taskID)) {
-            return ExtensionResponseFactory.create(Map.of("Mail Details", (List<MailDetails>) eventData.get(Constants.DATA)));
+            List<MailDetails> mailDetails = (List<MailDetails>) eventData.get(Constants.DATA);
+            telemetryHelper.recordSuccess("outlook3.getResult", startTime, Map.of(
+                    "task_id", taskID,
+                    "mail_count", String.valueOf(mailDetails.size())
+            ));
+            return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
         }
-        LOGGER.error("Invalid task ID: {}", taskID);
+        LOGGER.error("Get Result :::: Invalid task ID ::: {}", taskID);
         throw new IllegalStateException(Constants.INVALID_TASK_ID);
     }
 
@@ -749,25 +1056,53 @@ public class MessagingArea {
             @Field(name = "Label", type = "Text") String label,
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
+
+        long startTime = System.currentTimeMillis();
+        LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}, pageSize: {}", label, pageNumber, pageSize);
+
         try {
-            LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}; pageSize: {}", label, pageNumber, pageSize);
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(ValidationResourceUtil.prepareValidateLabelMap(label, pageNumber, pageSize));
+            Map<Validator.ValidationResource, String> validationMap = ValidationResourceUtil.prepareValidateLabelMap(label, pageNumber, pageSize);
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationMap);
 
             if (validationResults.isEmpty()) {
+                telemetryHelper.recordSuccess("outlook3.fetchMailsByLabel", startTime, Map.of(
+                        "label", label,
+                        "page_number", String.valueOf(pageNumber),
+                        "page_size", String.valueOf(pageSize)
+                ));
                 return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);
-            } else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL, StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
             }
+
+            telemetryHelper.recordRetryPrompted("outlook3.fetchMailsByLabel", startTime, safeTagMap(
+                    "label", label,
+                    "page_number", String.valueOf(pageNumber),
+                    "page_size", String.valueOf(pageSize),
+                    "validation_count", String.valueOf(validationResults.size())
+            ));
+
+            String stateId = UUID.randomUUID().toString();
+            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+            return responseGenerator.generateConfirmationResponse(
+                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                    SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL,
+                    StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
+
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchMailsByLabel", startTime, cause.getMessage(), safeTagMap(
+                    "label", label,
+                    "page_number", String.valueOf(pageNumber),
+                    "page_size", String.valueOf(pageSize)
+            ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
-            LOGGER.error("Error occurred while Fetch Mails By Label  :{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while Fetch Mails By Label", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+            LOGGER.error("Error occurred while Fetch Mails By Label: {}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.fetchMailsByLabel", startTime, cause, safeTagMap(
+                    "label", label,
+                    "page_number", String.valueOf(pageNumber),
+                    "page_size", String.valueOf(pageSize)
+            ));
+            return ExtensionResponseFactory.create("Error occurred while Fetch Mails By Label",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Mails By Label", List.of())),
                     null, null);
         }
@@ -783,29 +1118,48 @@ public class MessagingArea {
     public ExtensionResponse mailReceivedAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
+        long startTime = System.currentTimeMillis();
+
         try {
             if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
                 LOGGER.info("Creating/Updating subscription...");
-
                 String messageId = (String) eventData.get(Constants.MESSAGE_ID);
                 LOGGER.info("Processing Mail for Message Id :  {}", messageId);
+
                 MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageId), null);
+
                 if (mailDetails != null) {
                     LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
                             mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+
+                    telemetryHelper.recordSuccess("outlook3.mailReceivedAlert", startTime, Map.of(
+                            "message_id", messageId,
+                            "subject", mailDetails.subject,
+                            "from", mailDetails.from
+                    ));
+
                     return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
                 } else {
+                    telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, new IllegalStateException("Mail details null"), safeTagMap(
+                            "message_id", messageId));
+
                     return ExtensionResponseFactory.create("Mail details not available", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                            List.of(RemediationActionFactory.createInformActionALLParticipants("Mail details not available ", List.of())),
-                            null, null);
+                            List.of(RemediationActionFactory.createInformActionALLParticipants("Mail details not available", List.of())), null, null);
                 }
             } else {
-                throw new IllegalStateException();
+                telemetryHelper.recordValidationError("outlook3.mailReceivedAlert", startTime, "Invalid event name", safeTagMap(
+                        "event_name", eventName
+                ));
+                throw new IllegalStateException("Invalid event name");
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.mailReceivedAlert", startTime, cause.getMessage(), safeTagMap(
+                    "event_name", eventName
+            ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Mail Received Alert:{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, cause, safeTagMap("event_name", eventName));
             return ExtensionResponseFactory.create("Error occurred while Mail Received Alert", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Mail Received Alert", List.of())),
                     null, null);
@@ -821,31 +1175,44 @@ public class MessagingArea {
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
     @SuppressWarnings("unchecked")
     public ExtensionResponse fetchLatestMail() {
+        long startTime = System.currentTimeMillis();
+
         try {
             LOGGER.info("fetchLatestMail: start");
             List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
             MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
+
             if (mailDetails != null && mailDetails.sendDateAndTime != null) {
                 long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
                 if (change <= 120_000) {
+                    telemetryHelper.recordSuccess("outlook3.fetchLatestMail", startTime, Map.of(
+                            "message_id", mailDetails.messageID,
+                            "subject", mailDetails.subject,
+                            "age_ms", String.valueOf(change)
+                    ));
                     return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
                 } else {
+                    telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, new IllegalStateException("Mail too old"), safeTagMap(
+                            "message_id", mailDetails.messageID,
+                            "subject", mailDetails.subject,
+                            "age_ms", String.valueOf(change)
+                    ));
                     return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                            List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
-                            null, null);
+                            List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())), null, null);
                 }
             } else {
+                telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, new IllegalStateException("No mail found"), Map.of());
                 return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                        List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
-                        null, null);
+                        List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())), null, null);
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.fetchLatestMail", startTime, cause.getMessage(), Map.of());
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Fetch Latest Mail:{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, cause, Map.of());
             return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())),
-                    null, null);
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())), null, null);
         }
     }
 
@@ -857,21 +1224,28 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Category Names", type = "[ Text ]", required = false)
     public ExtensionResponse listCategories() {
+        long startTime = System.currentTimeMillis();
+
         try {
             LOGGER.info("Fetching Categories");
-            List<String> categoryNames;
-            categoryNames = account.getCategoryNames();
+            List<String> categoryNames = account.getCategoryNames();
             LOGGER.info("listCategories(): {}", categoryNames);
+
+            telemetryHelper.recordSuccess("outlook3.listCategories", startTime, Map.of(
+                    "category_count", String.valueOf(categoryNames.size())
+            ));
+
             return ExtensionResponseFactory.create(Map.of("Category Names", categoryNames));
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.listCategories", startTime, cause.getMessage(), Map.of());
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Unable to fetch categories {}", cause.getMessage(), cause);
+            telemetryHelper.recordError("outlook3.listCategories", startTime, cause, Map.of());
             return ExtensionResponseFactory.create("Unable to fetch categories", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Unable to fetch categories", List.of())),
                     null, Map.of());
         }
-
     }
 
     @CatalogRequest(
@@ -885,29 +1259,34 @@ public class MessagingArea {
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category,
             @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean createCategory) {
+
+        long startTime = System.currentTimeMillis();
         try {
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
             if (validationResults.isEmpty()) {
+                telemetryHelper.recordSuccess("outlook3.addCategoryToMessage", startTime, Map.of("message_id", messageID, "category", category, "create_category", String.valueOf(createCategory)));
                 return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
             } else {
                 String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID, SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                telemetryHelper.recordRetryPrompted("outlook3.addCategoryToMessage", startTime, safeTagMap("message_id", messageID, "category", category, "validation_count", String.valueOf(validationResults.size())));
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE, StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
+                        SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE,
+                        StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError("outlook3.addCategoryToMessage", startTime, cause.getMessage(), safeTagMap("message_id", messageID, "category", category));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Add Category To Message:{}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.addCategoryToMessage", startTime, cause, safeTagMap("message_id", messageID, "category", category));
             return ExtensionResponseFactory.create("Error occurred while Add Category To Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Add Category To Message", List.of())),
-                    null, null);
+                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Add Category To Message", List.of())), null, null);
         }
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_6cdb6cf3-4ca6-46f0-a682-75be3bd37c98",
@@ -919,25 +1298,41 @@ public class MessagingArea {
     public ExtensionResponse removeCategoryFromMessage(
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+
+        long startTime = System.currentTimeMillis();
+        String baseMetric = "outlook3.removeCategoryFromMessage";
+
         try {
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID,
-                            Validator.ValidationResource.CATEGORY, category));
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(
+                    Map.of(Validator.ValidationResource.MESSAGE_ID, messageID, Validator.ValidationResource.CATEGORY, category));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.removeCategoryFromMessage(messageID, category);
+                ExtensionResponse response = messagingAreaImpl.removeCategoryFromMessage(messageID, category);
+                telemetryHelper.recordSuccess(baseMetric, startTime, Map.of("message_id", messageID, "category", category));
+                return response;
             } else {
                 String stateId = UUID.randomUUID().toString();
                 internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
                         SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+
+                telemetryHelper.recordRetryPrompted(baseMetric, startTime, safeTagMap("message_id", messageID, "category", category,
+                        "validation_count", String.valueOf(validationResults.size())));
+
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(OutlookResources.STATE_ID, stateId, OutlookResources.MESSAGE_ID, messageID, OutlookResources.CATEGORY, category));
+                        SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(
+                                OutlookResources.STATE_ID, stateId,
+                                OutlookResources.MESSAGE_ID, messageID,
+                                OutlookResources.CATEGORY, category));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(), safeTagMap("message_id", messageID, "category", category));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Remove Category From Message:{}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while Remove Category From Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+            telemetryHelper.recordError(baseMetric, startTime, cause, safeTagMap("message_id", messageID, "category", category));
+            return ExtensionResponseFactory.create("Error occurred while Remove Category From Message",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Remove Category From Message", List.of())),
                     null, null);
         }
@@ -951,15 +1346,23 @@ public class MessagingArea {
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Desc(name = "Message Ids", type = "[ Text ]", required = false)
     public ExtensionResponse getNotificationDelta() {
+        long startTime = System.currentTimeMillis();
+        String baseMetric = "outlook3.getNotificationDelta";
+
         try {
-            return messagingAreaImpl.fetchNotificationDelta();
+            ExtensionResponse response = messagingAreaImpl.fetchNotificationDelta();
+            telemetryHelper.recordSuccess(baseMetric, startTime, Map.of());
+            return response;
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(), Map.of());
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetching notification delta:{}", cause.getMessage());
+            telemetryHelper.recordError(baseMetric, startTime, cause, Map.of());
             return new ExtensionResponse(ExtensionResponse.Result.SUCCESS, Map.of("Message Ids", List.of()), null, null, null);
         }
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_796c1290-9922-4d27-805e-5d971303be1a",
@@ -969,18 +1372,25 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     public void sendAlertUsingNotificationDelta(
             @Field.Text(name = "Message Id", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageId) {
+        long startTime = System.currentTimeMillis();
+        String baseMetric = "outlook3.sendAlertUsingNotificationDelta";
+
         try {
             FreeForm freeForm = new FreeForm();
             freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, messageId);
             LOGGER.info("Sending notification delta alert to Krista: {} ", messageId);
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
+            telemetryHelper.recordSuccess(baseMetric, startTime, safeTagMap("message_id", messageId));
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(), safeTagMap("message_id", messageId));
             LOGGER.error(cause.getMessage());
             throw cause;
         } catch (Exception cause) {
+            telemetryHelper.recordError(baseMetric, startTime, cause, safeTagMap("message_id", messageId));
             LOGGER.error("Error occurred while sending alert using notification delta:{}", cause.getMessage());
         }
     }
+
 
     @CatalogRequest(
             id = "localDomainRequest_2694e61a-1d82-4f55-8a74-a66eba60fe63",
@@ -993,27 +1403,40 @@ public class MessagingArea {
             @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
             @Field.PickOne(name = "Label", values = {"Read", "Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String label,
             @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+        long startTime = System.currentTimeMillis();
+        String baseMetric = "mark_message_category_and_status";
+        Map<String, String> tags = safeTagMap("message_id", messageID);
+
         try {
-            List<ValidationOrchestrator.ValidationResult> validationResults =
-                    validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+            List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
+
             if (validationResults.isEmpty()) {
-                return messagingAreaImpl.markMessageCategoryAndStatus(messageID, label, category);
+                ExtensionResponse response = messagingAreaImpl.markMessageCategoryAndStatus(messageID, label, category);
+                telemetryHelper.recordSuccess(baseMetric, startTime, tags);
+                return response;
             } else {
+                telemetryHelper.recordRetryPrompted(baseMetric, startTime, tags);
                 String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                        OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults
+                )));
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                         SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
                                 OutlookResources.STATE_ID, stateId,
                                 OutlookResources.LABEL, label,
-                                OutlookResources.MESSAGE_ID, messageID));
+                                OutlookResources.MESSAGE_ID, messageID
+                        ));
             }
         } catch (MustAuthorizeException cause) {
+            telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(), tags);
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
+            telemetryHelper.recordError(baseMetric, startTime, cause, tags);
             LOGGER.error("Error occurred while updating message category and status: {}", cause.getMessage());
-            return ExtensionResponseFactory.create("Error occurred while updating message category and status", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
+            return ExtensionResponseFactory.create("Error occurred while updating message category and status",
+                    ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while updating message category and status", List.of())),
                     null, null);
         }
