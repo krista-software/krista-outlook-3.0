@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp;
 
 import app.krista.ksdk.telemetry.TelemetryMetrics;
+import javax.inject.Inject;
 import org.jvnet.hk2.annotations.Service;
 
 import java.util.HashMap;
@@ -14,6 +15,7 @@ public class TelemetryHelper {
 
     private final TelemetryMetrics telemetry;
 
+    @Inject
     public TelemetryHelper(TelemetryMetrics telemetry) {
         this.telemetry = telemetry;
     }
@@ -51,6 +53,7 @@ public class TelemetryHelper {
 
     /**
      * Sanitizes a map of tags by replacing null values with the string "null"
+     *
      * @param tags The map of tags to sanitize
      * @return A new map with sanitized values
      */
