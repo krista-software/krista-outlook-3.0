@@ -14,6 +14,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.O
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.ksdk.telemetry.TelemetryMetrics;
 import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import com.microsoft.graph.http.GraphServiceException;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,20 +39,30 @@ public class TestConnectionServiceImpl {
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore outlookAttributeStore;
     private final String baseRoutingUrl;
+    private final TelemetryMetrics telemetryMetrics;
 
     @Inject
     public TestConnectionServiceImpl(GraphServiceClientProviderFactory providerFactory,
                                      OutlookAttributeStore outlookAttributeStore,
-                                     Invoker invoker) {
+                                     Invoker invoker, TelemetryMetrics telemetryMetrics) {
         this.providerFactory = providerFactory;
         this.outlookAttributeStore = outlookAttributeStore;
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        this.telemetryMetrics = telemetryMetrics;
     }
 
     public String testConnection(OutlookAttributes outlookAttributes) {
         LOGGER.info("Testing connection with Microsoft Graph API");
+        long startTime = System.currentTimeMillis();
         String authContextId = providerFactory.createAttributes(outlookAttributes);
         String authUrl = null;
+        
+        // Record test connection attempt
+        telemetryMetrics.incrementCounter("outlook3.testConnection.attempt", 1, 
+                safeTagMap("email", outlookAttributes.getEmail(), 
+                          "auth_type", outlookAttributes.getAuthType(),
+                          "allow_mail_alert", String.valueOf(outlookAttributes.isAllowMailAlert())));
+        
         try {
             LOGGER.info("Verifying API access for email: {}", outlookAttributes.getEmail());
             providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
@@ -60,26 +72,73 @@ public class TestConnectionServiceImpl {
                 boolean subscriptionCreated = MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
                 if (!subscriptionCreated) {
                     LOGGER.error("Failed to create mail subscription");
+                    
+                    // Record subscription creation failure
+                    telemetryMetrics.incrementCounter("outlook3.testConnection.subscription.createFailed", 1,
+                            safeTagMap("email", outlookAttributes.getEmail()));
+                    
                     return createTestConnectionResponse(false, "Connection successful but failed to create mail subscription.", null);
                 }
                 LOGGER.info("Mail subscription created successfully");
+                
+                // Record subscription creation success
+                telemetryMetrics.incrementCounter("outlook3.testConnection.subscription.createSuccess", 1,
+                        safeTagMap("email", outlookAttributes.getEmail()));
             } else {
                 LOGGER.info("Mail alerts disabled, removing any existing subscriptions");
                 boolean subscriptionDeleted = MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId));
                 if (!subscriptionDeleted) {
                     LOGGER.error("Failed to delete mail subscription");
+                    
+                    // Record subscription deletion failure
+                    telemetryMetrics.incrementCounter("outlook3.testConnection.subscription.deleteFailed", 1,
+                            safeTagMap("email", outlookAttributes.getEmail()));
+                } else {
+                    // Record subscription deletion success
+                    telemetryMetrics.incrementCounter("outlook3.testConnection.subscription.deleteSuccess", 1,
+                            safeTagMap("email", outlookAttributes.getEmail()));
                 }
             }
             LOGGER.info("Test connection successful");
+            
+            // Record successful connection
+            telemetryMetrics.incrementCounter("outlook3.testConnection.success", 1,
+                    safeTagMap("email", outlookAttributes.getEmail(), 
+                              "auth_type", outlookAttributes.getAuthType()));
+            telemetryMetrics.recordDuration("outlook3.testConnection.duration", System.currentTimeMillis() - startTime,
+                    safeTagMap("email", outlookAttributes.getEmail(), 
+                              "status", "success"));
+            
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
             LOGGER.error("Graph API connection failed: {}", cause.getMessage());
+            
+            // Record Graph API error
+            telemetryMetrics.incrementCounter("outlook3.testConnection.graphApiError", 1,
+                    safeTagMap("email", outlookAttributes.getEmail(), 
+                              "error_message", cause.getMessage(),
+                              "error_code", cause.getServiceError() != null ? 
+                                      cause.getServiceError().code : "unknown"));
+            telemetryMetrics.recordDuration("outlook3.testConnection.duration", System.currentTimeMillis() - startTime,
+                    safeTagMap("email", outlookAttributes.getEmail(), 
+                              "status", "error",
+                              "error_type", "graph_api"));
+            
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
             LOGGER.info("Authorization required, generating auth URL");
             String state = createStateParameter(cause, outlookAttributes);
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
+            
+            // Record authorization required
+            telemetryMetrics.incrementCounter("outlook3.testConnection.authorizationRequired", 1,
+                    safeTagMap("email", outlookAttributes.getEmail(), 
+                              "auth_type", outlookAttributes.getAuthType()));
+            telemetryMetrics.recordDuration("outlook3.testConnection.duration", System.currentTimeMillis() - startTime,
+                    safeTagMap("email", outlookAttributes.getEmail(), 
+                              "status", "auth_required"));
+            
             return createTestConnectionResponse(false, AUTHORIZATION_PROMPT, authUrl);
         } finally {
             if (authUrl == null) {
@@ -118,9 +177,26 @@ public class TestConnectionServiceImpl {
         return state;
     }
 
+    /**
+     * Helper method to create a map of tags with safe values (no nulls).
+     */
+    private Map<String, String> safeTagMap(String... keysAndValues) {
+        Map<String, String> map = new HashMap<>();
+        for (int i = 0; i < keysAndValues.length - 1; i += 2) {
+            map.put(keysAndValues[i], keysAndValues[i + 1] != null ? keysAndValues[i + 1] : "NA");
+        }
+        return map;
+    }
+
     private ExtensionResponse createExtensionResponse(AuthenticationResponse authenticationResponse, OutlookAttributes outlookAttributes, long startTime) {
         Map<String, Object> testConnectionResponse = createTestConnectionResponse(authenticationResponse, outlookAttributes, startTime);
         ExtensionResponse extensionResponse = new ExtensionResponseBuilder().success(testConnectionResponse).build();
+        
+        // Record total time to create response
+        telemetryMetrics.recordDuration("outlook3.testConnection.totalTime", System.currentTimeMillis() - startTime,
+                safeTagMap("email", outlookAttributes.getEmail(), 
+                          "is_success", String.valueOf(authenticationResponse.isSuccess())));
+        
         LOGGER.info("Extension response created in {} ms", (System.currentTimeMillis() - startTime));
         return extensionResponse;
     }
@@ -160,14 +236,32 @@ public class TestConnectionServiceImpl {
      */
     public ExtensionResponse testConnection(String invokerId) {
         long startTime = System.currentTimeMillis();
+        
+        // Record test connection by invoker ID
+        telemetryMetrics.incrementCounter("outlook3.testConnection.byInvokerId", 1,
+                Map.of("invoker_id", invokerId));
+        
         OutlookAttributes outlookAttributes = outlookAttributeStore.load(invokerId);
         ExtensionResponseMeta extensionResponse = new ExtensionResponseMeta();
         ExtensionResponse extensionResponseMeta = getExtensionResponse(outlookAttributes, extensionResponse, startTime);
         if (extensionResponseMeta != null) {
+            // Record not configured
+            telemetryMetrics.incrementCounter("outlook3.testConnection.notConfigured", 1,
+                    Map.of("invoker_id", invokerId));
+            telemetryMetrics.recordDuration("outlook3.testConnection.duration", System.currentTimeMillis() - startTime,
+                    Map.of("invoker_id", invokerId, "status", "not_configured"));
+            
             return extensionResponseMeta;
         }
         String testConnectionJsonResponse = testConnection(outlookAttributes);
         AuthenticationResponse authenticationResponse = GSON.fromJson(testConnectionJsonResponse, AuthenticationResponse.class);
+        
+        // Record response creation
+        telemetryMetrics.recordDuration("outlook3.testConnection.responseCreation", System.currentTimeMillis() - startTime,
+                safeTagMap("invoker_id", invokerId, 
+                          "email", outlookAttributes.getEmail(),
+                          "is_success", String.valueOf(authenticationResponse.isSuccess())));
+        
         return createExtensionResponse(authenticationResponse, outlookAttributes, startTime);
     }
 
