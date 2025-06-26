@@ -6,10 +6,10 @@ import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.HealthStatus;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.TelemetryHelper;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAreaImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
-import app.krista.ksdk.telemetry.TelemetryMetrics;
 import org.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class HealthCheck {
     private final Account account;
     private final MessagingAreaImpl messagingAreaImpl;
     private final Invoker invoker;
-    private final TelemetryMetrics telemetryMetrics;
+    private final TelemetryHelper telemetryHelper;
 
     /**
      * Constructor for AuthenticationHealthCheck.
@@ -63,12 +63,12 @@ public class HealthCheck {
      */
     @Inject
     public HealthCheck(OutlookAttributeStore attributeStore, Invoker invoker,
-                       Account account, MessagingAreaImpl messagingAreaImpl, TelemetryMetrics telemetryMetrics) {
+                       Account account, MessagingAreaImpl messagingAreaImpl, TelemetryHelper telemetryHelper) {
         this.attributeStore = attributeStore;
         this.account = account;
         this.messagingAreaImpl = messagingAreaImpl;
         this.invoker = invoker;
-        this.telemetryMetrics = telemetryMetrics;
+        this.telemetryHelper = telemetryHelper;
         LOGGER.info("AuthenticationHealthCheck service initialized");
     }
 
@@ -85,90 +85,96 @@ public class HealthCheck {
         lastHealthCheckTime = lastHealthCheckTime == 0 ? System.currentTimeMillis() : lastHealthCheckTime;
         Map<String, Object> healthData = new HashMap<>();
         String healthSummaryMessage = "";
-        
+
         // Record the health check attempt
-        recordCounter("outlook3.healthCheck.attempt", 1, 
-                Map.of("invoker_id", invoker.getInvokerId()));
-        
+        telemetryHelper.incrementCount("outlook3.healthCheck.attempt");
+
         try {
             // Collect system metrics
             healthData = updateSystemMetrics();
             healthSummaryMessage = healthSummaryMessage + "Collected system metrics.\n";
             healthData.put("LastHealthCheckTime", lastHealthCheckTime);
-            
+
             // Record system metrics in telemetry
-            recordGauge("outlook3.healthCheck.memory.used", 
-                    convertToDouble(healthData.get("CurrentMemoryUsageMB")));
-            recordGauge("outlook3.healthCheck.memory.available", 
-                    convertToDouble(healthData.get("AvailableMemoryMB")));
-            recordGauge("outlook3.healthCheck.memory.total", 
-                    convertToDouble(healthData.get("TotalMemoryMB")));
-            recordGauge("outlook3.healthCheck.cpu.usage", 
-                    convertToDouble(healthData.get("CpuUsagePercentage")));
-            recordGauge("outlook3.healthCheck.threads.active", 
-                    convertToDouble(healthData.get("ActiveThreads")));
-            recordGauge("outlook3.healthCheck.uptime.hours", 
-                    convertToDouble(healthData.get("UptimeHours")));
+            recordSystemMetricsTelemetry(healthData);
 
             // Check authentication configuration
             OutlookAttributes attributes = attributeStore.load(invoker.getInvokerId());
-            if (attributes == null) {
-                healthData.put("Message", "Outlook is not configured");
-                healthData.put("AuthType", "Not Configured");
-                healthData.put("Email", "Not Configured");
-                healthData.put("HasRefreshToken", false);
-                healthData.put("TokenValid", false);
-                
-                recordCounter("outlook3.healthCheck.auth.notConfigured", 1, 
-                        Map.of("invoker_id", invoker.getInvokerId()));
-            } else {
-                String authType = attributes.getAuthType();
-                boolean hasRefreshToken = isHasRefreshToken();
-                healthData.put("AuthType", authType);
-                healthData.put("Email", attributes.getEmail());
-                healthData.put("HasRefreshToken", hasRefreshToken);
-                healthData.put("TokenValid", hasRefreshToken);
-                
-                Map<String, String> authTags = safeTagMap(
-                        "invoker_id", invoker.getInvokerId(),
-                        "email", attributes.getEmail(),
-                        "auth_type", authType,
-                        "has_refresh_token", String.valueOf(hasRefreshToken),
-                        "token_valid", String.valueOf(hasRefreshToken)
-                );
-                
-                recordCounter("outlook3.healthCheck.auth.configured", 1, authTags);
-                
-                if (hasRefreshToken) {
-                    recordCounter("outlook3.healthCheck.auth.tokenValid", 1, authTags);
-                } else {
-                    recordCounter("outlook3.healthCheck.auth.tokenInvalid", 1, authTags);
-                }
-            }
-            
+            checkAuthenticationConfiguration(attributes, healthData);
+
             healthSummaryMessage = healthSummaryMessage + "Checked authentication configuration.\n";
-            
+
             // Record successful health check completion time
-            recordDuration("outlook3.healthCheck.overall", System.currentTimeMillis() - startTime, 
-                    Map.of("invoker_id", invoker.getInvokerId(), "status", "success"));
-            
+            telemetryHelper.recordSuccess("outlook3.healthCheck.overall", startTime,
+                    TelemetryHelper.safeTagMap("invoker_id", invoker.getInvokerId(), "status", "success"));
+
             return toExtensionResponse(healthData, null, startTime, healthSummaryMessage);
         } catch (Exception exception) {
             LOGGER.error("Authentication health check failed for operation {}: {}",
                     operationId, exception.getMessage(), exception);
             healthSummaryMessage = healthSummaryMessage + "Error message:" + exception.getMessage() + "\n";
-            
+
             // Record failed health check with error details
-            recordDuration("outlook3.healthCheck.overall", System.currentTimeMillis() - startTime, 
-                    safeTagMap(
+            telemetryHelper.recordError("outlook3.healthCheck.overall", startTime, exception,
+                    TelemetryHelper.safeTagMap(
                             "invoker_id", invoker.getInvokerId(),
                             "status", "error",
                             "error_message", exception.getMessage(),
                             "error_type", exception.getClass().getSimpleName()
                     ));
-            
+
             return toExtensionResponse(healthData, exception, startTime, healthSummaryMessage);
         }
+    }
+
+    private void checkAuthenticationConfiguration(OutlookAttributes attributes, Map<String, Object> healthData) {
+        if (attributes == null) {
+            healthData.put("Message", "Outlook is not configured");
+            healthData.put("AuthType", "Not Configured");
+            healthData.put("Email", "Not Configured");
+            healthData.put("HasRefreshToken", false);
+            healthData.put("TokenValid", false);
+
+            telemetryHelper.incrementCount("outlook3.healthCheck.auth.notConfigured");
+        } else {
+            String authType = attributes.getAuthType();
+            boolean hasRefreshToken = isHasRefreshToken();
+            healthData.put("AuthType", authType);
+            healthData.put("Email", attributes.getEmail());
+            healthData.put("HasRefreshToken", hasRefreshToken);
+            healthData.put("TokenValid", hasRefreshToken);
+
+            Map<String, String> authTags = TelemetryHelper.safeTagMap(
+                    "invoker_id", invoker.getInvokerId(),
+                    "email", attributes.getEmail(),
+                    "auth_type", authType,
+                    "has_refresh_token", String.valueOf(hasRefreshToken),
+                    "token_valid", String.valueOf(hasRefreshToken)
+            );
+
+            telemetryHelper.recordCounter("outlook3.healthCheck.auth.configured", 1, authTags);
+
+            if (hasRefreshToken) {
+                telemetryHelper.recordCounter("outlook3.healthCheck.auth.tokenValid", 1, authTags);
+            } else {
+                telemetryHelper.recordCounter("outlook3.healthCheck.auth.tokenInvalid", 1, authTags);
+            }
+        }
+    }
+
+    private void recordSystemMetricsTelemetry(Map<String, Object> healthData) {
+        telemetryHelper.recordGauge("outlook3.healthCheck.memory.used",
+                convertToDouble(healthData.get("CurrentMemoryUsageMB")));
+        telemetryHelper.recordGauge("outlook3.healthCheck.memory.available",
+                convertToDouble(healthData.get("AvailableMemoryMB")));
+        telemetryHelper.recordGauge("outlook3.healthCheck.memory.total",
+                convertToDouble(healthData.get("TotalMemoryMB")));
+        telemetryHelper.recordGauge("outlook3.healthCheck.cpu.usage",
+                convertToDouble(healthData.get("CpuUsagePercentage")));
+        telemetryHelper.recordGauge("outlook3.healthCheck.threads.active",
+                convertToDouble(healthData.get("ActiveThreads")));
+        telemetryHelper.recordGauge("outlook3.healthCheck.uptime.hours",
+                convertToDouble(healthData.get("UptimeHours")));
     }
 
     private boolean isHasRefreshToken() {
@@ -322,39 +328,39 @@ public class HealthCheck {
         HealthStatus healthStatus = getHealthStatus(healthData);
         double timeTakenInSeconds = (System.currentTimeMillis() - startTime) / 1000.0;
         LOGGER.debug("Creating extension response for health data with operation ID: {}", operationId);
-        
+
         try {
             // Determine if the system is healthy
             healthStatus.systemStatus = exception == null ? "HEALTHY" : "UNHEALTHY";
             boolean isHealthy = "HEALTHY".equals(healthStatus.systemStatus);
             extensionResponse = getExtensionResponse(isHealthy, healthStatus, timeTakenInSeconds, exception, healthSummaryMessage);
-            
+
             // Record response creation time
-            recordDuration("outlook3.healthCheck.responseTime", 
-                    System.currentTimeMillis() - startTime,
-                    Map.of("is_healthy", String.valueOf(isHealthy)));
-            
+            telemetryHelper.recordSuccess("outlook3.healthCheck.responseTime",
+                    startTime,
+                    TelemetryHelper.safeTagMap("is_healthy", String.valueOf(isHealthy)));
+
             LOGGER.info("Extension response created successfully in {} ms", timeTakenInSeconds);
         } catch (Exception exception1) {
             LOGGER.error("Error creating extension response for operation {}: {}",
                     operationId, exception1.getMessage(), exception1);
-            
+
             // Record error in response creation
-            recordDuration("outlook3.healthCheck.responseCreation", System.currentTimeMillis() - startTime, 
-                    Map.of("invoker_id", invoker.getInvokerId(), "status", "error"));
-            
+            telemetryHelper.recordError("outlook3.healthCheck.responseCreation", startTime, exception1,
+                    TelemetryHelper.safeTagMap("invoker_id", invoker.getInvokerId(), "status", "error"));
+
             healthStatus.systemStatus = "UNHEALTHY";
             extensionResponse = getExtensionResponse(false, healthStatus, timeTakenInSeconds, exception1, healthSummaryMessage);
         }
-        
+
         // Record final health status
-        recordCounter("outlook3.healthCheck.result", 1, 
-                safeTagMap(
+        telemetryHelper.recordCounter("outlook3.healthCheck.result", 1,
+                TelemetryHelper.safeTagMap(
                         "invoker_id", invoker.getInvokerId(),
                         "status", healthStatus.systemStatus,
                         "has_exception", String.valueOf(exception != null)
                 ));
-        
+
         return ExtensionResponseFactory.create(extensionResponse);
     }
 
@@ -421,18 +427,18 @@ public class HealthCheck {
             responseMeta.technicalDetailedErrorReport = "Outlook is not configured";
             responseMeta.responseType = "UNHEALTHY";
             responseMeta.timeTakenInSeconds = timeTakenInSeconds;
-            
+
             // Record not configured status
-            recordCounter("outlook3.healthCheck.notConfigured", 1, 
+            telemetryHelper.recordCounter("outlook3.healthCheck.notConfigured", 1,
                     Map.of("invoker_id", invoker.getInvokerId()));
-            
+
             return Map.of(
                     "Health Status", healthStatus,
                     "Is Healthy", isHealthy,
                     "Extension Response Meta", responseMeta
             );
         }
-        
+
         String responseMessage = isHealthy
                 ? "Health check completed successfully. All systems operational."
                 : "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage;
@@ -442,29 +448,9 @@ public class HealthCheck {
         extensionResponseMeta.technicalDetailedErrorReport = exception != null ? Arrays.toString(exception.getStackTrace()) : "";
         extensionResponseMeta.responseType = isHealthy ? "SUCCESS" : "UNHEALTHY";
         extensionResponseMeta.timeTakenInSeconds = timeTakenInSeconds;
-        
-        if (!isHealthy) {
-            String errorMessage = exception != null ? exception.getMessage() : "";
-            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + "\n" + " For " + "Extension Name : " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport + "\n" + "\n" + "Error Message: " + errorMessage;
-            
-            // Record unhealthy status and email alert
-            recordCounter("outlook3.healthCheck.unhealthy", 1, 
-                    safeTagMap(
-                            "invoker_id", invoker.getInvokerId(),
-                            "system_status", healthStatus.systemStatus,
-                            "error_message", errorMessage
-                    ));
-            
-            messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "service.automation@kristasoft.com", null, null, null, "Text");
-            
-            recordCounter("outlook3.healthCheck.alertEmailSent", 1, 
-                    Map.of("invoker_id", invoker.getInvokerId()));
-        } else {
-            // Record healthy status
-            recordCounter("outlook3.healthCheck.healthy", 1, 
-                    Map.of("invoker_id", invoker.getInvokerId()));
-        }
-        
+
+        sendMail(isHealthy, healthStatus, exception, healthSummaryMessage, extensionResponseMeta);
+
         return Map.of(
                 "Health Status", healthStatus,
                 "Is Healthy", isHealthy,
@@ -472,57 +458,28 @@ public class HealthCheck {
         );
     }
 
-    /**
-     * Helper method to record a counter metric with a value and tags.
-     * 
-     * @param metricName The name of the metric to record
-     * @param value The value to increment the counter by
-     * @param tags The tags to associate with the metric
-     */
-    private void recordCounter(String metricName, long value, Map<String, String> tags) {
-        telemetryMetrics.incrementCounter(metricName, value, tags);
-    }
+    private void sendMail(boolean isHealthy, HealthStatus healthStatus, Exception exception, String healthSummaryMessage, ExtensionResponseMeta extensionResponseMeta) {
+        if (!isHealthy) {
+            String errorMessage = exception != null ? exception.getMessage() : "";
+            String emailBody = "System status: " + healthStatus.systemStatus + "\n" + healthSummaryMessage + "\n" + " For " + "Extension Name : " + healthStatus.extensionName + " with Invoker Id : " + invoker.getInvokerId() + " and Invoker Name : " + invoker.getInvokerName() + "\n" + "\n" + "Technical Detailed Error Report: " + extensionResponseMeta.technicalDetailedErrorReport + "\n" + "\n" + "Error Message: " + errorMessage;
 
-    /**
-     * Helper method to record a duration metric.
-     * 
-     * @param metricName The name of the metric to record
-     * @param durationMs The duration in milliseconds
-     */
-    private void recordDuration(String metricName, long durationMs) {
-        telemetryMetrics.recordDuration(metricName, durationMs);
-    }
+            // Record unhealthy status and email alert
+            telemetryHelper.recordCounter("outlook3.healthCheck.unhealthy", 1,
+                    TelemetryHelper.safeTagMap(
+                            "invoker_id", invoker.getInvokerId(),
+                            "system_status", healthStatus.systemStatus,
+                            "error_message", errorMessage
+                    ));
 
-    /**
-     * Helper method to record a duration metric with tags.
-     * 
-     * @param metricName The name of the metric to record
-     * @param durationMs The duration in milliseconds
-     * @param tags The tags to associate with the metric
-     */
-    private void recordDuration(String metricName, long durationMs, Map<String, String> tags) {
-        telemetryMetrics.recordDuration(metricName, durationMs, tags);
-    }
+            messagingAreaImpl.sendMail("Health Check Summary", emailBody, null, "service.automation@kristasoft.com", null, null, null, "Text");
 
-    /**
-     * Helper method to record a gauge metric.
-     * 
-     * @param metricName The name of the metric to record
-     * @param value The value to record
-     */
-    private void recordGauge(String metricName, double value) {
-        telemetryMetrics.observeGauge(metricName, value);
-    }
-
-    /**
-     * Helper method to create a map of tags with safe values (no nulls).
-     */
-    private Map<String, String> safeTagMap(String... keysAndValues) {
-        Map<String, String> map = new HashMap<>();
-        for (int i = 0; i < keysAndValues.length - 1; i += 2) {
-            map.put(keysAndValues[i], keysAndValues[i + 1] != null ? keysAndValues[i + 1] : "NA");
+            telemetryHelper.recordCounter("outlook3.healthCheck.alertEmailSent", 1,
+                    Map.of("invoker_id", invoker.getInvokerId()));
+        } else {
+            // Record healthy status
+            telemetryHelper.recordCounter("outlook3.healthCheck.healthy", 1,
+                    Map.of("invoker_id", invoker.getInvokerId()));
         }
-        return map;
     }
 
 }

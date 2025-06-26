@@ -1,9 +1,9 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp;
 
 import app.krista.ksdk.telemetry.TelemetryMetrics;
-import javax.inject.Inject;
 import org.jvnet.hk2.annotations.Service;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,4 +88,13 @@ public class TelemetryHelper {
         }
         return map;
     }
+
+    public void recordCounter(String metricName, long value, Map<String, String> tags) {
+        telemetry.incrementCounter(metricName, value, tags);
+    }
+
+    public void recordGauge(String metricName, double value) {
+        telemetry.observeGauge(metricName, value);
+    }
+
 }
