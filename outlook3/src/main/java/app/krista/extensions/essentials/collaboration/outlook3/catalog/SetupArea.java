@@ -23,7 +23,7 @@ public class SetupArea {
     @CatalogRequest(
             id = "localDomainRequest_6fa660ef-642a-495e-9d92-49948812253b",
             name = "Health Check",
-            description = "This 'Health Check' request verifies the health status of the appliance by calling the health check API. It returns a boolean response indicating overall health status along with detailed system resource information including memory usage, CPU utilization, and other vital metrics.",
+            description = "Request Description",
             area = "Setup",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)",required = false)
