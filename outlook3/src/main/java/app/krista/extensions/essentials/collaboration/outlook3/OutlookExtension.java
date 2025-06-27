@@ -60,11 +60,4 @@ public class OutlookExtension {
         MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
     }
 
-    @InvokerRequest(InvokerRequest.Type.INVOKER_UPDATED)
-    public void attributesUpdated(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
-        telemetryMetrics.incrementCounter("outlook3.invoker_upgrade.count", 1, Map.of(
-                "invoker", "outlook3",
-                "upgraded", "ues"
-        ));
-    }
 }

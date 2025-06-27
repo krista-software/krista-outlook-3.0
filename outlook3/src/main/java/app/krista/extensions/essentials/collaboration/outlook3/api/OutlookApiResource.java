@@ -11,6 +11,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.G
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.SubscriptionStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Notification;
@@ -37,7 +38,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription.mailAlertSubscription;
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 import static com.github.scribejava.core.model.OAuthConstants.CODE;
 import static com.github.scribejava.core.model.OAuthConstants.STATE;
@@ -51,6 +57,7 @@ public final class OutlookApiResource {
     private static final int MESSAGE_ID_CAPACITY = 1000;
     private final OutlookAttributeStore outlookAttributeStore;
     private final RefreshTokenStore refreshTokenStore;
+    private final SubscriptionStore subscriptionStore;
     private final GraphServiceClientProviderFactory providerFactory;
     private final EventHandler eventHandler;
     private final NotificationProcessQueue notificationProcessQueue;
@@ -60,14 +67,18 @@ public final class OutlookApiResource {
     private final String invokerId;
     private final Invoker invoker;
     private final TestConnectionServiceImpl testConnectionService;
+    private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
+
 
     @Inject
-    public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
+    public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore, SubscriptionStore subscriptionStore,
                               GraphServiceClientProviderFactory providerFactory, EventHandler eventHandler,
                               Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener,
                               TestConnectionServiceImpl testConnectionService) {
         this.outlookAttributeStore = outlookAttributeStore;
         this.refreshTokenStore = refreshTokenStore;
+        this.subscriptionStore = subscriptionStore;
         this.providerFactory = providerFactory;
         this.eventHandler = eventHandler;
         this.context = context;
@@ -222,6 +233,8 @@ public final class OutlookApiResource {
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
         }
         MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
+        // Trigger the renewal scheduler upon handling the first notification
+        startRenewalTask(providerFactory.create(), baseRoutingUrl);
         LOGGER.info("Acknowledgement sent...");
         return Response.status(200).build();
     }
@@ -259,6 +272,9 @@ public final class OutlookApiResource {
                     .users(attributes.getEmail())
                     .mailFolders().buildRequest().get();
             boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
+            if (isSaved && mailAlertSubscription != null) {
+                subscriptionStore.put(baseRoutingUrl, mailAlertSubscription.id);
+            }
             return isSaved
                     ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
                     : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
@@ -329,6 +345,78 @@ public final class OutlookApiResource {
      */
     public static boolean isMessageIdTriggered(String messageId) {
         return triggeredMailIds.contains(messageId);
+    }
+
+    /**
+     * Handles the scheduling and execution of Microsoft Graph mail alert subscription renewals.
+     * <p>
+     * Subscriptions are valid for 3 days (72 hours), and to prevent expiration, this service
+     * schedules renewal tasks at a fixed interval (default: every 65 hours).
+     * <p>
+     * Key Features:
+     * <ul>
+     *   <li>Initial delay and fixed renewal interval configured to safely renew before expiry.</li>
+     *   <li>Each scheduled task attempts to renew the current subscription ID mapped to a routing URL.</li>
+     *   <li>Successful renewals update the in-memory subscription store with the new subscription ID.</li>
+     *   <li>Errors are logged with context if renewal fails or required data is missing.</li>
+     *   <li>The scheduler is shut down gracefully if already running to avoid duplicate scheduling.</li>
+     * </ul>
+     *
+     * @see MailSubscription#renewSubscription(GraphServiceClientProvider, String)
+     * @see GraphServiceClientProvider
+     */
+    public void startRenewalTask(GraphServiceClientProvider graphServiceClientProvider, String baseRoutingUrl) {
+        LOGGER.info("Initializing scheduled subscription renewal task for: {}", baseRoutingUrl);
+        shutdown(); // Stop any existing scheduler
+
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        scheduler.scheduleAtFixedRate(createRenewalTask(graphServiceClientProvider, baseRoutingUrl),
+                65, // initial delay (65 hrs)
+                65, // run every after 65 hrs
+                TimeUnit.HOURS
+        );
+
+        LOGGER.info("Subscription renewal task scheduled for every 65 hrs (after 665 hrs delay)");
+    }
+
+    private Runnable createRenewalTask(GraphServiceClientProvider provider, String routingUrl) {
+        return () -> {
+            long start = System.currentTimeMillis();
+            LOGGER.info("Running subscription renewal for routing URL: {}", routingUrl);
+
+            try {
+                renewAndUpdateSubscription(provider, routingUrl);
+            } catch (Exception e) {
+                LOGGER.error("Subscription renewal failed for routing URL: {}", routingUrl, e);
+            }
+
+            long duration = System.currentTimeMillis() - start;
+            LOGGER.info("Renewal completed for {} in {} ms", routingUrl, duration);
+        };
+    }
+
+    private void renewAndUpdateSubscription(GraphServiceClientProvider provider, String routingUrl) {
+        String subscriptionId = subscriptionStore.get(routingUrl);
+        if (subscriptionId == null) {
+            LOGGER.error("No subscription ID found for routing URL: {}. Skipping renewal.", routingUrl);
+            return;
+        }
+
+        boolean renewed = MailSubscription.renewSubscription(provider, subscriptionId);
+        if (renewed && mailAlertSubscription != null) {
+            subscriptionStore.put(routingUrl, mailAlertSubscription.id);
+            LOGGER.info("Subscription renewed and store updated for routing URL: {}", routingUrl);
+        } else {
+            LOGGER.error("Renewal failed or mailAlertSubscription is null for routing URL: {}", routingUrl);
+        }
+    }
+
+    public void shutdown() {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+        }
+        isRunning.set(false); // allow restart
     }
 
 }
