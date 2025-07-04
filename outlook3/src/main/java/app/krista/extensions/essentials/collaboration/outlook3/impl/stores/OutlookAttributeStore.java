@@ -38,9 +38,9 @@ public class OutlookAttributeStore {
      */
     @SuppressWarnings("unchecked")
     public OutlookAttributes load(String key) {
-        String loadedAttributes  = null ;
-        if(store.get(key) != null){
-            loadedAttributes =  (String)store.get(key);
+        String loadedAttributes = null;
+        if (store.get(key) != null) {
+            loadedAttributes = (String) store.get(key);
         }
         if (loadedAttributes == null || loadedAttributes.isBlank()) {
             return null;
@@ -88,7 +88,7 @@ public class OutlookAttributeStore {
      * using the specified invoker ID as the key.
      *
      * @param attributes The OutlookAttributes to save
-     * @param invokerId The invoker ID to use as the key
+     * @param invokerId  The invoker ID to use as the key
      * @return true if the save operation was successful
      * @throws IllegalArgumentException if attributes is null
      */

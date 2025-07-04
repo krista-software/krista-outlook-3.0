@@ -46,7 +46,11 @@ public class GraphServiceClientProviderFactory {
     }
 
     public GraphServiceClientProvider create() {
-        String key = requestContext.getInvokerId();
+        return create(requestContext);
+    }
+
+    public GraphServiceClientProvider create(RequestContext context) {
+        String key = context.getInvokerId();
         OutlookAttributes attributes = outlookAttributeStore.load(key);
         return getGraphServiceClientProvider(attributes, null);
     }

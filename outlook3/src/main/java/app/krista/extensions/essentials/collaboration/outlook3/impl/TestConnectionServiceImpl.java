@@ -12,7 +12,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.E
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.SubscriptionStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.model.field.NamedValuedField;
@@ -38,16 +37,14 @@ public class TestConnectionServiceImpl {
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore outlookAttributeStore;
     private final String baseRoutingUrl;
-    private final SubscriptionStore subscriptionStore;
 
     @Inject
     public TestConnectionServiceImpl(GraphServiceClientProviderFactory providerFactory,
                                      OutlookAttributeStore outlookAttributeStore,
-                                     Invoker invoker, SubscriptionStore subscriptionStore) {
+                                     Invoker invoker) {
         this.providerFactory = providerFactory;
         this.outlookAttributeStore = outlookAttributeStore;
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
-        this.subscriptionStore = subscriptionStore;
     }
 
     public String testConnection(OutlookAttributes outlookAttributes) {
@@ -69,7 +66,6 @@ public class TestConnectionServiceImpl {
             } else {
                 LOGGER.info("Mail alerts disabled, removing any existing subscriptions");
                 if (MailSubscription.deleteSubscription(baseRoutingUrl, providerFactory.create(authContextId))) {
-                    subscriptionStore.remove(baseRoutingUrl);
                     LOGGER.info("Subscription successfully deleted and store updated");
                 } else {
                     LOGGER.error("Failed to delete mail subscription for baseRoutingUrl: {}", baseRoutingUrl);

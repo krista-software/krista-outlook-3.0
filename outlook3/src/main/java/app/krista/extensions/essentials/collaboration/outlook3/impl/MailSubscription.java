@@ -28,8 +28,6 @@ public class MailSubscription {
     public static final long TWENTY_FIVE_HOURS_IN_MILLIS = 25 * 60 * 60 * (long) 1000;
     private static final Logger LOGGER = LoggerFactory.getLogger(MailSubscription.class);
 
-    public static Subscription mailAlertSubscription;
-
     private MailSubscription() {
     }
 
@@ -80,7 +78,7 @@ public class MailSubscription {
 
     /**
      * Checks whether the given subscription is nearing expiration and renews it if required.
-     *
+     * <p>
      * Microsoft Graph subscriptions expire after a maximum of 72 hours. This method calculates
      * the time remaining and initiates a renewal if more than 25 hours have elapsed since creation.
      *
@@ -129,7 +127,6 @@ public class MailSubscription {
                         .post(subscription);
 
                 LOGGER.info("Subscription created successfully ::: {} ", newSubscription.id);
-                mailAlertSubscription = newSubscription;
                 return true; // Success
             } catch (ClientException e) {
                 String errorMessage = e.getMessage();
@@ -189,22 +186,35 @@ public class MailSubscription {
      * @return boolean indicating if renewal was successful
      */
     public static boolean renewSubscription(GraphServiceClientProvider provider, String subscriptionId) {
-        try {
-            // Create a new subscription object with just the expiration date
-            Subscription subscription = new Subscription();
-            subscription.expirationDateTime = getExpirationDateTime();
+        LOGGER.info("Starting subscription renewal for ID: {}", subscriptionId);
 
-            // Patch the existing subscription with the new expiration date
+        try {
+            // Calculate new expiration datetime
+            OffsetDateTime newExpirationDate = getExpirationDateTime();
+            LOGGER.debug("Calculated new expiration date: {}", newExpirationDate);
+
+            // Prepare subscription object with new expiration time
+            Subscription subscription = new Subscription();
+            subscription.expirationDateTime = newExpirationDate;
+            LOGGER.debug("Created Subscription object with updated expiration");
+
+            // Initiate Graph API call to patch the subscription
+            LOGGER.info("Sending patch request to Microsoft Graph for subscription ID: {}", subscriptionId);
             Subscription renewSubscription = provider.getGraphServiceClientForAdmin()
                     .subscriptions(subscriptionId)
                     .buildRequest()
                     .patch(subscription);
 
-            LOGGER.info("Subscription renewed successfully ::: {}", renewSubscription.id);
-            mailAlertSubscription = renewSubscription;
+            // Log response details
+            LOGGER.info("Subscription renewed successfully. ID: {}", renewSubscription.id);
+            LOGGER.debug("Renewed subscription details: Expiration: {}, Resource: {}, ChangeType: {}",
+                    renewSubscription.expirationDateTime,
+                    renewSubscription.resource,
+                    renewSubscription.changeType);
+
             return true;
         } catch (ClientException | ParseException cause) {
-            LOGGER.error("Error renewing subscription: {}", cause.getMessage());
+            LOGGER.error("Failed to renew subscription ID: {}. Error: {}", subscriptionId, cause.getMessage(), cause);
             return false;
         }
     }
@@ -250,7 +260,6 @@ public class MailSubscription {
                         foundSubscription = true;
                     }
                 }
-                mailAlertSubscription = null;
                 return true; // Return true if we found and deleted a subscription, or if there was nothing to delete
             } else {
                 return true; // No subscriptions to delete is still a success

@@ -14,8 +14,11 @@
 - [**KE-2156**](https://antbrains.atlassian.net/browse/KE-2156):  
   Add authentication error handling for existing catalog requests, and create health check + test connection for Cujo.
 
-- [**KE-18796**](https://antbrains.atlassian.net/browse/KE-18796):  
+- [**KR-18796**](https://antbrains.atlassian.net/browse/KR-18796):  
   Outlook Extension: Unexpected authentication prompt triggered during request execution.
+
+- [**KE-2232**](https://antbrains.atlassian.net/browse/KE-2232):  
+  Add two additional fields in Message entity for Outlook.
 
 ---
 

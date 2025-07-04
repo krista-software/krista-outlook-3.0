@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import java.util.Map;
 
 @Java(version = Java.Version.JAVA_21)
-@Extension(version = "3.0.6-rc1", name = "OutlookV3")
+@Extension(version = "3.0.6", name = "OutlookV3")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 

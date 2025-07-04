@@ -42,7 +42,6 @@ public class MessagingAreaSubCatalogRequests {
     public static final String HANDLE_REENTER_MARK_MESSAGE = "handleReenterMarkMessage";
     public static final String REENTER = "Reenter";
     public static final String REENTER_WAS_TRUE_HENCE_CONTINUING = "Reenter was true. Hence continuing.";
-    public static final String CONFIRM_REENTER_AUTHORIZATION = "confirmReenterAuthorization";
     private static final Logger LOGGER = LoggerFactory.getLogger(MessagingAreaSubCatalogRequests.class);
     private final MailHandler mailHandler;
     private final Account account;
