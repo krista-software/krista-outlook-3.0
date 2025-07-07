@@ -121,4 +121,10 @@ public class StateMapperUtil {
         metaData.put(OutlookResources.PREFERENCE, pref);
         return metaData;
     }
+
+    public static Map<String, Object> addAuthorizationMetaDataToMap(String stateId) {
+        Map<String, Object> metaData = new LinkedHashMap<>();
+        metaData.put(OutlookResources.STATE_ID, stateId);
+        return metaData;
+    }
 }

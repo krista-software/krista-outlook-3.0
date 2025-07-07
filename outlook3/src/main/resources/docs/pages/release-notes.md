@@ -1,19 +1,33 @@
-# Release Notes - Krista Outlook Extension
+# 📝 Release Notes – Krista Outlook Extension
 
-## Version 3.0.5
+## 📦 Version 3.0.6
 
-- **Developer Name** : Aradhya Gudadhe, VaraPrasad Kolli, Vaibhav Choudhary
-- **Krista Service APIs Java** : 1.0.114
-- **Global Catalog Version** : 1.0.58
-- **Appliance Release Version** : 3.5.0
+- **Developers**: Aradhya Gudadhe, VaraPrasad Kolli, Vaibhav Choudhary
+- **Krista Service APIs (Java)**: 1.0.115-rc4
+- **Global Catalog Version**: 1.0.59
+- **Appliance Release Version**: 3.5.1
 
-## Resolved Bugs
+---
 
-* [KE-2077](https://antbrains.atlassian.net/browse/KE-2077) : Outlook Extension: "Allow Mail Alert" not working In Test and draft mode of authentication
-* [KE-2024](https://antbrains.atlassian.net/browse/KE-2024) : Outlook extension Missing Email Triggers.
-* [KE-1779](https://antbrains.atlassian.net/browse/KE-1836) : Create Fetch Inbox with preference catalog request in outlook extension.
-* [KE-1836](https://antbrains.atlassian.net/browse/KE-1836) : Getting an extension error when running the Fetch Inbox With Preferences request without any input.
+## ✅ Resolved Bugs
 
-## Known Issues
+- [**KE-2156**](https://antbrains.atlassian.net/browse/KE-2156):  
+  Add authentication error handling for existing catalog requests, and create health check + test connection for Cujo.
 
-* **Not Available**
+- [**KR-18796**](https://antbrains.atlassian.net/browse/KR-18796):  
+  Outlook Extension: Unexpected authentication prompt triggered during request execution.
+
+- [**KE-2232**](https://antbrains.atlassian.net/browse/KE-2232):  
+  Add two additional fields in Message entity for Outlook.
+
+- [**KE-2129**](https://antbrains.atlassian.net/browse/KE-2129):  
+  Outlook extension: Automatic token refresh regardless of private or public authentication credentials.
+
+- [**KE-2019**](https://antbrains.atlassian.net/browse/KE-2019):  
+  Automatic renewal of Subscription for alert emails in Outlook Extension.
+
+---
+
+## ⚠️ Known Issues
+
+- None reported.

@@ -59,16 +59,28 @@ public class MailDetails {
     @Field.Desc(name = "Categories", type = "[ Text ]", required = false)
     public List<String> categories;
 
+    @Field.Text(name = "Conversation ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    public String conversationID;
+
+    @Field(name = "Unique Body", type = "RichText", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")}, options = {})
+    public String uniqueBody;
+
     @Override
     public String toString() {
-        return new StringBuilder()
-                .append("MailDetails{")
-                .append("messageId='").append(messageID).append("'")
-                .append("from='").append(from).append("'")
-                .append(", to='").append(to).append("'")
-                .append(", subject='").append(subject).append("'")
-                .append(", message='").append(message).append("'")
-                .append("}")
+        return new StringBuilder("MailDetails{")
+                .append("messageID='").append(messageID).append("', ")
+                .append("from='").append(from).append("', ")
+                .append("to='").append(to).append("', ")
+                .append("cc='").append(cc).append("', ")
+                .append("bcc='").append(bcc).append("', ")
+                .append("replyTo='").append(replyTo).append("', ")
+                .append("subject='").append(subject).append("', ")
+                .append("message='").append(message).append("', ")
+                .append("isRead=").append(isRead).append(", ")
+                .append("categories=").append(categories)
+                .append("Conversation ID=").append(conversationID)
+                .append('}')
                 .toString();
     }
+
 }

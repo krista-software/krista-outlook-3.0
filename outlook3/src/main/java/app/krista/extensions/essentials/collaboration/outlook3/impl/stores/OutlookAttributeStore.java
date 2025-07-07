@@ -26,9 +26,22 @@ public class OutlookAttributeStore {
         this.store = store;
     }
 
+    /**
+     * Loads Outlook attributes from the store using the provided key.
+     * <p>
+     * This method retrieves the serialized attributes from the key-value store,
+     * deserializes them, and constructs an {@link OutlookAttributes} object based
+     * on the authentication type (public or organizational).
+     *
+     * @param key The key used to retrieve the attributes from the store
+     * @return The deserialized OutlookAttributes object, or null if not found or empty
+     */
     @SuppressWarnings("unchecked")
     public OutlookAttributes load(String key) {
-        final String loadedAttributes = String.valueOf(store.get(key));
+        String loadedAttributes = null;
+        if (store.get(key) != null) {
+            loadedAttributes = (String) store.get(key);
+        }
         if (loadedAttributes == null || loadedAttributes.isBlank()) {
             return null;
         } else {
@@ -48,6 +61,16 @@ public class OutlookAttributeStore {
         }
     }
 
+    /**
+     * Saves Outlook attributes to the store with a generated unique identifier.
+     * <p>
+     * This method serializes the attributes to JSON and stores them in the key-value store
+     * using a generated unique identifier as the key.
+     *
+     * @param attributes The OutlookAttributes to save
+     * @return The generated unique identifier (authContextId) used as the key
+     * @throws IllegalArgumentException if attributes is null
+     */
     public String save(OutlookAttributes attributes) {
         if (attributes == null) {
             throw new IllegalArgumentException("Outlook Attributes cannot be null");
@@ -58,6 +81,17 @@ public class OutlookAttributeStore {
         return authContextId;
     }
 
+    /**
+     * Saves Outlook attributes to the store using the provided invoker ID as the key.
+     * <p>
+     * This method serializes the attributes to JSON and stores them in the key-value store
+     * using the specified invoker ID as the key.
+     *
+     * @param attributes The OutlookAttributes to save
+     * @param invokerId  The invoker ID to use as the key
+     * @return true if the save operation was successful
+     * @throws IllegalArgumentException if attributes is null
+     */
     public boolean save(OutlookAttributes attributes, String invokerId) {
         if (attributes == null) {
             throw new IllegalArgumentException("Outlook Attributes cannot be null");

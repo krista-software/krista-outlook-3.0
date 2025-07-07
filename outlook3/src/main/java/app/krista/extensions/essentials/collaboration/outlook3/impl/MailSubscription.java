@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * This class is used for Mail Alerts
@@ -78,13 +77,17 @@ public class MailSubscription {
     }
 
     /**
-     * Handles the renewal of an existing subscription if needed
+     * Checks whether the given subscription is nearing expiration and renews it if required.
+     * <p>
+     * Microsoft Graph subscriptions expire after a maximum of 72 hours. This method calculates
+     * the time remaining and initiates a renewal if more than 25 hours have elapsed since creation.
      *
-     * @param provider        GraphServiceClientProvider object
-     * @param oldSubscription The existing subscription to check for renewal
-     * @return boolean indicating if renewal was successful or not needed
+     * @param provider        The {@link GraphServiceClientProvider} instance used to perform the renewal.
+     * @param oldSubscription The existing {@link Subscription} object to evaluate.
+     * @return {@code true} if the subscription is valid (either renewed or still active),
+     * {@code false} if renewal was needed but failed.
      */
-    private static boolean handleSubscriptionRenewal(GraphServiceClientProvider provider, Subscription oldSubscription) {
+    public static boolean handleSubscriptionRenewal(GraphServiceClientProvider provider, Subscription oldSubscription) {
         // Calculate time remaining until expiration
         final long expirationEpoch = Objects.requireNonNull(oldSubscription.expirationDateTime).toEpochSecond() * 1000;
         final long currentTimeInMillis = Instant.now().toEpochMilli();
@@ -95,6 +98,7 @@ public class MailSubscription {
 
         // Determine if renewal is required
         final boolean requireRenew = elapsedTime > TWENTY_FIVE_HOURS_IN_MILLIS;
+        LOGGER.info("Subscription created {} ms ago. Remaining time: {} ms. Renewal required: {}", elapsedTime, remainingTime, requireRenew);
 
         if (requireRenew) {
             LOGGER.info("Renewing subscription with ID: {}", oldSubscription.id);
@@ -117,12 +121,12 @@ public class MailSubscription {
             LOGGER.info("Attempting to create subscription - attempt {}/{}", attempt, maxRetries);
             try {
                 // Use synchronous approach for better error handling
-                provider.getGraphServiceClientForAdmin()
+                Subscription newSubscription = provider.getGraphServiceClientForAdmin()
                         .subscriptions()
                         .buildRequest()
                         .post(subscription);
 
-                LOGGER.info("Subscription created successfully");
+                LOGGER.info("Subscription created successfully ::: {} ", newSubscription.id);
                 return true; // Success
             } catch (ClientException e) {
                 String errorMessage = e.getMessage();
@@ -182,21 +186,35 @@ public class MailSubscription {
      * @return boolean indicating if renewal was successful
      */
     public static boolean renewSubscription(GraphServiceClientProvider provider, String subscriptionId) {
-        try {
-            // Create a new subscription object with just the expiration date
-            Subscription subscription = new Subscription();
-            subscription.expirationDateTime = getExpirationDateTime();
+        LOGGER.info("Starting subscription renewal for ID: {}", subscriptionId);
 
-            // Patch the existing subscription with the new expiration date
-            provider.getGraphServiceClientForAdmin()
+        try {
+            // Calculate new expiration datetime
+            OffsetDateTime newExpirationDate = getExpirationDateTime();
+            LOGGER.debug("Calculated new expiration date: {}", newExpirationDate);
+
+            // Prepare subscription object with new expiration time
+            Subscription subscription = new Subscription();
+            subscription.expirationDateTime = newExpirationDate;
+            LOGGER.debug("Created Subscription object with updated expiration");
+
+            // Initiate Graph API call to patch the subscription
+            LOGGER.info("Sending patch request to Microsoft Graph for subscription ID: {}", subscriptionId);
+            Subscription renewSubscription = provider.getGraphServiceClientForAdmin()
                     .subscriptions(subscriptionId)
                     .buildRequest()
                     .patch(subscription);
 
-            LOGGER.info("Subscription renewed successfully");
+            // Log response details
+            LOGGER.info("Subscription renewed successfully. ID: {}", renewSubscription.id);
+            LOGGER.debug("Renewed subscription details: Expiration: {}, Resource: {}, ChangeType: {}",
+                    renewSubscription.expirationDateTime,
+                    renewSubscription.resource,
+                    renewSubscription.changeType);
+
             return true;
         } catch (ClientException | ParseException cause) {
-            LOGGER.error("Error renewing subscription: {}", cause.getMessage());
+            LOGGER.error("Failed to renew subscription ID: {}. Error: {}", subscriptionId, cause.getMessage(), cause);
             return false;
         }
     }
@@ -224,9 +242,9 @@ public class MailSubscription {
 
         try {
             SubscriptionCollectionPage collectionPage = provider.getGraphServiceClientForAdmin()
-                .subscriptions()
-                .buildRequest()
-                .get();
+                    .subscriptions()
+                    .buildRequest()
+                    .get();
 
             if (collectionPage != null && !collectionPage.getCurrentPage().isEmpty()) {
                 boolean foundSubscription = false;
@@ -236,13 +254,12 @@ public class MailSubscription {
                             .equals(routingUrl + Constants.REST_OUTLOOK_MAIL_NOTIFICATION)) {
 
                         provider.getGraphServiceClientForAdmin().subscriptions(Objects.requireNonNull(subscription.id))
-                            .buildRequest().delete();
+                                .buildRequest().delete();
 
                         LOGGER.info("Subscription deleted successfully");
                         foundSubscription = true;
                     }
                 }
-
                 return true; // Return true if we found and deleted a subscription, or if there was nothing to delete
             } else {
                 return true; // No subscriptions to delete is still a success

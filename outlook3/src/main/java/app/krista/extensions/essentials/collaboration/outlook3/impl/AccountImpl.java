@@ -28,6 +28,8 @@ import javax.inject.Inject;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.BODY_CONTENT_TYPE_HTML;
+
 @Service
 @ContractsProvided(Account.class)
 public class AccountImpl implements Account {
@@ -170,36 +172,42 @@ public class AccountImpl implements Account {
     }
 
     @Override
-    public Email getEmail(String emailMessageId) {
+    public Email getEmail(String emailId) {
+        LOGGER.info("Getting email with ID: {}", emailId);
         try {
-            if (Validators.isStringNullOrBlank(emailMessageId)) {
-                throw new IllegalArgumentException(Constants.MESSAGE_ID_IS_EMPTY_OR_NULL);
-            }
-            Message message = getUserRequestBuilder(null, null).messages(emailMessageId).buildRequest(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML)).get();
+            Message message = getUserRequestBuilder(null, null)
+                    .messages(emailId)
+                    .buildRequest(
+                            new HeaderOption(Constants.PREFER, BODY_CONTENT_TYPE_HTML),
+                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                    )
+                    .get();
+
             return new EmailImpl(provider, message);
-        } catch (MustAuthorizeException cause) {
-            LOGGER.error(cause.getMessage(), cause);
-            throw cause;
-        } catch (RuntimeException cause) {
-            LOGGER.error(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID, cause);
-            throw new IllegalStateException(Constants.NO_MESSAGE_FOUND_FOR_MESSAGE_ID, cause);
+        } catch (Exception e) {
+            LOGGER.error("Error getting email with ID {}: {}", emailId, e.getMessage(), e);
+            return null;
         }
     }
 
     @Override
     public List<Email> searchEmails(String searchString) {
-        if (Validators.isStringNullOrBlank(searchString)) {
-            throw new IllegalArgumentException(Constants.SEARCH_STRING_IS_EMPTY_OR_NULL);
-        }
-        // Check for special characters to add escape character
-        searchString = searchString.replaceAll("([\"\\\\])", "\\\\$1");
-        LinkedList<Option> requestOptions = new LinkedList<>();
-        requestOptions.add(new QueryOption("$search", "\"" + searchString + "\""));
-        requestOptions.add(new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML));
-        MessageCollectionPage messages = getUserRequestBuilder(null, null).messages().buildRequest(requestOptions).top(15).get();
-        if (messages == null)
+        String sanitized = searchString.replaceAll("([\"\\\\])", "\\\\$1");
+        try {
+            MessageCollectionPage messages = getUserRequestBuilder(null, null)
+                    .messages()
+                    .buildRequest(
+                            new QueryOption("$search", "\"" + sanitized + "\""),
+                            new HeaderOption(Constants.PREFER, BODY_CONTENT_TYPE_HTML),
+                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                    )
+                    .top(15).get();
+            return (messages == null || messages.getCurrentPage() == null) ? List.of()
+                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
+        } catch (Exception e) {
+            LOGGER.error("Error while searching emails with query '{}': {}", searchString, e.getMessage(), e);
             return List.of();
-        return messages.getCurrentPage().stream().map(e -> new EmailImpl(provider, e)).collect(Collectors.toList());
+        }
     }
 
     @Override
@@ -299,7 +307,7 @@ public class AccountImpl implements Account {
         LOGGER.info("Notification being fetched from current page moving to next page.");
         while (deltaCollectionPage != null && deltaCollectionPage.getNextPage() != null) {
             deltaCollectionPage = deltaCollectionPage.getNextPage().buildRequest().get();
-            if(deltaLink != null) {
+            if (deltaLink != null) {
                 if (deltaCollectionPage != null) {
                     for (Message message : deltaCollectionPage.getCurrentPage()) {
                         messageIds.add(message.id);

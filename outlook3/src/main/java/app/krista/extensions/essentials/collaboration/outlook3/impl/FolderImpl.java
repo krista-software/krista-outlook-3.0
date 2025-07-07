@@ -10,8 +10,12 @@ import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.MailFolderMoveParameterSet;
 import com.microsoft.graph.models.Message;
 import com.microsoft.graph.options.HeaderOption;
+import com.microsoft.graph.options.Option;
+import com.microsoft.graph.options.QueryOption;
 import com.microsoft.graph.requests.*;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +27,9 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 
 
 public class FolderImpl implements Folder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FolderImpl.class);
+
     private final Account account;
     private final GraphServiceClientProvider provider;
     private final MailFolder mailFolder;
@@ -143,33 +150,42 @@ public class FolderImpl implements Folder {
 
     @Override
     public List<Email> getEmails(Double pageNumber, Double pageSize) {
-        return getEmailList(pageNumber, pageSize, HTML);
-    }
-
-    private @Nullable List<Email> getEmailList(Double pageNumber, Double pageSize, String bodyType) {
-        int intPageNumber = validatePageNumber(pageNumber);
-        int intPageSize = validatePageSize(pageSize);
-        int skipParameter = (intPageNumber - 1) * intPageSize;
-        String preference = BODY_CONTENT_TYPE_HTML; // Setting Default Preference to HTML
-        if (bodyType.equalsIgnoreCase(TEXT)) {
-            preference = BODY_CONTENT_TYPE_TEXT;
+        int skip = (validatePageNumber(pageNumber) - 1) * validatePageSize(pageSize), top = validatePageSize(pageSize);
+        try {
+            MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
+                    .messages()
+                    .buildRequest(
+                            new HeaderOption(Constants.PREFER, BODY_CONTENT_TYPE_HTML),
+                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                    )
+                    .top(top).skip(skip).get();
+            return (messages == null || messages.getCurrentPage() == null) ? List.of()
+                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
+        } catch (Exception e) {
+            LOGGER.error("Error retrieving paginated emails: {}", e.getMessage(), e);
+            return List.of();
         }
-
-        MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
-                .messages()
-                .buildRequest(new HeaderOption(Constants.PREFER, preference))
-                .top(intPageSize)
-                .skip(skipParameter)
-                .get();
-        return messages != null ? messages.getCurrentPage().stream().map(e -> new EmailImpl(provider, e)).collect(Collectors.toList()) : null;
     }
+
 
     @Override
-    public List<Email> getEmails(Double pageNumber, Double pageSize, Map<String, Object> preferences) {
-        if (preferences.get("Mail Body").toString().equalsIgnoreCase("Text")) {
-            return getEmailList(pageNumber, pageSize, TEXT);
+    public List<Email> getEmails(Double pageNumber, Double pageSize, Map<String, Object> pref) {
+        int top = validatePageSize(pageSize), skip = (validatePageNumber(pageNumber) - 1) * top;
+        String preference = String.valueOf(pref.getOrDefault("Mail Body", "Html")).equalsIgnoreCase(TEXT) ? BODY_CONTENT_TYPE_TEXT : BODY_CONTENT_TYPE_HTML;
+        try {
+            MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
+                    .messages()
+                    .buildRequest(
+                            new HeaderOption(Constants.PREFER, preference),
+                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                    )
+                    .top(top).skip(skip).get();
+            return (messages == null || messages.getCurrentPage() == null) ? List.of()
+                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
+        } catch (Exception e) {
+            LOGGER.error("Error fetching paginated emails: {}", e.getMessage(), e);
+            return List.of();
         }
-        return getEmailList(pageNumber, pageSize, HTML);
     }
 
     @Override

@@ -85,9 +85,26 @@ public interface Account {
      */
     EmailBuilder newEmail();
 
+    /**
+     * Returns list of all category names defined in the Outlook account
+     *
+     * @return List of category names
+     */
     List<String> getCategoryNames();
 
+    /**
+     * Creates a new category in the Outlook account
+     *
+     * @param category name of the category to create
+     * @return the created {@link OutlookCategory} object
+     */
     OutlookCategory createCategory(String category);
 
+    /**
+     * Fetches the delta of notifications since the last query
+     * Uses Microsoft Graph delta query to efficiently track changes
+     *
+     * @return List of message IDs that have changed since the last query
+     */
     List<String> fetchNotificationDeltaQuery();
 }

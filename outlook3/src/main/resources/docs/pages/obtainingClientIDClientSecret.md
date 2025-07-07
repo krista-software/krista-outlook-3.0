@@ -1,55 +1,48 @@
-[<span style = "color : blue ; text-decoration: none">< back<span>](pages/connectingWithOutlookExtension)
+# Obtaining Credentials for Private Authentication
 
-# Obtaining Credentials For Private Authentication
+To use the Outlook Extension, you need to obtain the **Client ID**, **Tenant ID**, and **Client Secret** from the Azure Portal.
 
-* For the Outlook Extension, you would need to obtain Client ID, Tenant ID, and Client Secret from the Azure Portal.
+---
 
-### Steps to get Client ID, Tenant ID, and Client Secret
+### Steps to Get Client ID, Tenant ID, and Client Secret
 
-* Log in to the Azure portal. To see related information, [click here](https://portal.azure.com/).
-  ![Home Page](../_media/homePage.png)
+1. Log in to the [Azure Portal](https://portal.azure.com/).  
+   ![Home Page](../_media/homePage.png)
 
+2. Under **Azure Services**, click on **Azure Active Directory**.  
+   If it's not readily visible, click **More Services** to find it.  
+   ![Azure Active Directory](../_media/azureActiveDirectory.png)
 
-* Under **Azure services**, click **Azure Active Directory**. If not found readily click **More services** to find Azure
-  Active Directory.
-  ![Azure Active Directory](../_media/azureActiveDirectory.png)
+3. In the **Overview** section, click **App registrations** under the **Manage** menu.  
+   ![App Registration](../_media/appRegistration.png)
 
+4. At the top of the page, click **New Registration**.  
+   Alternatively, open your existing application.  
+   ![New registration](../_media/newRegistration.png)
 
-* On the following Overview page, click **App registrations** under the **Manage** column menu.
-  ![App Registration](../_media/appRegistration.png)
+5. On the **Register an application** page:
+  - Enter a **Name** (this will be the display name of your app).
+  - Under **Supported account types**, choose **Accounts in this organizational directory only** (single tenant).
+  - Under **Redirect URI**, select **Web** and enter the redirect URI copied from the **Details** tab in the Outlook Extension.  
+    Click **Register**.  
+    ![Authorized redirect uri Reference](../_media/authorizedRedirectURIReference.png)
 
+6. After registration, go to the **Overview** tab.  
+   Under **Essentials**, you will find the **Client ID** and **Tenant ID**.  
+   ![Client Id and Tenant Id](../_media/clientIDtenantID.png)
 
-* At the top of the page, click **New Registration**. Alternatively, open your pre-existing application.
-  ![New registration](../_media/newRegistration.png)
+7. Navigate to **Certificates & secrets**, and click on **New client secret**.  
+   ![Certificates & Secrets](../_media/certificates&Secrets.png)
 
+8. In the **Add a client secret** panel:
+  - Enter a **Description**.
+  - Set the **expiration period** in the **Expires** field.
+  - Click **Add**.  
+    ![Add Client Secret](../_media/addClientSecret.png)
 
-* **Register an application** page is displayed. Enter the relevant details on this application page. Enter the **Name**
-  that would be display name. Select the **Supported account types**. Out of the available options, select accounts in
-  the single tenant only (first option).
+9. After adding, the **Client Secret** will appear under the **Value** column.  
+   ![Client Secret](../_media/clientSecret.png)
 
-* Under Redirect URI, select the Web platform. Add the authorized redirect URI
-  corresponding to your Outlook extension which you have copied from Details tab. Click **Register**.
-  ![Authorized redirect uri Reference](../_media/authorizedRedirectURIReference.png)
+10. Save the **Client ID**, **Tenant ID**, and **Client Secret** securely for future reference.
 
-
-* After registration, in **Overview**, under **Essentials**, you will find the Client ID and Tenant ID.
-  ![Client Id and Tenant Id](../_media/clientIDtenantID.png)
-
-
-* Click **Certificates & secrets**, go to and click **New client secret**.
-  ![Certificates & Secrets](../_media/certificates&Secrets.png)
-
-
-* On the **Add a client secret panel**, enter the **Description**, and set up the time span of expiry in the **Expires**
-  field. Click **Add**.
-  ![Add Client Secret](../_media/addClientSecret.png)
-
-
-* On the following page, you will see the Client Secret under **Value**.
-  ![Client Secret](../_media/clientSecret.png)
-
-
-* Save the Client ID, Tenant ID, and Client Secret for future reference.
-
-* You must provide these values in your extension to proceed with the operations such as catalog requests and invoker
-  request.
+11. You will need to provide these values in the extension to proceed with operations like **catalog requests** and **invoker requests**.

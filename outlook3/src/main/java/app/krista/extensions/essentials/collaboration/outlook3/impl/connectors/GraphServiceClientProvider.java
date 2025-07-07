@@ -3,6 +3,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl.connectors;
 import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthErrorRule;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.ksdk.context.RequestContext;
@@ -109,7 +110,9 @@ public class GraphServiceClientProvider {
                     .authenticationProvider(new GraphServiceClientAuthenticationProvider(authenticationResult.accessToken()))
                     .buildClient();
         } catch (ClientException | ExecutionException | MalformedURLException cause) {
-            throw createMustAuthorizationException(refreshTokenStoreKey, true);
+            handleAuthenticationError(cause, refreshTokenStoreKey);
+            // This line will never be reached as handleAuthenticationError always throws an exception
+            return null;
         } catch (InterruptedException cause) {
             Thread.currentThread().interrupt();
             throw createMustAuthorizationException(refreshTokenStoreKey, true);
@@ -207,4 +210,38 @@ public class GraphServiceClientProvider {
         }
     }
 
+    private List<NamedValuedField> createAuthDetails(String userId) {
+        List<NamedValuedField> details = new ArrayList<>();
+        NamedValuedField userIdField = new NamedValuedField(USER_ID, TEXT, userId, new HashMap<>(), new HashMap<>());
+        details.add(userIdField);
+        if (authContextId != null) {
+            NamedValuedField contextIdField = new NamedValuedField(AUTH_CONTEXT_ID, TEXT, authContextId, new HashMap<>(), new HashMap<>());
+            details.add(contextIdField);
+        }
+        return details;
+    }
+
+    /**
+     * Handles authentication errors and throws appropriate MustAuthorizeException
+     *
+     * @param cause                The exception that occurred during authentication
+     * @param refreshTokenStoreKey The key used to store the refresh token
+     * @throws MustAuthorizeException with appropriate error message based on the cause
+     */
+    private void handleAuthenticationError(Exception cause, String refreshTokenStoreKey) {
+        String errorMessage = cause.getMessage();
+        LOGGER.error(" handleAuthenticationError() -> errorMessage ::: {} ", errorMessage);
+        if (errorMessage != null) {
+            for (AuthErrorRule rule : AUTH_ERROR_RULES) {
+                if (rule.matches(errorMessage)) {
+                    if (rule.shouldRemoveToken()) {
+                        refreshTokenStore.remove(refreshTokenStoreKey);
+                    }
+                    throw new MustAuthorizeException(rule.getUserMessage(), createAuthDetails(refreshTokenStoreKey));
+                }
+            }
+        }
+        // Default fallback
+        throw createMustAuthorizationException(refreshTokenStoreKey, !requestContext.invokeAsUser());
+    }
 }

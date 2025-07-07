@@ -61,6 +61,9 @@ public class MailHandler {
         mailDetails.sendDateAndTime = email.getSendDateAndTime();
         mailDetails.receivedDateAndTime = email.getReceivedDateAndTime();
         mailDetails.categories = email.getCategories();
+        mailDetails.conversationID = email.getConversationId();
+        mailDetails.uniqueBody = email.getUniqueBody();
+
         return mailDetails;
     }
 

@@ -8,6 +8,8 @@ import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.MessagingArea;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ErrorHandlingStateManager;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.errorhandlers.ExtensionResponseGenerator;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.ExtensionResponseFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.TelemetryHelper;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.ValidationOrchestrator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
@@ -25,15 +27,27 @@ import org.mockito.MockSettings;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
+import app.krista.model.base.EntityValue;
+
+/**
+ * Tests for the MessagingArea implementation.
+ * <p>
+ * IMPORTANT: The credentials used in this test class (Client ID, Client Secret, Tenant ID, Email)
+ * are for testing purposes only. These may be valid or invalid depending on your environment.
+ * To run these tests successfully, please replace them with your own valid credentials
+ * in the setup() method where OutlookAttributes is instantiated.
+ */
 public class MessagingAreaTest {
 
-    // Your actual base URL and callback path
+    // Your actual base URL and callback path... This can be changed as per the invoker
     private static final String BASE_URL = "https://extension.solution.eng.krista.app/extension/api/xAcwhzRYmXuSToCNf4ropQ_e_e";
     private static final String CALLBACK_PATH = "/rest/outlook/callback";
     private static final String FULL_CALLBACK_URL = BASE_URL + CALLBACK_PATH;
@@ -56,6 +70,8 @@ public class MessagingAreaTest {
 
     private MessagingArea messagingArea;
     private MessagingAreaImpl messagingAreaImpl;
+    private TestConnectionServiceImpl testConnectionService;
+    private TelemetryHelper telemetryHelper;
 
     @BeforeEach
     public void setup() {
@@ -76,6 +92,8 @@ public class MessagingAreaTest {
         invoker = mock(Invoker.class, settings);
         routingInfo = mock(RoutingInfo.class, settings);
         graphServiceClientProvider = mock(GraphServiceClientProvider.class, settings);
+        testConnectionService = mock(TestConnectionServiceImpl.class, settings);
+        telemetryHelper = mock(TelemetryHelper.class, settings);
 
         // Setup the routing info mock
         when(invoker.getRoutingInfo()).thenReturn(routingInfo);
@@ -109,8 +127,9 @@ public class MessagingAreaTest {
                 responseGenerator,
                 internalStateManager,
                 validationOrchestrator,
-                providerFactory,
-                invoker
+                invoker,
+                testConnectionService,
+                telemetryHelper
         );
 
         messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
@@ -122,7 +141,7 @@ public class MessagingAreaTest {
         List<String> labels = Arrays.asList("Archive", "Conversation History", "Deleted Items", "Drafts", "Inbox", "Junk Email", "Outbox", "Sent Items");
         doReturn(labels).when(account).getFolderNames();
         ExtensionResponse response1 = messagingArea.fetchAllLabels();
-        List<String> allLabels = (List<String>)response1.getResponseValue().get("Labels");
+        List<String> allLabels = (List<String>) response1.getResponseValue().get("Labels");
         assertTrue(allLabels.contains("Archive"));
     }
 
@@ -191,6 +210,51 @@ public class MessagingAreaTest {
         assertEquals(response.getResponseValue().get("Mails"), List.of());
     }
 
+    @Test
+    public void testFetchSent() {
+        Double pageNumber = 1.0;
+        Double pageSize = 10.0;
+        List<Email> emails = List.of(mock(Email.class));
+        when(account.getSentFolder()).thenReturn(mock(Folder.class));
+        when(account.getSentFolder().getEmails(pageNumber, pageSize)).thenReturn(emails);
+
+        ExtensionResponse response = messagingArea.fetchSent(pageNumber, pageSize);
+
+        assertEquals(1, ((List<?>) response.getResponseValue().get("Sent Mails")).size());
+    }
+
+    @Test
+    public void testListCategories() {
+        List<String> categories = Arrays.asList("Important", "Personal", "Work");
+        when(account.getCategoryNames()).thenReturn(categories);
+
+        ExtensionResponse response = messagingArea.listCategories();
+
+        List<String> returnedCategories = (List<String>) response.getResponseValue().get("Category Names");
+        assertEquals(3, returnedCategories.size());
+        assertTrue(returnedCategories.contains("Important"));
+    }
+
+    @Test
+    public void testTestConnection() {
+        when(testConnectionService.testConnection(anyString()))
+            .thenReturn(ExtensionResponseFactory.create(Map.of(
+                "Is Connection Successful", true,
+                "Test Connection Summary", Map.of(
+                    "Summary", "Connection successful",
+                    "Email", "service.automation@kristasoft.com",
+                    "Allow Mail Alert", "true",
+                    "Tenant ID", "3694f6b4-b5f1-47ef-852f-a0b4a459ab44",
+                    "Client ID", "ec0745c8-7635-4b31-97cc-d217944dd620",
+                    "Auth Type", "private",
+                    "Mailbox Accessible", "true"
+                )
+            )));
+
+        ExtensionResponse response = messagingArea.testConnection();
+
+        assertEquals(true, response.getResponseValue().get("Is Connection Successful"));
+        Map<String, String> summary = (Map<String, String>) response.getResponseValue().get("Test Connection Summary");
+        assertEquals("Connection successful", summary.get("Summary"));
+    }
 }
-
-

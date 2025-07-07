@@ -414,4 +414,24 @@ public class EmailImpl implements Email {
         return existingCategories;
     }
 
+    @Override
+    public String getConversationId() {
+        return message.conversationId;
+    }
+
+    @Override
+    public String getUniqueBody() {
+        String content = (message.uniqueBody != null) ? message.uniqueBody.content : null;
+        if (content != null) {
+            Document document = Jsoup.parse(content);
+            document.outputSettings(new Document.OutputSettings().prettyPrint(false));
+            document.select("br").append("\\n");
+            document.select("p").prepend("\\n\\n");
+            document.select("img").remove();
+            return document.html().replaceAll("\\\\n", "\n");
+        }
+        return null;
+    }
+
+
 }

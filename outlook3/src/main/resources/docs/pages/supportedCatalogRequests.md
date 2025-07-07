@@ -1,5 +1,7 @@
 # Supported Requests
 
+This document provides comprehensive information about error handling in the Outlook3 extension, including common error scenarios, their causes, and recommended solutions.
+
 ## Catalog Requests
 
 The Outlook Extension supports the following catalog requests.
@@ -47,6 +49,16 @@ The Outlook Extension supports the following catalog requests.
 | Input Parameter | Valid Data        | Invalid Data                                                              |
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
+
+- **Error Handling Response**
+
+| **Error Scenario**     | **Condition**                    | **User Message**                                                                                 |
+|------------------------|----------------------------------|--------------------------------------------------------------------------------------------------|
+| Invalid Message ID     | Email is null                    | "We couldn't find an email with the Message ID: %s. Please check and enter a valid Message ID."  |
+| Invalid Label          | Label is not "Read" or "Unread"  | "Unable to mark message (un)read invalid label [label] for messageID: [messageID]"               |
+| Graph Service Exception| Any GraphServiceException        | "Mark message request failed. Please try again later."                                           |
+| System Error           | Any other Exception              | "Error occurred while mark message."                                                             |
+| General Failure        | Multiple conditions              | "We couldn't process the message because it seems the message ID is incorrect or missing."       |
 
 ### Add Category To Message
 
@@ -123,6 +135,16 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
+- **Error Handling Response**
+
+| **Error Scenario**      | **Condition**                                   | **User Message**                                                                                                         |
+|-------------------------|-------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Invalid Message ID      | Message ID validation fails                     | "The provided Message ID: [messageId] does not exist."                                                                   |
+| Message Not Found       | getEmail throws IllegalStateException           | Empty response (mailDetails will be null)                                                                                |
+| Authorization Error     | MustAuthorizeException                          | Handled by AuthorizationExceptionHandler (various messages)                                                              |
+| System Error            | Any other Exception                             | "Error occurred while fetch mail by message ID."                                                                         |
+| General Failure         | Multiple conditions                             | "We couldn't fetch the email because the message ID appears to be incorrect. Please check the message ID and try again." |
+
 ### Move Message
 
 - **Description**: Accepts message ID, and folder name as input and move one message from source folder to another
@@ -147,13 +169,22 @@ The Outlook Extension supports the following catalog requests.
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Folder Name     | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
+- **Error Handling Response**
+
+| **Error Scenario**      | **Condition**                                         | **User Message**                                                                                                                   |
+|-------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Invalid Message ID      | Email is null                                         | "We couldn't find an email with the Message ID: [messageId]. Please check and enter a valid Message ID."                           |
+| Invalid Folder Name     | Folder is null                                        | "The provided Folder Name: [folderName] does not exist."                                                                           |
+| Failed to Move          | moveToFolder throws IllegalStateException             | "Failed to move message!"                                                                                                          |
+| Authorization Error     | MustAuthorizeException                                | Handled by AuthorizationExceptionHandler (various messages)                                                                        |
+| System Error            | Any other Exception                                   | "Error occurred while moving message to folder."                                                                                   |
+| General Failure         | Multiple conditions                                   | "We couldn't move the message because either the message ID is incorrect or the folder doesn't exist. Please check and try again." |
+
 ### Fetch Mails By Label
 
 - **Description**: Accepts label, page number, and page size as input and returns list of mail. Page number, and page
   size are optional input.
-- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
-  and of page size is 15. To fetch subfolder provide folder path such as parent folder followed by '/' followed by child
-  folder in label.
+- **Input Parameters**: Currently supports page size and page number between 1 and 15. Default value of page number is 1 and of page size is 15. To fetch subfolder provide folder path such as parent folder followed by '/' followed by child folder in label.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**       |
 |--------------------|--------------------|---------------|-------------------|
@@ -301,6 +332,15 @@ The Outlook Extension supports the following catalog requests.
 | Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
+- **Error Handling Response**
+
+| **Error Scenario**       | **Condition**                                                         | **User Message**                                                                                                                              |
+|--------------------------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| Invalid Message ID       | Email is null                                                         | "The provided Message ID: [messageId] does not exist."                                                                                        |
+| Invalid Email Address    | GraphServiceException with message containing `ONE_INVALID_MAIL`      | "The provided Email Address: [email] does not exist."                                                                                         |
+| General Forward Failure  | Any other GraphServiceException                                       | "We couldn't forward the email because the message ID or recipient email address seems to be incorrect. Please double-check and try again."   |
+| System Error             | Any other Exception                                                   | "Error occurred while forward mail."                                                                                                          |
+
 ### Send Mail
 
 - **Description**: Accepts subject, message, attachments, to, bcc, cc, reply to as input and returns response message.
@@ -335,6 +375,15 @@ The Outlook Extension supports the following catalog requests.
 | Cc              | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
+
+- **Error Handling Response**
+
+| **Error Scenario**       | **Condition**                                                      | **User Message**                                                             |
+|--------------------------|---------------------------------------------------------------------|------------------------------------------------------------------------------|
+| Invalid Email Address    | GraphServiceException with message containing `ONE_INVALID_MAIL`   | "Invalid mail address. Please check the email addresses and try again."     |
+| General Send Mail Failure| Any other GraphServiceException                                    | "Send mail request failed. Please try again later."                          |
+| System Error             | Any other Exception                                                | "Error occurred while send mail."                                            |
+
 
 ### Send Mail With Table
 
@@ -446,6 +495,16 @@ The Outlook Extension supports the following catalog requests.
 |-----------------|-------------------|---------------------------------------------------------------------------|
 | Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
 | Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
+
+- **Error Handling Response**
+
+| **Error Scenario**        | **Condition**                                       | **User Message**                                                                                                        |
+|---------------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Invalid Page Number       | Page number is 0 or negative                        | "The provided Page number: [pageNumber] should be greater than 0 and less than or equal to 15."                         |
+| Invalid Page Size         | Page size is 0, negative, or greater than 15        | "The provided Page size: [pageSize] should be greater than 0 and less than or equal to 15."                             |
+| Authorization Error       | MustAuthorizeException                              | Handled by AuthorizationExceptionHandler (various messages)                                                             |
+| System Error              | Any other Exception                                 | "Error occurred while fetch inbox."                                                                                     |
+| General Failure           | Multiple conditions                                 | "We couldn't fetch your inbox because the page number or page size is invalid. Please enter a number between 1 and 15." |
 
 ### Fetch Inbox With Preferences
 
@@ -626,6 +685,52 @@ The Outlook Extension supports the following catalog requests.
 
 - **Note**: Returns `true` if the message ID has already triggered an alert and exists in the triggered mail IDs set, 
 otherwise returns `false`. This can be used to prevent duplicate processing of emails in workflows that use the "Mail Received Alert" request.
+
+### Health Check
+
+- **Description**: This 'Health Check' request verifies the health status of the appliance by calling the health check API. It returns a boolean response indicating overall health status along with detailed system resource information including memory usage, CPU utilization, and other vital metrics.
+- **Input Parameters**: NA
+- **Output Parameters**:
+
+| **Parameter Name**      | **Parameter Type**              | **Example**                                                                                                                                                                                                                                                                                                                                                |
+|-------------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Extension Response Meta | Entity(Extension Response Meta) | {"message": "Health check completed successfully", "responseType": "SUCCESS", "timeTakenInSeconds": 0.35}                                                                                                                                                                                                                                                  |
+| Health Status           | Entity(Health Status)           | {"extensionName": "Outlook", "systemStatus": "HEALTHY", "currentMemoryUsageMB": 256.0, "availableMemoryMB": 768.0, "totalMemoryMB": 1024.0, "cPUUsagePercentage": 15.5, "activeThreads": 24.0, "uptimeHours": 72.5, "authType": "PRIVATE", "email": "user@example.com", "hasRefreshToken": true, "tokenValid": true, "lastHealthCheckTime": 1623456789000} |
+| Is Healthy              | Boolean                         | true                                                                                                                                                                                                                                                                                                                                                       |
+
+- **Note**: The Health Status entity includes information about system resources (memory, CPU), authentication status, and overall health classification (HEALTHY, DEGRADED, UNHEALTHY). When health issues are detected, an email notification is automatically sent with diagnostic details.
+
+### Test Connection
+
+- **Description**: This test connection request validates the connection using stored or provided configuration parameters. It performs comprehensive connectivity tests including OAuth token acquisition, mailbox connectivity, and scope validation to ensure the integration is working properly.
+- **Input Parameters**: NA
+- **Output Parameters**:
+
+| **Parameter Name**       | **Parameter Type**              | **Example**                                                                                                                                                                                                                                                                                       |
+|--------------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Is Connection Successful | Boolean                         | true                                                                                                                                                                                                                                                                                              |
+| Test Connection Summary  | MultiField                      | {"Summary": "Connection successful", "Email": "user@example.com", "Allow Mail Alert": true, "Tenant ID": "12345678-1234-1234-1234-123456789012", "Client ID": "87654321-4321-4321-4321-210987654321", "Auth Type": "PRIVATE", "Mailbox Accessible": true, "Allow Mail Alert Is Successful": true} |
+| Extension Response Meta  | Entity(Extension Response Meta) | {"message": "Connection test completed successfully", "responseType": "SUCCESS", "timeTakenInSeconds": 0.85}                                                                                                                                                                                      |
+
+- **Note**: The Test Connection Summary includes information about the connection status, email account, authentication type, and mailbox accessibility. If mail alerts are enabled, the test will also attempt to create or update the necessary mail subscription. This request is essential for verifying that your Outlook configuration is correctly set up and functioning.
+
+## Authentication Error Handling
+
+The **Outlook3** extension handles Microsoft authentication errors with user-friendly messages for each catalog request:
+
+| **Error Type**                   | **Error Condition**                                                                                    | **User Message**                                                                               |
+|----------------------------------|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| Refresh Token Expiration         | Message contains `REFRESH_TOKEN_EXPIRED`                                                               | "Your session has expired. Please contact your administrator."                                 |
+| Password Changed or Reset        | Message contains `PASSWORD_CHANGED_ERROR`                                                              | "Your Microsoft password was changed. Please contact your administrator."                      |
+| User Deleted in Domain           | Message contains `USER_DELETED_ERROR`                                                                  | "Your Microsoft account no longer exists. Please contact your administrator."                  |
+| User Disabled                    | Message contains `USER_DISABLED_ERROR`                                                                 | "Your Microsoft account has been blocked or locked. Please contact your administrator."        |
+| Permission Revoked               | Message contains `PERMISSIONS_REVOKED_ERROR`                                                           | "Your access to Microsoft has been removed. Please contact your administrator."                |
+| Application Not Found            | Message contains `APP_NOT_FOUND_ERROR`                                                                 | "We couldn't find the application in your Microsoft setup. Please contact your administrator." |
+| Tenant Not Found                 | Message contains `TENANT_NOT_FOUND_CODE` or `KEYWORD_TENANT_NOT_FOUND`                                 | "We couldn't find your Microsoft organization. Please contact your administrator."             |
+| Network or Service Unavailable   | Message contains `SERVICE_UNAVAILABLE_CODE`, `KEYWORD_SERVICE_UNAVAILABLE`, or `KEYWORD_NETWORK_ERROR` | "Microsoft is temporarily unavailable. Please contact your administrator."                     |
+| Invalid Client Secret            | Message contains `INVALID_CLIENT_SECRET_CODE` or `KEYWORD_INVALID_CLIENT_SECRET`                       | "Something's wrong with the application's connection. Please contact your administrator."      |
+| Default Case                     | None of the above conditions match                                                                     | "Authentication error: [original error message]"                                               |
+
 
 ## Entity Requests
 

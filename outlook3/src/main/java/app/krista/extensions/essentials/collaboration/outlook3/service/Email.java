@@ -191,11 +191,31 @@ public interface Email {
     boolean addCategory(String category);
 
     /**
-     * This method will remove category for the given message id.
-     * @param category
-     * @return
+     * Removes a category tag from the email
+     *
+     * @param category name of the category to be removed
+     * @return true if the category was successfully removed, false otherwise
      */
-
     boolean removeCategory(String category);
+
+    /**
+     * Returns the conversation ID of the email.
+     * This ID is used to track all messages in the same thread (i.e., replies to the original message).
+     * It is required by KEU for message ingestion to group related emails.
+     *
+     * @return the conversation ID
+     */
+    String getConversationId();
+
+    /**
+     * Returns the unique body of the email.
+     * This is the portion of the email body that is newly written in a reply,
+     * excluding quoted text from previous messages. It is used by KEU to build a
+     * progressive document representing the email conversation over time, which is
+     * ingested by the DocSet.
+     *
+     * @return the unique body as HTML or plain text
+     */
+    String getUniqueBody();
 
 }
