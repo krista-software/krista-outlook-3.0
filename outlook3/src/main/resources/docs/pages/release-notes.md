@@ -20,6 +20,12 @@
 - [**KE-2232**](https://antbrains.atlassian.net/browse/KE-2232):  
   Add two additional fields in Message entity for Outlook.
 
+- [**KE-2129**](https://antbrains.atlassian.net/browse/KE-2129):  
+  Outlook extension: Automatic token refresh regardless of private or public authentication credentials.
+
+- [**KE-2019**](https://antbrains.atlassian.net/browse/KE-2019):  
+  Automatic renewal of Subscription for alert emails in Outlook Extension.
+
 ---
 
 ## ⚠️ Known Issues

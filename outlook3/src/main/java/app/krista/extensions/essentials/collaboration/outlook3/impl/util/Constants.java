@@ -135,6 +135,8 @@ public class Constants {
     public static final String IS_SUCCESSFUL = "Is Successful";
     public static final String IS_FORWARDED = "Is Forwarded";
     public static final String DELTA_TOKEN = "Delta Token";
+    public static final String MAIL_SELECT_FIELDS = "id,subject,body,bodyPreview,receivedDateTime,sentDateTime,from,toRecipients,ccRecipients,bccRecipients,replyTo,isRead,hasAttachments,importance,conversationId,uniqueBody";
+    public static final String SELECT_QUERY = "$select";
 
     // Error messages for ExtensionResponse
     public static final String USER_DELETED_ERROR = "Your Microsoft account no longer exists. Please contact your administrator.";
