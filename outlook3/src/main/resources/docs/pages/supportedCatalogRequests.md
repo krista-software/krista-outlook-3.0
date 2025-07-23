@@ -184,7 +184,7 @@ The Outlook Extension supports the following catalog requests.
 
 - **Description**: Accepts label, page number, and page size as input and returns list of mail. Page number, and page
   size are optional input.
-- **Input Parameters**: Currently supports page size and page number between 1 and 15. Default value of page number is 1 and of page size is 15. To fetch subfolder provide folder path such as parent folder followed by '/' followed by child folder in label.
+- **Input Parameters**: Currently, the page size is supported between 1 and 15, and the page number can be between 1 and 100. The default page number is 1, and the default page size is 15. To fetch a subfolder, provide the folder path in the label, using the format: parent folder followed by '/' followed by child folder.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**       |
 |--------------------|--------------------|---------------|-------------------|
