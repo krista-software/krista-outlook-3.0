@@ -1,6 +1,6 @@
-# 📝 Release Notes – Krista Outlook Extension
+# Release Notes – Krista Outlook Extension
 
-## 📦 Version 3.0.7
+## Version 3.0.7
 
 - **Developers**: VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
@@ -9,7 +9,7 @@
 
 ---
 
-## ✅ Resolved Bugs
+## Resolved Bugs
 
 - [**KE-2293**](https://antbrains.atlassian.net/browse/KE-2293):  
   Our outlook extension has limits on the max Page Number and max Page Size parameters for the "Fetch Mails By Label" 
@@ -32,6 +32,6 @@
 
 ---
 
-## ⚠️ Known Issues
+## Known Issues
 
 - None reported.
