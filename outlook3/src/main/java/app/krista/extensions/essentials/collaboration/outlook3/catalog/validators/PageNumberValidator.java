@@ -20,7 +20,7 @@ public class PageNumberValidator implements Validator {
 
     private Boolean isNumberValid(String resourceId) {
         double number = Double.parseDouble(resourceId);
-        return number > 0 && number <= 15;//Maximum limit for Page Number
+        return number > 0;
     }
 
     @Override
@@ -40,13 +40,13 @@ public class PageNumberValidator implements Validator {
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Page number : %s should be greater than 0 and less than or equal to 15.",
+        return String.format("The provided Page number : %s should be greater than 0.",
                 EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 
     @Override
     public String getErrMessage(String resourceId) {
-        return String.format("The provided Page number : %s should be greater than 0 and less than or equal to 15.",
+        return String.format("The provided Page number : %s should be greater than 0.",
                 EntityHelperUtil.removeTrailingZeros(Double.parseDouble(resourceId)));
     }
 

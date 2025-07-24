@@ -29,8 +29,7 @@ public class ValidationResourceUtil {
     public static Map<Validator.ValidationResource, String> prepareValidateFetchInboxMap(Double pageNumber, Double pageSize) {
         Map<Validator.ValidationResource, String> map = new HashMap<>();
 
-        // Add page number to validation map if it's OUTSIDE valid range (1-15 inclusive)
-        if (isNotNull(pageNumber) && (pageNumber < 1 || pageNumber > 15)) {
+        if (isNotNull(pageNumber) && (pageNumber < 1)) {
             map.put(Validator.ValidationResource.PAGE_NUMBER, pageNumber.toString());
         }
 

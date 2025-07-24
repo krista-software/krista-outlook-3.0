@@ -1121,15 +1121,13 @@ public class MessagingArea {
 
         try {
             if (eventName.equalsIgnoreCase(Constants.MAIL_RECEIVED)) {
-                LOGGER.info("Creating/Updating subscription...");
                 String messageId = (String) eventData.get(Constants.MESSAGE_ID);
                 LOGGER.info("Processing Mail for Message Id :  {}", messageId);
 
                 MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageId), null);
 
                 if (mailDetails != null) {
-                    LOGGER.info("Allow Alert Mail Triggered : ID {}, from {}, subject {}, timestamp {}",
-                            mailDetails.messageID, mailDetails.from, mailDetails.subject, new Date(mailDetails.sendDateAndTime));
+                    LOGGER.info("Allow Alert Mail Triggered : ID {}", mailDetails.messageID);
 
                     telemetryHelper.recordSuccess("outlook3.mailReceivedAlert", startTime, Map.of(
                             "message_id", messageId,
@@ -1139,19 +1137,20 @@ public class MessagingArea {
 
                     return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
                 } else {
+                    LOGGER.error("Mail details not available for message id: {}", messageId);
                     telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, new IllegalStateException("Mail details null"), safeTagMap(
                             "message_id", messageId));
-
-                    return ExtensionResponseFactory.create("Mail details not available", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                            List.of(RemediationActionFactory.createInformActionALLParticipants("Mail details not available", List.of())), null, null);
+                    throw new IllegalStateException("Mail details not available");
                 }
             } else {
+                LOGGER.error("Invalid event name: {}", eventName);
                 telemetryHelper.recordValidationError("outlook3.mailReceivedAlert", startTime, "Invalid event name", safeTagMap(
                         "event_name", eventName
                 ));
                 throw new IllegalStateException("Invalid event name");
             }
         } catch (MustAuthorizeException cause) {
+            LOGGER.error("Authorization error: {}", cause.getMessage());
             telemetryHelper.recordValidationError("outlook3.mailReceivedAlert", startTime, cause.getMessage(), safeTagMap(
                     "event_name", eventName
             ));
@@ -1159,9 +1158,7 @@ public class MessagingArea {
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Mail Received Alert:{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, cause, safeTagMap("event_name", eventName));
-            return ExtensionResponseFactory.create("Error occurred while Mail Received Alert", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                    List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Mail Received Alert", List.of())),
-                    null, null);
+            throw new IllegalStateException("Error occurred while Mail Received Alert");
         }
     }
 

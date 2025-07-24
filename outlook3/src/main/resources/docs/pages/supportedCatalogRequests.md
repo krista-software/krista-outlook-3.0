@@ -184,7 +184,7 @@ The Outlook Extension supports the following catalog requests.
 
 - **Description**: Accepts label, page number, and page size as input and returns list of mail. Page number, and page
   size are optional input.
-- **Input Parameters**: Currently supports page size and page number between 1 and 15. Default value of page number is 1 and of page size is 15. To fetch subfolder provide folder path such as parent folder followed by '/' followed by child folder in label.
+- **Input Parameters**: Currently, the page size is supported between 1 and 15. The default page number is 1, and the default page size is 15. To fetch a subfolder, provide the folder path in the label, using the format: parent folder followed by '/' followed by child folder.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**       |
 |--------------------|--------------------|---------------|-------------------|
@@ -284,8 +284,7 @@ The Outlook Extension supports the following catalog requests.
 ### Fetch Sent
 
 - **Description**: Accepts page number, and page size as input and returns list of mails from sent folder.
-- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
-  and of page size is 15.
+- **Input Parameters**: Currently supports page size between 0 and 15. Default value of page number is 1 and of page size is 15.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example** |
 |--------------------|--------------------|---------------|-------------|
@@ -473,10 +472,8 @@ The Outlook Extension supports the following catalog requests.
 
 ### Fetch Inbox
 
-- **Description**: Accepts page number, and page size as input and returns list of mail. Page number, and page size are
-  optional parameters.
-- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is 1
-  and of page size is 15.
+- **Description**: Accepts page number, and page size as input and returns list of mail. Page number, and page size are optional parameters.
+- **Input Parameters**: Currently supports page size between 0 and 15. Default value of page number is 1 and of page size is 15.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example** |
 |--------------------|--------------------|---------------|-------------|
@@ -498,19 +495,18 @@ The Outlook Extension supports the following catalog requests.
 
 - **Error Handling Response**
 
-| **Error Scenario**        | **Condition**                                       | **User Message**                                                                                                        |
-|---------------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| Invalid Page Number       | Page number is 0 or negative                        | "The provided Page number: [pageNumber] should be greater than 0 and less than or equal to 15."                         |
-| Invalid Page Size         | Page size is 0, negative, or greater than 15        | "The provided Page size: [pageSize] should be greater than 0 and less than or equal to 15."                             |
-| Authorization Error       | MustAuthorizeException                              | Handled by AuthorizationExceptionHandler (various messages)                                                             |
-| System Error              | Any other Exception                                 | "Error occurred while fetch inbox."                                                                                     |
-| General Failure           | Multiple conditions                                 | "We couldn't fetch your inbox because the page number or page size is invalid. Please enter a number between 1 and 15." |
+| **Error Scenario**        | **Condition**                                        | **User Message**                                                                                                        |
+|---------------------------|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Invalid Page Number       | Page number is 0 or negative                         | "The provided Page number: [pageNumber] should be greater than 0"                                                       |
+| Invalid Page Size         | Page size is 0, negative, or greater than 15         | "The provided Page size: [pageSize] should be greater than 0 and less than or equal to 15."                             |
+| Authorization Error       | MustAuthorizeException                               | Handled by AuthorizationExceptionHandler (various messages)                                                             |
+| System Error              | Any other Exception                                  | "Error occurred while fetch inbox."                                                                                     |
+| General Failure           | Multiple conditions                                  | "We couldn't fetch your inbox because the page number or page size is invalid. Please enter a number between 1 and 15." |
 
 ### Fetch Inbox With Preferences
 
 - **Description**: This request is used to fetch Inbox emails with the selected preferences.
-- **Input Parameters**: Currently supports page size and page number between 0 and 15. Default value of page number is
-  1, page size is 15 and that of Mail Body is Html.
+- **Input Parameters**: Currently supports page size between 0 and 15. Default value of page number is 1, page size is 15 and that of Mail Body is Html.
 - **Note**: "Mail Body" is a standard key and should not be altered.
 
 | **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**             |

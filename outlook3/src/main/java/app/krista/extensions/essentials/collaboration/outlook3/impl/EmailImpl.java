@@ -54,7 +54,7 @@ public class EmailImpl implements Email {
 
     @Override
     public EmailAddress getSenderEmailAddress() {
-        return message.sender != null ? toEmailAddress(message.sender) : null;
+        return message.from != null ? toEmailAddress(message.from) : null;
     }
 
     @Override
@@ -242,7 +242,7 @@ public class EmailImpl implements Email {
         }
 
         if (Validators.isListNullOrEmpty(to)) {
-            LOGGER.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
+            LOGGER.debug(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
         }
 
@@ -345,7 +345,7 @@ public class EmailImpl implements Email {
 
     private MessageRequestBuilder getMessageRequestBuilder(Boolean useEmail) {
         if (message.id == null || message.id.isEmpty()) {
-            LOGGER.warn("Message id is null or empty");
+            LOGGER.debug("Message id is null or empty");
             return null;
         }
         return provider.getUserRequestBuilder(useEmail, null).messages(message.id);
@@ -353,15 +353,16 @@ public class EmailImpl implements Email {
 
     private EmailAddress toEmailAddress(Recipient recipient) {
         if (recipient == null) {
-            LOGGER.warn(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
+            LOGGER.debug(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             return null;
         }
+        LOGGER.info("toEmailAddress for recipient {}", recipient.emailAddress);
         return recipient.emailAddress != null ? new EmailAddress(recipient.emailAddress.name, recipient.emailAddress.address) : null;
     }
 
     private Recipient toRecipient(EmailAddress emailAddress) {
         if (emailAddress == null) {
-            LOGGER.warn(Constants.EMAIL_ADDRESS_IS_EMPTY_OR_NULL);
+            LOGGER.debug(Constants.EMAIL_ADDRESS_IS_EMPTY_OR_NULL);
             return null;
         }
         Recipient recipient = new Recipient();
