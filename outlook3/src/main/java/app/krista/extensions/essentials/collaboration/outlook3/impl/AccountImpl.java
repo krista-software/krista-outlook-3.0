@@ -1,6 +1,5 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
-import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
@@ -14,7 +13,6 @@ import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.Message;
 import com.microsoft.graph.models.OutlookCategory;
 import com.microsoft.graph.options.HeaderOption;
-import com.microsoft.graph.options.Option;
 import com.microsoft.graph.options.QueryOption;
 import com.microsoft.graph.requests.*;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -182,7 +182,6 @@ public class AccountImpl implements Account {
                             new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
                     )
                     .get();
-
             return new EmailImpl(provider, message);
         } catch (Exception e) {
             LOGGER.error("Error getting email with ID {}: {}", emailId, e.getMessage(), e);
@@ -262,6 +261,8 @@ public class AccountImpl implements Account {
 
     @Override
     public List<String> fetchNotificationDeltaQuery() {
+        OffsetDateTime startOfTodayUtc = OffsetDateTime.now(ZoneOffset.UTC).minusDays(1);
+
         String deltaLink = provider.getDeltaLink();
         LOGGER.info("Search for the existing delta link: {}", deltaLink);
         MessageDeltaCollectionPage deltaCollectionPage = null;
@@ -289,7 +290,14 @@ public class AccountImpl implements Account {
                 LOGGER.info("Skipping deleted message ID: {}", message.id);
                 continue; // Skip deleted message
             }
-            messageIds.add(message.id);
+            OffsetDateTime receivedTime = message.receivedDateTime;
+
+            if (receivedTime != null && !receivedTime.isBefore(startOfTodayUtc)) {
+                messageIds.add(message.id);
+            } else {
+                LOGGER.info("Skipping older message ID: {}", message.id);
+            }
+
         }
 
 
