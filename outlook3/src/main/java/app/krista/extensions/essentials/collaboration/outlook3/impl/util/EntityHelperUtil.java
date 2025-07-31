@@ -1,11 +1,13 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
 
+import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailAddress;
 import app.krista.ksdk.entities.Entities;
 import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
 import app.krista.model.entity.EntityAttributeField;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.logging.Log;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -249,6 +251,117 @@ public class EntityHelperUtil {
             }
         }
         return stringValue;
+    }
+
+    public static String formatMessageWithThread(Email email, String message, String bodyType, String originalDate) {
+        if (message == null) {
+            message = "";
+        }
+
+        String originalContent = formattedMessage(email.getContent(), bodyType);
+        System.out.println(" originalContent ::: " + originalContent);
+        String originalSender = email.getSenderEmailAddress() != null ? formatEmailWithDisplayName(email.getSenderEmailAddress()) : "Unknown Sender";
+        String originalTo = formatEmailListWithDisplayNames(email.getToEmailAddresses());
+        String originalSubject = email.getSubject();
+
+        if (Constants.HTML.equals(bodyType)) {
+            return formatHtmlThreadMessage(message, originalContent, originalSender, originalTo, originalSubject, originalDate);
+        } else {
+            return formatTextThreadMessage(message, originalContent, originalSender, originalTo, originalSubject, originalDate);
+        }
+    }
+
+    private static String formatEmailWithDisplayName(EmailAddress emailAddress) {
+        String name = emailAddress.getName();
+        String email = emailAddress.getMailAddress();
+        if (name != null && !name.trim().isEmpty() && email != null && !email.trim().isEmpty()) {
+            return name + " <" + email + ">";
+        }
+        return email != null ? email : (name != null ? name : "Unknown");
+    }
+
+    private static String formatEmailListWithDisplayNames(List<EmailAddress> emails) {
+        if (emails == null || emails.isEmpty()) {
+            return Constants.EMPTY_STRING;
+        }
+        StringBuilder emailString = new StringBuilder();
+        for (EmailAddress email : emails) {
+            if (emailString.length() > 0) {
+                emailString.append(", ");
+            }
+            emailString.append(formatEmailWithDisplayName(email));
+        }
+        return emailString.toString();
+    }
+
+    private static String formatHtmlThreadMessage(String newMessage, String originalContent, String originalSender,
+                                                  String originalTo, String originalSubject, String originalDate) {
+        originalContent = originalContent.replaceAll("(?m)^\\s*$\\n", "");
+        originalContent = originalContent.replaceAll("(?i)(<br\\s*/?>\\s*){2,}", "<br>");
+        originalContent = originalContent.replaceAll("(?i)(</?br\\s*/?>\\s*){2,}", "<br>");
+        return newMessage +
+                "<br>" +
+                "<hr style='border: 1px solid #ccc;'>" +
+                "<b>From:</b> " + escapeAngleBrackets(originalSender) + "<br>" +
+                "<b>Sent:</b> " + originalDate + "<br>" +
+                "<b>To:</b> " + escapeAngleBrackets(originalTo) + "<br>" +
+                "<b>Subject:</b> " + escapeAngleBrackets(originalSubject) + "<br><br>" +
+                originalContent;
+    }
+
+    private static String escapeAngleBrackets(String input) {
+        if (input == null) return "";
+        return input.replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private static String formatTextThreadMessage(String newMessage, String originalContent,
+                                                  String originalSender, String originalTo,
+                                                  String originalSubject, String originalDate) {
+        StringBuilder threadMessage = new StringBuilder();
+        String newMsg = newMessage == null ? "" : newMessage.trim();
+
+        if (!newMsg.isEmpty()) {
+            threadMessage.append(newMsg).append("\n\n");
+        }
+        threadMessage.append("-----Original Message-----\n");
+        threadMessage.append("From: ").append(originalSender).append("\n");
+        threadMessage.append("Sent: ").append(originalDate).append("\n");
+        threadMessage.append("To: ").append(originalTo).append("\n");
+        threadMessage.append("Subject: ").append(originalSubject).append("\n\n");
+
+        String origContent = cleanOriginalContent(originalContent);
+        threadMessage.append(origContent);
+        return threadMessage.toString();
+    }
+
+    private static String cleanOriginalContent(String originalContent) {
+        if (originalContent == null) {
+            return "";
+        }
+
+        String cleaned = originalContent.trim();
+        cleaned = cleaned.replaceAll("(?i)<br\\s*/?>", "\n")
+                .replaceAll("(?i)<[^>]+>", "")
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&amp;", "&")
+                .replaceAll("&quot;", "\"");
+
+        cleaned = cleaned.replaceAll("(?m)(\\S)(From:)", "$1\n$2");     // Insert newline if From: appears immediately after text
+        cleaned = cleaned.replaceAll("(?m)\n?(From:)", "\n\n$1");       // Ensure there's a blank line before every From:
+        cleaned = cleaned.replaceAll("\\n{3,}", "\n\n");                // Normalize any 3+ newlines
+        cleaned = cleaned.replaceAll("(?m)^\\s+", "").replaceAll("(?m)\\s+$", "").trim();
+
+        int originalMessageIndex = cleaned.indexOf("-----Original Message-----");
+        if (originalMessageIndex > 0) {
+            cleaned = cleaned.substring(0, originalMessageIndex).trim();
+        }
+        return cleaned;
+    }
+
+    public static String mapWindowsTimeZoneToJava(String windowsTimeZone) {
+        return WINDOWS_TO_IANA.getOrDefault(windowsTimeZone, "UTC");
     }
 
 }

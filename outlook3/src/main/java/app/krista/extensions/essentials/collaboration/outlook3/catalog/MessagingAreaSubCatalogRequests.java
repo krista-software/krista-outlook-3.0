@@ -213,7 +213,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToAllWithFields(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -236,7 +236,7 @@ public class MessagingAreaSubCatalogRequests {
     @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToAllWithFields(
-            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }") Map<String, Object> map
     ) {
         LOGGER.info("SubCatalogRequest handleReenterReplayToALLWithCcBcc start: {}", map);
         try {
@@ -248,8 +248,9 @@ public class MessagingAreaSubCatalogRequests {
             String to = (String) map.get(OutlookResources.TO);
             String bcc = (String) map.get(OutlookResources.BCC);
             String replyTo = (String) map.get(OutlookResources.REPLY_TO);
+            Boolean includeEmailThread = (Boolean) map.get(OutlookResources.INCLUDE_EMAIL_THREAD);
 
-            return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+            return messagingAreaImpl.replyToAllWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType, includeEmailThread);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc and Bcc",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
@@ -263,7 +264,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToAll(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -286,7 +287,7 @@ public class MessagingAreaSubCatalogRequests {
     @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToAll(
-            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }") Map<String, Object> map
     ) {
         LOGGER.info("SubCatalogRequest handleReenterReplyToALL start: {}", map);
         try {
@@ -294,8 +295,9 @@ public class MessagingAreaSubCatalogRequests {
             String messageId = (String) map.get(OutlookResources.MESSAGE_ID);
             String bodyType = (String) map.get(OutlookResources.BODY_TYPE);
             String message = (String) map.get(OutlookResources.MESSAGE);
+            Boolean includeEmailThread = (Boolean) map.get(OutlookResources.INCLUDE_EMAIL_THREAD);
 
-            return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
+            return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType, includeEmailThread);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Failed to Reply all Message",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
@@ -309,7 +311,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterForwardMail(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -330,7 +332,7 @@ public class MessagingAreaSubCatalogRequests {
             type = CatalogRequest.Type.CHANGE_SYSTEM)
     @Field(name = "Is Forwarded", type = "Switch", required = false)
     public app.krista.extension.executor.ExtensionResponse handleReenterForwardMail(
-            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }") Map<String, Object> map
     ) {
         LOGGER.info("SubCatalogRequest handleReenterForwardMail start: {}", map);
         try {
@@ -339,8 +341,9 @@ public class MessagingAreaSubCatalogRequests {
             String to = (String) map.get(OutlookResources.TO);
             String bodyType = (String) map.get(OutlookResources.BODY_TYPE);
             String message = (String) map.get(OutlookResources.MESSAGE);
+            Boolean includeEmailThread = (Boolean) map.get(OutlookResources.INCLUDE_EMAIL_THREAD);
 
-            return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
+            return messagingAreaImpl.forwardMail(messageId, to, message, bodyType, includeEmailThread);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "We couldn't forward the email because the message ID or " +
                             "recipient email address seems to be incorrect. Please double-check and try again.",
@@ -503,7 +506,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToMailWithFields(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -526,7 +529,7 @@ public class MessagingAreaSubCatalogRequests {
     @Field(name = "Message", type = "Text", required = false, attributes = {}, options = {})
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToMailWithFields(
-            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }") Map<String, Object> map
     ) {
         LOGGER.info("SubCatalogRequest handleReenterReplayToMailWithCcBcc start: {}", map);
         try {
@@ -538,8 +541,9 @@ public class MessagingAreaSubCatalogRequests {
             String to = (String) map.get(OutlookResources.TO);
             String bcc = (String) map.get(OutlookResources.BCC);
             String replyTo = (String) map.get(OutlookResources.REPLY_TO);
+            Boolean includeEmailThread = (Boolean) map.get(OutlookResources.INCLUDE_EMAIL_THREAD);
 
-            return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+            return messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType, includeEmailThread);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Failed to Reply Mail With CC and BCC",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);
@@ -554,7 +558,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToMail(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -577,7 +581,7 @@ public class MessagingAreaSubCatalogRequests {
     @Field(name = "Message", type = "Text", required = false)
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToMail(
-            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
+            @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML), Include Email Thread : Boolean }") Map<String, Object> map
     ) {
         LOGGER.info("SubCatalogRequest handleReenterReplayToMail start: {}", map);
         try {
@@ -585,8 +589,9 @@ public class MessagingAreaSubCatalogRequests {
             String messageID = (String) map.get(OutlookResources.MESSAGE_ID);
             String bodyType = (String) map.get(OutlookResources.BODY_TYPE);
             String message = (String) map.get(OutlookResources.MESSAGE);
+            Boolean includeEmailThread = (Boolean) map.get(OutlookResources.INCLUDE_EMAIL_THREAD);
 
-            return messagingAreaImpl.replyToMail(attachments, messageID, bodyType, message);
+            return messagingAreaImpl.replyToMail(attachments, messageID, bodyType, message, includeEmailThread);
         } catch (Exception cause) {
             return ExtensionResponseFactory.create(cause, "Failed to Reply Mail",
                     ExtensionResponse.Error.ExceptionType.LOGIC_ERROR);

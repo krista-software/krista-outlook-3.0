@@ -4,6 +4,7 @@ import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.FieldTypes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.extresp.OutlookResources;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,8 @@ public class MessageIdValidator implements Validator {
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
         try {
-            account.getEmail(resourceId);
-            return true;
+            Email email = account.getEmail(resourceId);
+            return email != null && email.getEmailId() != null;
         } catch (MustAuthorizeException cause) {
             logger.error("Exception thrown while authorizing user : {} {}", cause.getMessage(), cause);
             throw cause;

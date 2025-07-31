@@ -15,7 +15,7 @@ public class StateMapperUtil {
     }
 
     @NotNull
-    public static Map<String, Object> addReplyToALLFieldsMetaToMap(String messageId, String to, String cc, String bcc, String replyTo, String message, List<File> attachments, String bodyType, String stateId) {
+    public static Map<String, Object> addReplyToALLFieldsMetaToMap(String messageId, String to, String cc, String bcc, String replyTo, String message, List<File> attachments, String bodyType, String stateId, Boolean includeEmailThread) {
         Map<String, Object> metaData = new LinkedHashMap<>();
         metaData.put(OutlookResources.STATE_ID, stateId);
         metaData.put(OutlookResources.MESSAGE_ID, messageId);
@@ -26,30 +26,33 @@ public class StateMapperUtil {
         metaData.put(OutlookResources.MESSAGE, message);
         metaData.put(OutlookResources.ATTACHMENTS, attachments);
         metaData.put(OutlookResources.BODY_TYPE, bodyType);
+        metaData.put(OutlookResources.INCLUDE_EMAIL_THREAD, bodyType);
 
         return metaData;
     }
 
     @NotNull
-    public static Map<String, Object> addReplyToALLMetaToMap(String messageId, String message, List<File> attachments, String bodyType, String stateId) {
+    public static Map<String, Object> addReplyToALLMetaToMap(String messageId, String message, List<File> attachments, String bodyType, String stateId,Boolean includeEmailThread) {
         Map<String, Object> metaData = new LinkedHashMap<>();
         metaData.put(OutlookResources.STATE_ID, stateId);
         metaData.put(OutlookResources.MESSAGE_ID, messageId);
         metaData.put(OutlookResources.MESSAGE, message);
         metaData.put(OutlookResources.ATTACHMENTS, attachments);
         metaData.put(OutlookResources.BODY_TYPE, bodyType);
+        metaData.put(OutlookResources.INCLUDE_EMAIL_THREAD, includeEmailThread);
 
         return metaData;
     }
 
     @NotNull
-    public static Map<String, Object> addForwardMailMetaToMap(String messageId, String message, String to, String bodyType, String stateId) {
+    public static Map<String, Object> addForwardMailMetaToMap(String messageId, String message, String to, String bodyType, String stateId, Boolean includeEmailThread) {
         Map<String, Object> metaData = new LinkedHashMap<>();
         metaData.put(OutlookResources.STATE_ID, stateId);
         metaData.put(OutlookResources.MESSAGE_ID, messageId);
         metaData.put(OutlookResources.MESSAGE, message);
         metaData.put(OutlookResources.TO, to);
         metaData.put(OutlookResources.BODY_TYPE, bodyType);
+        metaData.put(OutlookResources.INCLUDE_EMAIL_THREAD, includeEmailThread);
 
         return metaData;
     }

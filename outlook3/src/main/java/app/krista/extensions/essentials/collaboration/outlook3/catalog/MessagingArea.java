@@ -265,7 +265,8 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType,
+            @Field.Boolean(name = "Include Email Thread", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean includeEmailThread) {
 
         long startTime = System.currentTimeMillis();
         try {
@@ -287,7 +288,7 @@ public class MessagingArea {
                                 "body_type", bodyType));
 
                 return messagingAreaImpl.replyToAllWithCCAndBCC(
-                        attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+                        attachments, messageId, to, cc, bcc, replyTo, message, bodyType, includeEmailThread);
             } else {
                 telemetryHelper.recordRetryPrompted("outlook3.replyToAllWithCCAndBCC", startTime,
                         TelemetryHelper.safeTagMap("message_id", messageId,
@@ -301,7 +302,7 @@ public class MessagingArea {
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                         validationResults,
                         SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS,
-                        StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                        StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId, includeEmailThread));
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.replyToAllWithCCAndBCC", startTime, cause.getMessage(),
@@ -332,7 +333,8 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType,
+            @Field.Boolean(name = "Include Email Thread", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean includeEmailThread) {
 
         long startTime = System.currentTimeMillis();
         try {
@@ -346,7 +348,7 @@ public class MessagingArea {
             if (validationResults.isEmpty()) {
                 telemetryHelper.recordSuccess("outlook3.replyToAll", startTime,
                         TelemetryHelper.safeTagMap("message_id", messageId));
-                return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
+                return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType, includeEmailThread);
             } else {
                 telemetryHelper.recordRetryPrompted("outlook3.replyToAll", startTime,
                         TelemetryHelper.safeTagMap("message_id", messageId, "validation_count", String.valueOf(validationResults.size())));
@@ -359,7 +361,7 @@ public class MessagingArea {
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                         SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL,
-                        StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
+                        StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId, includeEmailThread));
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.replyToAll", startTime, cause.getMessage(),
@@ -452,7 +454,8 @@ public class MessagingArea {
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "To", type = "Text") String to,
             @Field(name = "Message", type = "RichText", required = false) String message,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType,
+            @Field.Boolean(name = "Include Email Thread", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean includeEmailThread) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.forwardMail");
@@ -463,7 +466,7 @@ public class MessagingArea {
             if (validationResults.isEmpty()) {
                 telemetryHelper.recordSuccess("outlook3.forwardMail", startTime,
                         safeTagMap("message_id", messageId, "to", to));
-                return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
+                return messagingAreaImpl.forwardMail(messageId, to, message, bodyType, includeEmailThread);
             } else {
                 telemetryHelper.recordRetryPrompted("outlook3.forwardMail", startTime,
                         safeTagMap("message_id", messageId, "to", to,
@@ -472,7 +475,7 @@ public class MessagingArea {
                 internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
                 return responseGenerator.generateConfirmationResponse(
                         ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL,
-                        StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
+                        StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId, includeEmailThread));
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.forwardMail", startTime, cause.getMessage(),
@@ -845,7 +848,8 @@ public class MessagingArea {
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType,
+            @Field.Boolean(name = "Include Email Thread", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean includeEmailThread) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.replyToMailWithCCAndBCC");
@@ -862,7 +866,7 @@ public class MessagingArea {
                             Validator.ValidationResource.REPLY_TO, validateString(replyTo)));
 
             if (validationResults.isEmpty()) {
-                ExtensionResponse response = messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
+                ExtensionResponse response = messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType, includeEmailThread);
                 telemetryHelper.recordSuccess("outlook3.replyToMailWithCCAndBCC", startTime, Map.of(
                         "message_id", messageId,
                         "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty()),
@@ -884,7 +888,7 @@ public class MessagingArea {
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS,
-                    StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                    StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId, includeEmailThread));
 
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.replyToMailWithCCAndBCC", startTime, cause.getMessage(), safeTagMap("message_id", messageId));
@@ -909,7 +913,8 @@ public class MessagingArea {
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType,
+            @Field.Boolean(name = "Include Email Thread", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean includeEmailThread) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.replyToMail");
@@ -921,7 +926,7 @@ public class MessagingArea {
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
             if (validationResults.isEmpty()) {
-                ExtensionResponse response = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+                ExtensionResponse response = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType, includeEmailThread);
                 telemetryHelper.recordSuccess("outlook3.replyToMail", startTime, Map.of(
                         "message_id", messageID,
                         "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty())
@@ -942,7 +947,7 @@ public class MessagingArea {
             return responseGenerator.generateConfirmationResponse(
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
                     SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL,
-                    StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+                    StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId, includeEmailThread));
 
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.replyToMail", startTime, cause.getMessage(), safeTagMap("message_id", messageID));
@@ -1165,7 +1170,7 @@ public class MessagingArea {
     @CatalogRequest(
             id = "localDomainRequest_90b24da6-d02f-4fcb-9632-ef8e6ae1550a",
             name = "Fetch Latest Mail",
-            description = "Returns the latest email received, in the last two minutes",
+            description = "Returns the latest email received",
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
@@ -1178,24 +1183,12 @@ public class MessagingArea {
             List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
             MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
 
-            if (mailDetails != null && mailDetails.sendDateAndTime != null) {
-                long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
-                if (change <= 120_000) {
-                    telemetryHelper.recordSuccess("outlook3.fetchLatestMail", startTime, Map.of(
-                            "message_id", mailDetails.messageID,
-                            "subject", mailDetails.subject,
-                            "age_ms", String.valueOf(change)
-                    ));
-                    return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
-                } else {
-                    telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, new IllegalStateException("Mail too old"), safeTagMap(
-                            "message_id", mailDetails.messageID,
-                            "subject", mailDetails.subject,
-                            "age_ms", String.valueOf(change)
-                    ));
-                    return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                            List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())), null, null);
-                }
+            if (mailDetails != null) {
+                telemetryHelper.recordSuccess("outlook3.fetchLatestMail", startTime, Map.of(
+                        "message_id", mailDetails.messageID,
+                        "subject", mailDetails.subject
+                ));
+                return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
             } else {
                 telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, new IllegalStateException("No mail found"), Map.of());
                 return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,

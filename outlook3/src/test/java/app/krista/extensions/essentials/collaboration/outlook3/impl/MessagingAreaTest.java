@@ -132,7 +132,7 @@ public class MessagingAreaTest {
                 telemetryHelper
         );
 
-        messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
+        messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry,providerFactory);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class MessagingAreaTest {
         List<File> attachments = null;
         Email email = mock(EmailImpl.class, withSettings().stubOnly());
         when(account.getEmail(messageID)).thenReturn(email);
-        ExtensionResponse response4 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
+        ExtensionResponse response4 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType, false);
         assertEquals(response4.getResponseValue().get("Is Successful"), true);
     }
 
@@ -164,13 +164,13 @@ public class MessagingAreaTest {
         String to = null;
         String message = null;
         String bodyType = "HTML";
-        ExtensionResponse response1 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType);
+        ExtensionResponse response1 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType,false);
         assertEquals(response1.getResponseValue().get("Is Forwarded"), false);
         messageID = "";
-        ExtensionResponse response2 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType);
+        ExtensionResponse response2 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType,false);
         assertEquals(response2.getResponseValue().get("Is Forwarded"), false);
         messageID = "   ";
-        ExtensionResponse response3 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType);
+        ExtensionResponse response3 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType,false);
         assertEquals(response3.getResponseValue().get("Is Forwarded"), false);
     }
 
@@ -193,13 +193,13 @@ public class MessagingAreaTest {
         String message = null;
         List<File> attachments = null;
         String bodyType = "HTML";
-        ExtensionResponse response1 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+        ExtensionResponse response1 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType,false);
         assertEquals(response1.getResponseValue().get("Message"), "Invalid message id");
         messageID = "";
-        ExtensionResponse response2 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+        ExtensionResponse response2 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType,false);
         assertEquals(response2.getResponseValue().get("Message"), "Invalid message id");
         messageID = "  ";
-        ExtensionResponse response3 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
+        ExtensionResponse response3 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType,false);
         assertEquals(response3.getResponseValue().get("Message"), "Invalid message id");
     }
 

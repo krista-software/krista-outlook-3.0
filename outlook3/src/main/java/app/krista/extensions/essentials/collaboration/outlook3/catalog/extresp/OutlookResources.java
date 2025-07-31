@@ -27,4 +27,5 @@ public class OutlookResources {
     public static final String PAGE_SIZE = "Page Size";
     public static final String CREATE_CATEGORY = "Create Category";
     public static final String PREFERENCE = "Preference";
+    public static final String INCLUDE_EMAIL_THREAD = "Include Email Thread";
 }
