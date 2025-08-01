@@ -318,7 +318,7 @@ public class EntityHelperUtil {
                                                   String originalSender, String originalTo,
                                                   String originalSubject, String originalDate) {
         StringBuilder threadMessage = new StringBuilder();
-        String newMsg = newMessage == null ? "" : newMessage.trim();
+        String newMsg = newMessage == null ? "" : cleanOriginalContent(newMessage.trim());
 
         if (!newMsg.isEmpty()) {
             threadMessage.append(newMsg).append("\n\n");
