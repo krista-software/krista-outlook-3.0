@@ -30,12 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
-import app.krista.model.base.EntityValue;
 
 /**
  * Tests for the MessagingArea implementation.
@@ -145,7 +143,6 @@ public class MessagingAreaTest {
         assertTrue(allLabels.contains("Archive"));
     }
 
-
     @Test
     public void testReplyToAll() {
         String messageID = UUID.randomUUID().toString();
@@ -154,8 +151,11 @@ public class MessagingAreaTest {
         List<File> attachments = null;
         Email email = mock(EmailImpl.class, withSettings().stubOnly());
         when(account.getEmail(messageID)).thenReturn(email);
-        ExtensionResponse response4 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType, false);
-        assertEquals(response4.getResponseValue().get("Is Successful"), true);
+        ExtensionResponse response = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
+        assertEquals(ExtensionResponse.Result.FAILURE, response.getResult());
+        assertNotNull(response.getError());
+        String errorJson = response.getError().toString();
+        assertTrue(errorJson.contains("\"errorMessage\": \"Failed to reply all\""));
     }
 
     @Test
@@ -164,13 +164,13 @@ public class MessagingAreaTest {
         String to = null;
         String message = null;
         String bodyType = "HTML";
-        ExtensionResponse response1 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType,false);
+        ExtensionResponse response1 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType);
         assertEquals(response1.getResponseValue().get("Is Forwarded"), false);
         messageID = "";
-        ExtensionResponse response2 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType,false);
+        ExtensionResponse response2 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType);
         assertEquals(response2.getResponseValue().get("Is Forwarded"), false);
         messageID = "   ";
-        ExtensionResponse response3 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType,false);
+        ExtensionResponse response3 = messagingAreaImpl.forwardMail(messageID, to, message, bodyType);
         assertEquals(response3.getResponseValue().get("Is Forwarded"), false);
     }
 
@@ -193,13 +193,13 @@ public class MessagingAreaTest {
         String message = null;
         List<File> attachments = null;
         String bodyType = "HTML";
-        ExtensionResponse response1 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType,false);
+        ExtensionResponse response1 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
         assertEquals(response1.getResponseValue().get("Message"), "Invalid message id");
         messageID = "";
-        ExtensionResponse response2 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType,false);
+        ExtensionResponse response2 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
         assertEquals(response2.getResponseValue().get("Message"), "Invalid message id");
         messageID = "  ";
-        ExtensionResponse response3 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType,false);
+        ExtensionResponse response3 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
         assertEquals(response3.getResponseValue().get("Message"), "Invalid message id");
     }
 

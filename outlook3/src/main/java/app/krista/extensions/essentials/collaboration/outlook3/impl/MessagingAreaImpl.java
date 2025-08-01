@@ -59,7 +59,7 @@ public class MessagingAreaImpl {
     }
 
 
-    public ExtensionResponse replyToAllWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType, Boolean includeEmailThread) {
+    public ExtensionResponse replyToAllWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType) {
         try {
             Email email = account.getEmail(messageId);
             if (email == null) {
@@ -69,12 +69,8 @@ public class MessagingAreaImpl {
                         null, Map.of());
             }
             bodyType = getBodyType(bodyType);
-            if (includeEmailThread) {
-                String originalDate = getReceivedDateAndTime(email);
-                message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
-            } else {
-                message = getFormattedMessage(message, bodyType);
-            }
+            String originalDate = getReceivedDateAndTime(email);
+            message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
             LOGGER.info(SENDING_MESSAGE, message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
@@ -95,7 +91,7 @@ public class MessagingAreaImpl {
                     .get();
         } catch (IOException cause) {
             LOGGER.error("Failed to get user mailbox settings: {}", cause.getMessage(), cause);
-            throw new RuntimeException(cause);
+            return null;
         }
 
         String javaTimeZone = EntityHelperUtil.mapWindowsTimeZoneToJava(
@@ -109,7 +105,7 @@ public class MessagingAreaImpl {
         return formatter.format(zonedDateTime);
     }
 
-    public ExtensionResponse replyToAll(List<File> attachments, String messageId, String message, String bodyType, Boolean includeEmailThread) {
+    public ExtensionResponse replyToAll(List<File> attachments, String messageId, String message, String bodyType) {
         try {
             Email email = account.getEmail(messageId);
             if (email == null) {
@@ -119,12 +115,8 @@ public class MessagingAreaImpl {
                         null, Map.of());
             }
             bodyType = getBodyType(bodyType);
-            if (includeEmailThread) {
-                String originalDate = getReceivedDateAndTime(email);
-                message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
-            } else {
-                message = getFormattedMessage(message, bodyType);
-            }
+            String originalDate = getReceivedDateAndTime(email);
+            message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
             LOGGER.info(SENDING_MESSAGE, message);
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
@@ -135,7 +127,7 @@ public class MessagingAreaImpl {
         }
     }
 
-    public ExtensionResponse forwardMail(String messageId, String to, String message, String bodyType, Boolean includeEmailThread) {
+    public ExtensionResponse forwardMail(String messageId, String to, String message, String bodyType) {
         try {
             LOGGER.info("Forwarding mail with messageId: {}; to {}; with message: {}", messageId, to, message);
 
@@ -147,12 +139,8 @@ public class MessagingAreaImpl {
                 return ExtensionResponseFactory.create(Map.of(Constants.IS_FORWARDED, false));
             }
             bodyType = getBodyType(bodyType);
-            if (includeEmailThread) {
-                String originalDate = getReceivedDateAndTime(email);
-                message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
-            } else {
-                message = getFormattedMessage(message, bodyType);
-            }
+            String originalDate = getReceivedDateAndTime(email);
+            message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
             LOGGER.info(SENDING_MESSAGE, message);
             email.forward(message, toEmailAddresses(to), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_FORWARDED, true));
@@ -262,7 +250,7 @@ public class MessagingAreaImpl {
     }
 
 
-    public ExtensionResponse replyToMailWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType, Boolean includeEmailThread) {
+    public ExtensionResponse replyToMailWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType) {
         try {
             Email email = account.getEmail(messageId);
             if (email == null) {
@@ -271,12 +259,8 @@ public class MessagingAreaImpl {
                         null, Map.of());
             }
             bodyType = getBodyType(bodyType);
-            if (includeEmailThread) {
-                String originalDate = getReceivedDateAndTime(email);
-                message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
-            } else {
-                message = getFormattedMessage(message, bodyType);
-            }
+            String originalDate = getReceivedDateAndTime(email);
+            message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
             LOGGER.info(SENDING_MESSAGE, message);
             email.replyText(message, mailHandler.toAttachment(attachments), toEmailAddresses(to), toEmailAddresses(cc),
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
@@ -294,19 +278,15 @@ public class MessagingAreaImpl {
         }
     }
 
-    public ExtensionResponse replyToMail(List<File> attachments, String messageId, String message, String bodyType, Boolean includeEmailThread) {
+    public ExtensionResponse replyToMail(List<File> attachments, String messageId, String message, String bodyType) {
         try {
             Email email = account.getEmail(messageId);
             if (email == null) {
                 return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.INVALID_MESSAGE_ID));
             }
             bodyType = getBodyType(bodyType);
-            if (includeEmailThread) {
-                String originalDate = getReceivedDateAndTime(email);
-                message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
-            } else {
-                message = getFormattedMessage(message, bodyType);
-            }
+            String originalDate = getReceivedDateAndTime(email);
+            message = EntityHelperUtil.formatMessageWithThread(email, message, bodyType, originalDate);
             LOGGER.info(SENDING_MESSAGE, message);
             email.replyText(message, mailHandler.toAttachment(attachments), bodyType);
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
