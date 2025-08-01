@@ -7,7 +7,6 @@ import app.krista.model.base.EntityValue;
 import app.krista.model.base.File;
 import app.krista.model.entity.EntityAttributeField;
 import com.google.gson.reflect.TypeToken;
-import org.apache.commons.logging.Log;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -259,7 +258,6 @@ public class EntityHelperUtil {
         }
 
         String originalContent = formattedMessage(email.getContent(), bodyType);
-        System.out.println(" originalContent ::: " + originalContent);
         String originalSender = email.getSenderEmailAddress() != null ? formatEmailWithDisplayName(email.getSenderEmailAddress()) : "Unknown Sender";
         String originalTo = formatEmailListWithDisplayNames(email.getToEmailAddresses());
         String originalSubject = email.getSubject();
