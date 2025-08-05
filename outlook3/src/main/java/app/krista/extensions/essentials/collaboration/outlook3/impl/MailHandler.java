@@ -72,15 +72,7 @@ public class MailHandler {
 
     public File toKristaFiles(java.io.File file) {
         long fileSize = file.length();
-        if (fileSize == 0) {
-            LOGGER.debug("File is empty: {}", file.getName());
-        }
-        // Check for reasonable file size limits (e.g., 50MB)
-        if (fileSize > 50 * 1024 * 1024) {
-            LOGGER.debug("Large file detected: fileName={}, size={}MB", file.getName(), fileSize / (1024 * 1024));
-        }
         LOGGER.debug("Converting file to Krista format: fileName={}, size={} bytes", file.getName(), fileSize);
-
         try {
             return kristaMediaClient.toKristaFile(file);
         } catch (IOException cause) {
