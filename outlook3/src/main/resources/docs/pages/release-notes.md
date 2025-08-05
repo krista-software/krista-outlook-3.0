@@ -11,9 +11,6 @@
 
 ## Resolved Bugs
 
-- [**KE-2343**](https://antbrains.atlassian.net/browse/KE-2343):  
-  Outlook 4.0: Make changes to make it compatible with EF4
-
 - [**KE-2358**](https://antbrains.atlassian.net/browse/KE-2358):  
   Outlook extension Paging occasionally fails on when iterating over pages - Fetch Mails By Label request
 
