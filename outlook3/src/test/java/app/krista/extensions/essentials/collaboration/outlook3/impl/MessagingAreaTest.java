@@ -30,12 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
-import app.krista.model.base.EntityValue;
 
 /**
  * Tests for the MessagingArea implementation.
@@ -132,7 +130,7 @@ public class MessagingAreaTest {
                 telemetryHelper
         );
 
-        messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry);
+        messagingAreaImpl = new MessagingAreaImpl(account, mailHandler, registry,providerFactory);
     }
 
     @Test
@@ -145,7 +143,6 @@ public class MessagingAreaTest {
         assertTrue(allLabels.contains("Archive"));
     }
 
-
     @Test
     public void testReplyToAll() {
         String messageID = UUID.randomUUID().toString();
@@ -154,8 +151,11 @@ public class MessagingAreaTest {
         List<File> attachments = null;
         Email email = mock(EmailImpl.class, withSettings().stubOnly());
         when(account.getEmail(messageID)).thenReturn(email);
-        ExtensionResponse response4 = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
-        assertEquals(response4.getResponseValue().get("Is Successful"), true);
+        ExtensionResponse response = messagingAreaImpl.replyToAll(attachments, messageID, message, bodyType);
+        assertEquals(ExtensionResponse.Result.FAILURE, response.getResult());
+        assertNotNull(response.getError());
+        String errorJson = response.getError().toString();
+        assertTrue(errorJson.contains("\"errorMessage\": \"Failed to reply all\""));
     }
 
     @Test

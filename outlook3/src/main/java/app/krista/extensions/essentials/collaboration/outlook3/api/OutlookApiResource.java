@@ -193,7 +193,8 @@ public final class OutlookApiResource {
             clientProvider.getUserRequestBuilder(null, null).mailFolders().buildRequest().get();
             return true;
         } catch (GraphServiceException cause) {
-            LOGGER.debug(cause.getMessage(), cause);
+            LOGGER.error(" User access verification failed. User does not have permission to access Microsoft Graph or " +
+                    "authentication is invalid : {}", cause.getMessage(), cause);
             return false;
         }
     }
@@ -304,7 +305,7 @@ public final class OutlookApiResource {
                     ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
                     : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
         } catch (Exception cause) {
-            LOGGER.debug(FAILED_TO_SAVE_ATTRIBUTES);
+            LOGGER.error(FAILED_TO_SAVE_ATTRIBUTES + ": {} ", cause.getMessage(), cause);
             return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
         } finally {
             outlookAttributeStore.remove(authContextId);

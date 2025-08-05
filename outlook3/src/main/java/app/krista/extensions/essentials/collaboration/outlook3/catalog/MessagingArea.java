@@ -1165,7 +1165,7 @@ public class MessagingArea {
     @CatalogRequest(
             id = "localDomainRequest_90b24da6-d02f-4fcb-9632-ef8e6ae1550a",
             name = "Fetch Latest Mail",
-            description = "Returns the latest email received, in the last two minutes",
+            description = "Returns the latest email received",
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "New Email", type = "Entity(Mail Details)", required = false)
@@ -1178,24 +1178,12 @@ public class MessagingArea {
             List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
             MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
 
-            if (mailDetails != null && mailDetails.sendDateAndTime != null) {
-                long change = System.currentTimeMillis() - mailDetails.sendDateAndTime;
-                if (change <= 120_000) {
-                    telemetryHelper.recordSuccess("outlook3.fetchLatestMail", startTime, Map.of(
-                            "message_id", mailDetails.messageID,
-                            "subject", mailDetails.subject,
-                            "age_ms", String.valueOf(change)
-                    ));
-                    return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
-                } else {
-                    telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, new IllegalStateException("Mail too old"), safeTagMap(
-                            "message_id", mailDetails.messageID,
-                            "subject", mailDetails.subject,
-                            "age_ms", String.valueOf(change)
-                    ));
-                    return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
-                            List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Fetch Latest Mail", List.of())), null, null);
-                }
+            if (mailDetails != null) {
+                telemetryHelper.recordSuccess("outlook3.fetchLatestMail", startTime, Map.of(
+                        "message_id", mailDetails.messageID,
+                        "subject", mailDetails.subject
+                ));
+                return ExtensionResponseFactory.create(Map.of("New Email", mailDetails));
             } else {
                 telemetryHelper.recordError("outlook3.fetchLatestMail", startTime, new IllegalStateException("No mail found"), Map.of());
                 return ExtensionResponseFactory.create("Error occurred while Fetch Latest Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,

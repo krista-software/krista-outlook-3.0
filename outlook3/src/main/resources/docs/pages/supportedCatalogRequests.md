@@ -530,7 +530,7 @@ The Outlook Extension supports the following catalog requests.
 
 ### Fetch Latest Mail
 
-- **Description**: Returns the latest email received, in the last two minutes
+- **Description**: Returns the latest email received
 - **Input Parameters**: NA
 
 - **Output Parameters**:

@@ -10,7 +10,6 @@ import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.MailFolderMoveParameterSet;
 import com.microsoft.graph.models.Message;
 import com.microsoft.graph.options.HeaderOption;
-import com.microsoft.graph.options.Option;
 import com.microsoft.graph.options.QueryOption;
 import com.microsoft.graph.requests.*;
 import org.jetbrains.annotations.Nullable;
@@ -161,8 +160,8 @@ public class FolderImpl implements Folder {
                     .top(top).skip(skip).get();
             return (messages == null || messages.getCurrentPage() == null) ? List.of()
                     : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
-        } catch (Exception e) {
-            LOGGER.error("Error retrieving paginated emails: {}", e.getMessage(), e);
+        } catch (Exception cause) {
+            LOGGER.error("Error retrieving paginated emails: {}", cause.getMessage(), cause);
             return List.of();
         }
     }
@@ -182,8 +181,8 @@ public class FolderImpl implements Folder {
                     .top(top).skip(skip).get();
             return (messages == null || messages.getCurrentPage() == null) ? List.of()
                     : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
-        } catch (Exception e) {
-            LOGGER.error("Error fetching paginated emails: {}", e.getMessage(), e);
+        } catch (Exception cause) {
+            LOGGER.error("Error fetching paginated emails: {}", cause.getMessage(), cause);
             return List.of();
         }
     }

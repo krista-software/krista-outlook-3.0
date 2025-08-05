@@ -24,11 +24,10 @@ public class ExtensionResponseGenerator {
     public static final String FIELD = "Field";
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionResponseGenerator.class);
 
-    public ExtensionResponse generateConfirmationResponse(
-            ExtensionResponse.Error.ExceptionType exceptionType,
-            List<ValidationOrchestrator.ValidationResult> validationResults,
-            String subCatalogRequestName,
-            Map<String, Object> state) {
+    public ExtensionResponse generateConfirmationResponse(ExtensionResponse.Error.ExceptionType exceptionType,
+                                                          List<ValidationOrchestrator.ValidationResult> validationResults,
+                                                          String subCatalogRequestName,
+                                                          Map<String, Object> state) {
 
         List<NamedField> fields = List.of(NamedFieldFactory.createSwitchField(MessagingAreaSubCatalogRequests.REENTER));
         Map<String, Object> stringStringMap = generateResponse(validationResults, false);
@@ -52,11 +51,10 @@ public class ExtensionResponseGenerator {
     }
 
     @SuppressWarnings("unchecked")
-    public ExtensionResponse generateFetchResponse(
-            ExtensionResponse.Error.ExceptionType exceptionType,
-            List<ValidationOrchestrator.ValidationResult> validationResults,
-            String subCatalogRequestName,
-            Map<String, Object> state) {
+    public ExtensionResponse generateFetchResponse(ExtensionResponse.Error.ExceptionType exceptionType,
+                                                   List<ValidationOrchestrator.ValidationResult> validationResults,
+                                                   String subCatalogRequestName,
+                                                   Map<String, Object> state) {
 
         LOGGER.info("Validation failed for : {}", validationResults.size());
         Map<String, Object> stringStringMap = generateResponse(validationResults, true);
@@ -65,12 +63,11 @@ public class ExtensionResponseGenerator {
                 subCatalogRequestName, state);
     }
 
-    public ExtensionResponse generateFetchDenyResponse(
-            ExtensionResponse.Error.ExceptionType exceptionType,
-            List<ValidationOrchestrator.ValidationResult> validationResults,
-            String subCatalogRequestName,
-            Map<String, Object> state
-    ) {
+    public ExtensionResponse generateFetchDenyResponse(ExtensionResponse.Error.ExceptionType exceptionType,
+                                                       List<ValidationOrchestrator.ValidationResult> validationResults,
+                                                       String subCatalogRequestName,
+                                                       Map<String, Object> state) {
+
         StringJoiner stepMessage = new StringJoiner(", ", "Updated value for ", " were not provided.");
         StringBuilder errMessage = new StringBuilder();
         for (ValidationOrchestrator.ValidationResult validationResult : validationResults) {

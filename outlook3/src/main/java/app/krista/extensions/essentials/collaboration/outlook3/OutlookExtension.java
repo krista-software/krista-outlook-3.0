@@ -2,10 +2,7 @@ package app.krista.extensions.essentials.collaboration.outlook3;
 
 import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.executor.Invoker;
-import app.krista.extension.impl.anno.Extension;
-import app.krista.extension.impl.anno.InvokerRequest;
-import app.krista.extension.impl.anno.Java;
-import app.krista.extension.impl.anno.StaticResource;
+import app.krista.extension.impl.anno.*;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
@@ -18,7 +15,7 @@ import javax.inject.Inject;
 import java.util.Map;
 
 @Java(version = Java.Version.JAVA_21)
-@Extension(version = "3.0.7", name = "OutlookV3")
+@Extension(version = "3.0.8", name = "OutlookV3")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 

@@ -213,7 +213,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToAllWithFields(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML)}", required = true) Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);

@@ -43,7 +43,7 @@ public class AttachmentImpl implements Attachment {
             out.write(bytes);
             return file;
         } catch (IOException cause) {
-            LOGGER.error("Failed to download the file.", cause);
+            LOGGER.error("Failed to download attachment: error={}", cause.getMessage(), cause);
             throw new IllegalArgumentException(Constants.ERROR_OCCURRED_DURING_FETCHING_ATTACHMENTS, cause);
         }
     }
