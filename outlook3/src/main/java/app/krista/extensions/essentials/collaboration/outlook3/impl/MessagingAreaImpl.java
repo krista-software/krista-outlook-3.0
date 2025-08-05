@@ -76,6 +76,7 @@ public class MessagingAreaImpl {
                     toEmailAddresses(bcc), toEmailAddresses(replyTo), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         } catch (Exception cause) {
+            LOGGER.error("Failed to Reply all with Cc and Bcc: {}", cause.getMessage(), cause);
             return ExtensionResponseFactory.create(cause, "Failed to Reply all with Cc and Bcc",
                     ExtensionResponse.Error.ExceptionType.INPUT_ERROR);
         }
@@ -87,7 +88,7 @@ public class MessagingAreaImpl {
             user = provider.getGraphServiceClientForUser(true, null)
                     .me()
                     .buildRequest()
-                    .select("mailboxSettings")
+                    .select(Constants.MAILBOX_SETTINGS)
                     .get();
         } catch (IOException cause) {
             LOGGER.error("Failed to get user mailbox settings: {}", cause.getMessage(), cause);
@@ -95,13 +96,13 @@ public class MessagingAreaImpl {
         }
 
         String javaTimeZone = EntityHelperUtil.mapWindowsTimeZoneToJava(
-                Objects.requireNonNull(user != null && user.mailboxSettings != null ? user.mailboxSettings.timeZone : "UTC"));
+                Objects.requireNonNull(user != null && user.mailboxSettings != null ? user.mailboxSettings.timeZone : Constants.UTC));
 
         Long dateToUse = email.getReceivedDateAndTime() != null ? email.getReceivedDateAndTime() : email.getSendDateAndTime();
         if (dateToUse == null) return "";
 
         ZonedDateTime zonedDateTime = Instant.ofEpochMilli(dateToUse).atZone(ZoneId.of(javaTimeZone));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT_PATTERN);
         return formatter.format(zonedDateTime);
     }
 
@@ -121,6 +122,7 @@ public class MessagingAreaImpl {
             email.replyToAll(message, mailHandler.toAttachment(attachments), bodyType);
             return ExtensionResponseFactory.create(Map.of(Constants.IS_SUCCESSFUL, true));
         } catch (Exception cause) {
+            LOGGER.error("Failed to reply all: {}", cause.getMessage(), cause);
             return ExtensionResponseFactory.create("Failed to reply all", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to reply all", List.of())),
                     null, Map.of());
@@ -146,6 +148,7 @@ public class MessagingAreaImpl {
             return ExtensionResponseFactory.create(Map.of(Constants.IS_FORWARDED, true));
         } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
+            LOGGER.error("Failed to forward mail: {}", errorMessage, graphServiceException);
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MAIL_ADDRESS, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                         List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MAIL_ADDRESS, List.of())),
@@ -181,6 +184,7 @@ public class MessagingAreaImpl {
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
         } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
+            LOGGER.error("Failed to send mail: {}", errorMessage, graphServiceException);
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MAIL_ADDRESS, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                         List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MAIL_ADDRESS, List.of())),
@@ -211,6 +215,7 @@ public class MessagingAreaImpl {
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
         } catch (GraphServiceException cause) {
             String errorMessage = cause.getMessage();
+            LOGGER.error("Failed to send mail with table: {}", errorMessage, cause);
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MAIL_ADDRESS, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                         List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MAIL_ADDRESS, List.of())),
@@ -243,6 +248,7 @@ public class MessagingAreaImpl {
             }
             return ExtensionResponseFactory.create(Map.of("Response", Constants.SUCCESS));
         } catch (GraphServiceException graphServiceException) {
+            LOGGER.error("Failed to mark message: {}", graphServiceException.getMessage(), graphServiceException);
             return ExtensionResponseFactory.create(Constants.MARK_MESSAGE_REQUEST_FAILED, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.MARK_MESSAGE_REQUEST_FAILED, List.of())),
                     null, Map.of());
@@ -267,6 +273,7 @@ public class MessagingAreaImpl {
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
         } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
+            LOGGER.error("Failed to reply to mail: {}", errorMessage, graphServiceException);
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MAIL_ADDRESS, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                         List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MAIL_ADDRESS, List.of())),
@@ -292,6 +299,7 @@ public class MessagingAreaImpl {
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
         } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
+            LOGGER.error("Failed to reply to mail: {}", errorMessage, graphServiceException);
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MAIL_ADDRESS, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                         List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.INVALID_MAIL_ADDRESS, List.of())),
@@ -322,6 +330,8 @@ public class MessagingAreaImpl {
     }
 
     public ExtensionResponse fetchMailByLabel(String label, Double pageNumber, Double pageSize) {
+        LOGGER.info("Fetching mails by label: label={}, pageNumber={}, pageSize={}", label, pageNumber, pageSize);
+
         try {
             Folder folder = account.getFolderByName(List.of(label.split(Constants.FORWARD_SLASH)));
             if (folder == null) {
@@ -399,6 +409,7 @@ public class MessagingAreaImpl {
 
             return ExtensionResponseFactory.create(Map.of("Response", Constants.SUCCESS));
         } catch (GraphServiceException graphServiceException) {
+            LOGGER.error("Failed to update message category and status: {}", graphServiceException.getMessage(), graphServiceException);
             return ExtensionResponseFactory.create("Failed to update message category and status", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to update message category and status", List.of())),
                     null, Map.of());

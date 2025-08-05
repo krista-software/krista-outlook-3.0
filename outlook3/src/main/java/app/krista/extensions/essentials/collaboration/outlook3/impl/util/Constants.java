@@ -1,14 +1,30 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
 public class Constants {
 
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    public static final Gson GSON = new GsonBuilder()
+            .registerTypeAdapter(OffsetDateTime.class, new JsonSerializer<OffsetDateTime>() {
+                @Override
+                public JsonElement serialize(OffsetDateTime src, Type typeOfSrc, JsonSerializationContext context) {
+                    return new JsonPrimitive(src.toEpochSecond() * 1000);
+                }
+            })
+            .registerTypeAdapter(OffsetDateTime.class, new JsonDeserializer<OffsetDateTime>() {
+                @Override
+                public OffsetDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+                    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(json.getAsLong()), ZoneOffset.UTC);
+                }
+            })
+            .create();
     public static final String INVALID_STATE_PARAMETERS = "Invalid state parameters!";
     public static final String WS_CONTACT = "wsContact";
     public static final String COMMA = ",";
@@ -138,6 +154,9 @@ public class Constants {
     public static final String DELTA_TOKEN = "Delta Token";
     public static final String MAIL_SELECT_FIELDS = "id,subject,body,bodyPreview,receivedDateTime,sentDateTime,from,toRecipients,ccRecipients,bccRecipients,replyTo,isRead,hasAttachments,importance,conversationId,uniqueBody";
     public static final String SELECT_QUERY = "$select";
+    public static final String MAILBOX_SETTINGS = "mailboxSettings";
+    public static final String UTC = "UTC";
+    public static final String DATE_TIME_FORMAT_PATTERN = "dd MMMM yyyy HH:mm";
 
     // Error messages for ExtensionResponse
     public static final String USER_DELETED_ERROR = "Your Microsoft account no longer exists. Please contact your administrator.";

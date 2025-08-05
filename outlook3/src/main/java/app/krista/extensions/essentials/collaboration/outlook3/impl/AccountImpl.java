@@ -71,7 +71,7 @@ public class AccountImpl implements Account {
     public Folder getFolderByName(String folderName, Boolean useEmail, String accountID) {
         LOGGER.info("getFolderByName for folderName {}, useEmail {}, accountID {}", folderName, useEmail, accountID);
         if (Validators.isStringNullOrBlank(folderName)) {
-            LOGGER.warn(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
+            LOGGER.error(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
             throw new IllegalArgumentException(Constants.FOLDER_NAME_IS_EMPTY_OR_NULL);
         }
         MailFolderCollectionPage page = getFoldersRequestBuilder(useEmail, accountID).buildRequest().get();
@@ -183,8 +183,8 @@ public class AccountImpl implements Account {
                     )
                     .get();
             return new EmailImpl(provider, message);
-        } catch (Exception e) {
-            LOGGER.error("Error getting email with ID {}: {}", emailId, e.getMessage(), e);
+        } catch (Exception cause) {
+            LOGGER.error("Error getting email with ID {}: {}", emailId, cause.getMessage(), cause);
             return null;
         }
     }
@@ -203,8 +203,8 @@ public class AccountImpl implements Account {
                     .top(15).get();
             return (messages == null || messages.getCurrentPage() == null) ? List.of()
                     : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
-        } catch (Exception e) {
-            LOGGER.error("Error while searching emails with query '{}': {}", searchString, e.getMessage(), e);
+        } catch (Exception cause) {
+            LOGGER.error("Error while searching emails with query '{}': {}", searchString, cause.getMessage(), cause);
             return List.of();
         }
     }
@@ -254,7 +254,7 @@ public class AccountImpl implements Account {
             return getUserRequestBuilder(null, null).outlook().masterCategories().buildRequest()
                     .post(outlookCategory);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Failed to create new category with name: {}", category, cause);
+            LOGGER.error("Failed to create new category with name: {} , {}", category, cause.getMessage(), cause);
             return null;
         }
     }

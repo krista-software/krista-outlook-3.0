@@ -284,7 +284,7 @@ public class EntityHelperUtil {
         }
         StringBuilder emailString = new StringBuilder();
         for (EmailAddress email : emails) {
-            if (emailString.length() > 0) {
+            if (!emailString.isEmpty()) {
                 emailString.append(", ");
             }
             emailString.append(formatEmailWithDisplayName(email));

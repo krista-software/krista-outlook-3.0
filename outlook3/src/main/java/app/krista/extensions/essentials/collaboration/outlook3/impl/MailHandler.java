@@ -10,6 +10,8 @@ import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.model.base.File;
 import com.microsoft.graph.models.FileAttachment;
 import org.jvnet.hk2.annotations.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -23,6 +25,7 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 @Service
 public class MailHandler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MailHandler.class);
     private final KristaMediaClient kristaMediaClient;
 
     // This unused parameter is needed for authentication of wait for event requests
@@ -68,10 +71,29 @@ public class MailHandler {
     }
 
     public File toKristaFiles(java.io.File file) {
+        long fileSize = file.length();
+        if (fileSize == 0) {
+            LOGGER.debug("File is empty: {}", file.getName());
+        }
+        // Check for reasonable file size limits (e.g., 50MB)
+        if (fileSize > 50 * 1024 * 1024) {
+            LOGGER.debug("Large file detected: fileName={}, size={}MB", file.getName(), fileSize / (1024 * 1024));
+        }
+        LOGGER.debug("Converting file to Krista format: fileName={}, size={} bytes", file.getName(), fileSize);
+
         try {
             return kristaMediaClient.toKristaFile(file);
         } catch (IOException cause) {
-            throw new RuntimeException("Failed to store content to file handle", cause);
+            LOGGER.debug("Regular upload failed, trying zip upload: fileName={}, size={}, error={}",
+                    file.getName(), fileSize, cause.getMessage());
+
+            try {
+                return kristaMediaClient.toKristaZipFile(file);
+            } catch (IOException zipCause) {
+                LOGGER.error("Both regular and zip upload failed: fileName={}, size={}, regularError={}, zipError={}",
+                        file.getName(), fileSize, cause.getMessage(), zipCause.getMessage(), zipCause);
+                throw new RuntimeException("Failed to store content to file handle: " + file.getName(), zipCause);
+            }
         }
     }
 
@@ -87,6 +109,7 @@ public class MailHandler {
                 fileAttachments.contentBytes = EntityHelperUtil.readContentOfTheFile(ioFile);
                 fileAttachments.oDataType = Constants.MICROSOFT_GRAPH_FILE_ATTACHMENT;
             } catch (IOException ioException) {
+                LOGGER.error("Failed to process attachment: fileName={}, error={}", file.getFileName(), ioException.getMessage(), ioException);
                 throw new IllegalStateException(Constants.ERROR_OCCURRED_DURING_UPLOADING_ATTACHMENT, ioException.getCause());
             }
             attachmentsList.add(fileAttachments);

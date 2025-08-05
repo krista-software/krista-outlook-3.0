@@ -123,4 +123,20 @@ public class KristaMediaClient {
             zipOut.closeEntry();
         }
     }
+
+    public app.krista.model.base.File toKristaZipFile(File file) throws IOException {
+        String baseName = file.getName();
+        int lastDotIndex = baseName.lastIndexOf(".");
+        if (lastDotIndex > 0) {
+            baseName = baseName.substring(0, lastDotIndex);
+        }
+        String zipFilePath = zipDir + baseName + ".zip";
+        compressFile(zipFilePath, file.getAbsolutePath());
+        File zipFile = new File(zipFilePath);
+        try (final FileHandle fileHandle = fileRepository.createNewFileByName(zipFile.getName())) {
+            FileInputStream stream = new FileInputStream(zipFile);
+            fileHandle.setContent(stream);
+            return fileHandle.getFile();
+        }
+    }
 }

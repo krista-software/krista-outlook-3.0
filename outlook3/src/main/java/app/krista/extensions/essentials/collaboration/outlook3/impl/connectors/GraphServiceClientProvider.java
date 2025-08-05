@@ -83,6 +83,7 @@ public class GraphServiceClientProvider {
             }
             return getGraphServiceClient(refreshTokenStoreKey, refreshToken);
         } catch (RuntimeException cause) {
+            LOGGER.error("getGraphServiceClient() -> Exception occurred: {}", cause.getMessage(), cause);
             throw cause;
         }
     }
@@ -110,10 +111,12 @@ public class GraphServiceClientProvider {
                     .authenticationProvider(new GraphServiceClientAuthenticationProvider(authenticationResult.accessToken()))
                     .buildClient();
         } catch (ClientException | ExecutionException | MalformedURLException cause) {
+            LOGGER.error("getGraphServiceClient() -> Exception occurred: {}", cause.getMessage(), cause);
             handleAuthenticationError(cause, refreshTokenStoreKey);
             // This line will never be reached as handleAuthenticationError always throws an exception
             return null;
         } catch (InterruptedException cause) {
+            LOGGER.error("getGraphServiceClient() -> InterruptedException occurred: {}", cause.getMessage(), cause);
             Thread.currentThread().interrupt();
             throw createMustAuthorizationException(refreshTokenStoreKey, true);
         }
@@ -145,6 +148,7 @@ public class GraphServiceClientProvider {
                     ? getGraphServiceClientForUser(null, null).me()
                     : getGraphServiceClientForUser(null, null).users(attributes.getEmail());
         } catch (IOException cause) {
+            LOGGER.error("getUserRequestBuilder() -> Exception occurred: {}", cause.getMessage(), cause);
             throw new IllegalStateException(cause);
         }
     }

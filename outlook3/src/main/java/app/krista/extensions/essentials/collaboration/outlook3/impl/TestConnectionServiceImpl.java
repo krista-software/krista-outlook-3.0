@@ -74,10 +74,10 @@ public class TestConnectionServiceImpl {
             LOGGER.info("Test connection successful");
             return createTestConnectionResponse(true, null, null);
         } catch (GraphServiceException cause) {
-            LOGGER.error("Graph API connection failed: {}", cause.getMessage());
+            LOGGER.error("Graph API connection failed: {}", cause.getMessage(), cause);
             return createTestConnectionResponse(false, "An error occurred during test connection.", null);
         } catch (MustAuthorizeException cause) {
-            LOGGER.info("Authorization required, generating auth URL");
+            LOGGER.error("Authorization required, generating auth URL : {} ", cause.getMessage(), cause);
             String state = createStateParameter(cause, outlookAttributes);
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;

@@ -71,7 +71,7 @@ public class MailSubscription {
             return createSubscriptionWithRetry(provider, subscription);
 
         } catch (ClientException | ParseException cause) {
-            LOGGER.error("Exception occurred while creating or updating subscription: {}", cause.getMessage());
+            LOGGER.error("Exception occurred while creating or updating subscription: {}", cause.getMessage(), cause);
             return false;
         }
     }
@@ -128,8 +128,8 @@ public class MailSubscription {
 
                 LOGGER.info("Subscription created successfully ::: {} ", newSubscription.id);
                 return true; // Success
-            } catch (ClientException e) {
-                String errorMessage = e.getMessage();
+            } catch (ClientException cause) {
+                String errorMessage = cause.getMessage();
 
                 if (errorMessage.contains("ValidationError") &&
                         errorMessage.contains("Notification endpoint must respond with 200 OK")) {
