@@ -11,6 +11,15 @@
 
 ## Resolved Bugs
 
+- [**KE-2343**](https://antbrains.atlassian.net/browse/KE-2343):  
+  Outlook 4.0: Make changes to make it compatible with EF4
+
+- [**KE-2358**](https://antbrains.atlassian.net/browse/KE-2358):  
+  Outlook extension Paging occasionally fails on when iterating over pages - Fetch Mails By Label request
+
+- [**KE-2349**](https://antbrains.atlassian.net/browse/KE-2349):  
+  Outlook Extension: Fetch Latest Mail request should fetch the latest mail object
+
 - [**KE-2273**](https://antbrains.atlassian.net/browse/KE-2273):  
   Outlook Extension, Add "include email thread" option in the Reply to Mail and Forward Mail requests
 
