@@ -15,8 +15,7 @@ import javax.inject.Inject;
 import java.util.Map;
 
 @Java(version = Java.Version.JAVA_21)
-@Extension(version = "3.0.8", name = "OutlookV3", implementationModel = Extension.ImplementationModel.Krista_4_O)
-@Containerize(baseImageVersion = "3.5.0")
+@Extension(version = "3.0.8", name = "OutlookV3")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
