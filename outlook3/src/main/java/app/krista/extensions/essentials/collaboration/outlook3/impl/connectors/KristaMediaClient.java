@@ -29,11 +29,7 @@ public class KristaMediaClient {
             compressFile(zipFilePath, file.getAbsolutePath());
             file = new File(zipFilePath);
         }
-        try (final FileHandle fileHandle = fileRepository.createNewFileByName(file.getName())) {
-            FileInputStream stream = new FileInputStream(file);
-            fileHandle.setContent(stream);
-            return fileHandle.getFile();
-        }
+        return uploadFileToRepository(file);
     }
 
     /**
@@ -124,6 +120,13 @@ public class KristaMediaClient {
         }
     }
 
+    /**
+     * Uploads a file to Krista's media server. it will take java.io.File object as input and returns krista's file object
+     *
+     * @param file The file to be uploaded.
+     * @return The Krista file object.
+     * @throws IOException If an I/O error occurs.
+     */
     public app.krista.model.base.File toKristaZipFile(File file) throws IOException {
         String baseName = file.getName();
         int lastDotIndex = baseName.lastIndexOf(".");
@@ -133,8 +136,15 @@ public class KristaMediaClient {
         String zipFilePath = zipDir + baseName + ".zip";
         compressFile(zipFilePath, file.getAbsolutePath());
         File zipFile = new File(zipFilePath);
-        try (final FileHandle fileHandle = fileRepository.createNewFileByName(zipFile.getName())) {
-            FileInputStream stream = new FileInputStream(zipFile);
+        return uploadFileToRepository(zipFile);
+    }
+
+    /**
+     * Common method to upload a file to the repository
+     */
+    private app.krista.model.base.File uploadFileToRepository(File file) throws IOException {
+        try (final FileHandle fileHandle = fileRepository.createNewFileByName(file.getName())) {
+            FileInputStream stream = new FileInputStream(file);
             fileHandle.setContent(stream);
             return fileHandle.getFile();
         }
