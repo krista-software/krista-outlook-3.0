@@ -12,18 +12,8 @@ import java.util.Map;
 public class Constants {
 
     public static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(OffsetDateTime.class, new JsonSerializer<OffsetDateTime>() {
-                @Override
-                public JsonElement serialize(OffsetDateTime src, Type typeOfSrc, JsonSerializationContext context) {
-                    return new JsonPrimitive(src.toEpochSecond() * 1000);
-                }
-            })
-            .registerTypeAdapter(OffsetDateTime.class, new JsonDeserializer<OffsetDateTime>() {
-                @Override
-                public OffsetDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
-                    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(json.getAsLong()), ZoneOffset.UTC);
-                }
-            })
+            .registerTypeAdapter(OffsetDateTime.class, (JsonSerializer<OffsetDateTime>) (src, typeOfSrc, context) -> new JsonPrimitive(src.toEpochSecond() * 1000))
+            .registerTypeAdapter(OffsetDateTime.class, (JsonDeserializer<OffsetDateTime>) (json, typeOfT, context) -> OffsetDateTime.ofInstant(Instant.ofEpochMilli(json.getAsLong()), ZoneOffset.UTC))
             .create();
     public static final String INVALID_STATE_PARAMETERS = "Invalid state parameters!";
     public static final String WS_CONTACT = "wsContact";
