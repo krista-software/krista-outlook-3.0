@@ -4,14 +4,12 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.G
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
-import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
-import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
-import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
-import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
+import app.krista.extensions.essentials.collaboration.outlook3.service.*;
 import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.Message;
 import com.microsoft.graph.models.OutlookCategory;
+import com.microsoft.graph.models.Recipient;
 import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.options.QueryOption;
 import com.microsoft.graph.requests.*;
@@ -282,26 +280,10 @@ public class AccountImpl implements Account {
             return messageIds;
         }
         for (Message message : deltaCollectionPage.getCurrentPage()) {
-            Map<String, Object> additionalData = message.additionalDataManager().entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            if (additionalData.containsKey("@removed")) {
-                LOGGER.info("Skipping deleted message ID: {}", message.id);
-                continue; // Skip deleted message
-            }
-            OffsetDateTime receivedTime = message.receivedDateTime;
-
-            if (receivedTime != null && !receivedTime.isBefore(startOfTodayUtc)) {
-                messageIds.add(message.id);
-            } else {
-                LOGGER.info("Skipping older message ID: {}", message.id);
-            }
-
+            filterMessages(message, startOfTodayUtc, messageIds);
         }
 
-
-        deltaCollectionPage = getMessageDeltaCollectionFromNextPages(deltaLink, deltaCollectionPage, messageIds);
+        deltaCollectionPage = getMessageDeltaCollectionFromNextPages(deltaLink, deltaCollectionPage, startOfTodayUtc, messageIds);
 
         LOGGER.info("All the Notification being fetched Storing new delta link.");
         if (deltaCollectionPage != null) {
@@ -310,15 +292,45 @@ public class AccountImpl implements Account {
         return messageIds;
     }
 
+    private void filterMessages(Message message, OffsetDateTime startOfTodayUtc, List<String> messageIds) {
+        Map<String, Object> additionalData = message.additionalDataManager().entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (additionalData.containsKey("@removed")) {
+            LOGGER.info("Skipping deleted message ID: {}", message.id);
+            return;
+        }
+        OffsetDateTime receivedTime = message.receivedDateTime;
+
+        if (receivedTime != null && !receivedTime.isBefore(startOfTodayUtc) && !isMessageFromTheConfiguredEmail(message.from != null ? toEmailAddress(message.from) : null)) {
+            messageIds.add(message.id);
+        } else {
+            LOGGER.info("Skipping older or same sender message ID: {}", message.id);
+        }
+    }
+
+    private boolean isMessageFromTheConfiguredEmail(String email) {
+        String configuredEmail = provider.getOutlookAttributes().getEmail();
+        return configuredEmail.equalsIgnoreCase(email);
+    }
+
+    private String toEmailAddress(Recipient recipient) {
+        if (recipient == null) {
+            return null;
+        }
+        return recipient.emailAddress != null ? recipient.emailAddress.address : null;
+    }
+
     @Nullable
-    private MessageDeltaCollectionPage getMessageDeltaCollectionFromNextPages(String deltaLink, MessageDeltaCollectionPage deltaCollectionPage, List<String> messageIds) {
+    private MessageDeltaCollectionPage getMessageDeltaCollectionFromNextPages(String deltaLink, MessageDeltaCollectionPage deltaCollectionPage, OffsetDateTime startOfTodayUtc, List<String> messageIds) {
         LOGGER.info("Notification being fetched from current page moving to next page.");
         while (deltaCollectionPage != null && deltaCollectionPage.getNextPage() != null) {
             deltaCollectionPage = deltaCollectionPage.getNextPage().buildRequest().get();
             if (deltaLink != null) {
                 if (deltaCollectionPage != null) {
                     for (Message message : deltaCollectionPage.getCurrentPage()) {
-                        messageIds.add(message.id);
+                        filterMessages(message, startOfTodayUtc, messageIds);
                     }
                 } else {
                     break;
