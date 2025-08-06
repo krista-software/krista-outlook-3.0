@@ -306,7 +306,7 @@ public class AccountImpl implements Account {
         if (receivedTime != null && !receivedTime.isBefore(startOfTodayUtc) && !isMessageFromTheConfiguredEmail(message.from != null ? toEmailAddress(message.from) : null)) {
             messageIds.add(message.id);
         } else {
-            LOGGER.info("Skipping older message ID: {}", message.id);
+            LOGGER.info("Skipping older or same sender message ID: {}", message.id);
         }
     }
 
