@@ -892,6 +892,7 @@ public class MessagingArea {
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To Mail With CC and BCC :{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.replyToMailWithCCAndBCC", startTime, cause, safeTagMap("message_id", messageId));
+            cause.printStackTrace();
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail With CC and BCC ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail With CC and BCC ", List.of())), null, null);
         }
