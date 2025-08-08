@@ -166,14 +166,47 @@ public class EmailImpl implements Email {
 
     @Override
     public Email replyText(String message, List<com.microsoft.graph.models.Attachment> attachments, List<EmailAddress> toRecipients, List<EmailAddress> ccRecipients, List<EmailAddress> bccRecipients, List<EmailAddress> replyTo, String bodyType) {
-        MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
-        if (messageRequestBuilder == null) {
-            throw new IllegalStateException(Constants.REPLY_TO_MAIL_REQUEST_FAILED);
-        }
+        try {
+            LOGGER.info("Getting message request builder for messageId: {}", this.message.id);
 
-        Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
-        messageRequestBuilder.reply(MessageReplyParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
-        return new EmailImpl(provider, replyMessage);
+            MessageRequestBuilder messageRequestBuilder = getMessageRequestBuilder(null);
+            if (messageRequestBuilder == null) {
+                LOGGER.error("MessageRequestBuilder is null for messageId: {}", this.message.id);
+                throw new IllegalStateException(Constants.REPLY_TO_MAIL_REQUEST_FAILED);
+            }
+
+            Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
+            if (replyMessage == null) {
+                LOGGER.error("setReplyMessageValues returned null for messageId: {}", this.message.id);
+            }
+
+            LOGGER.info("Reply message created successfully for messageId: {}, replyMessageBody: {}",
+                    this.message.id, replyMessage.body != null ? replyMessage.body.content : "null");
+
+            LOGGER.info("Calling Graph API reply for messageId: {}", this.message.id);
+            messageRequestBuilder.reply(MessageReplyParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
+            Email resultEmail = new EmailImpl(provider, replyMessage);
+            LOGGER.info("Created result EmailImpl for messageId: {}, resultEmailId: {}",
+                    this.message.id, resultEmail != null ? resultEmail.getEmailId() : "null");
+
+            return resultEmail;        } catch (GraphServiceException graphServiceException) {
+            String errorMessage = graphServiceException.getMessage();
+            LOGGER.error("GraphServiceException in replyText - messageId: {}, error: {}, statusCode: {}",
+                    this.message.id, errorMessage, graphServiceException.getResponseCode(), graphServiceException);
+
+            if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
+                LOGGER.error("Invalid mail address detected in replyText - messageId: {}", this.message.id);
+                throw new IllegalArgumentException(Constants.INVALID_MAIL_ADDRESS, graphServiceException.getCause());
+            }
+
+            LOGGER.error("General GraphServiceException in replyText - messageId: {}", this.message.id);
+            throw new InternalServerErrorException(Constants.REPLY_TO_MAIL_REQUEST_FAILED, graphServiceException.getCause());
+
+        } catch (Exception cause) {
+            LOGGER.error("Unexpected exception in replyText - messageId: {}, error: {}, errorType: {}",
+                    this.message.id, cause.getMessage(), cause.getClass().getSimpleName(), cause);
+            throw cause;
+        }
     }
 
     @Override
