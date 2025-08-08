@@ -259,7 +259,7 @@ public class MessagingAreaImpl {
 
     public ExtensionResponse replyToMailWithCCAndBCC(List<File> attachments, String messageId, String to, String cc, String bcc, String replyTo, String message, String bodyType) {
         LOGGER.info("Starting replyToMailWithCCAndBCC - messageId: {}, to: {}, cc: {}, bcc: {}, replyTo: {}, bodyType: {}, attachmentCount: {}",
-            messageId, to, cc, bcc, replyTo, bodyType, attachments != null ? attachments.size() : 0);
+                messageId, to, cc, bcc, replyTo, bodyType, attachments != null ? attachments.size() : 0);
 
         try {
             Email email = account.getEmail(messageId);
@@ -282,7 +282,7 @@ public class MessagingAreaImpl {
         } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
             LOGGER.error("GraphServiceException in replyToMailWithCCAndBCC - messageId: {}, error: {}, statusCode: {}",
-                messageId, errorMessage, graphServiceException.getResponseCode(), graphServiceException);
+                    messageId, errorMessage, graphServiceException.getResponseCode(), graphServiceException);
 
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
                 return ExtensionResponseFactory.create(Constants.INVALID_MAIL_ADDRESS, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
@@ -290,11 +290,13 @@ public class MessagingAreaImpl {
                         null, Map.of());
             }
 
+            graphServiceException.printStackTrace();
             return ExtensionResponseFactory.create(Constants.REPLY_TO_MAIL_REQUEST_FAILED, ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(Constants.REPLY_TO_MAIL_REQUEST_FAILED, List.of())),
                     null, Map.of());
         } catch (Exception cause) {
             LOGGER.error("Unexpected exception in replyToMailWithCCAndBCC - messageId: {}, error: {}", messageId, cause.getMessage(), cause);
+            cause.printStackTrace();
             return ExtensionResponseFactory.create("Failed to reply to mail with CC and BCC", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Failed to reply to mail with CC and BCC", List.of())),
                     null, Map.of());

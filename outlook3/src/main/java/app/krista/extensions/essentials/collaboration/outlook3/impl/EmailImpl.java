@@ -198,11 +198,13 @@ public class EmailImpl implements Email {
             }
 
             LOGGER.error("General GraphServiceException in replyText - messageId: {}", this.message.id);
+            graphServiceException.printStackTrace();
             throw new InternalServerErrorException(Constants.REPLY_TO_MAIL_REQUEST_FAILED, graphServiceException.getCause());
 
         } catch (Exception cause) {
             LOGGER.error("Unexpected exception in replyText - messageId: {}, error: {}, errorType: {}",
                     this.message.id, cause.getMessage(), cause.getClass().getSimpleName(), cause);
+            cause.printStackTrace();
             throw cause;
         }
     }
