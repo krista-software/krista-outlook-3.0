@@ -176,9 +176,6 @@ public class EmailImpl implements Email {
             }
 
             Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
-            if (replyMessage == null) {
-                LOGGER.error("setReplyMessageValues returned null for messageId: {}", this.message.id);
-            }
 
             LOGGER.info("Reply message created successfully for messageId: {}, replyMessageBody: {}",
                     this.message.id, replyMessage.body != null ? replyMessage.body.content : "null");
@@ -187,9 +184,10 @@ public class EmailImpl implements Email {
             messageRequestBuilder.reply(MessageReplyParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
             Email resultEmail = new EmailImpl(provider, replyMessage);
             LOGGER.info("Created result EmailImpl for messageId: {}, resultEmailId: {}",
-                    this.message.id, resultEmail != null ? resultEmail.getEmailId() : "null");
+                    this.message.id, resultEmail.getEmailId());
 
-            return resultEmail;        } catch (GraphServiceException graphServiceException) {
+            return resultEmail;
+        } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
             LOGGER.error("GraphServiceException in replyText - messageId: {}, error: {}, statusCode: {}",
                     this.message.id, errorMessage, graphServiceException.getResponseCode(), graphServiceException);
@@ -414,11 +412,7 @@ public class EmailImpl implements Email {
         LOGGER.info("UserRequestBuilder obtained successfully, getting messages builder for messageId: {}", message.id);
         MessageRequestBuilder messageRequestBuilder = userRequestBuilder.messages(message.id);
 
-        if (messageRequestBuilder == null) {
-            LOGGER.error("MessageRequestBuilder is null for messageId: {}", message.id);
-        } else {
-            LOGGER.info("MessageRequestBuilder created successfully for messageId: {}", message.id);
-        }
+        LOGGER.info("MessageRequestBuilder created successfully for messageId: {}", message.id);
         return messageRequestBuilder;
     }
 
