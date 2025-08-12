@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.EncryptionUtil.KRISTA_PREFIX;
 import static com.github.scribejava.core.model.OAuthConstants.CODE;
 import static com.github.scribejava.core.model.OAuthConstants.STATE;
 
@@ -315,7 +316,7 @@ public final class OutlookApiResource {
 
     private void decryptClientSecretIfPrivate(JsonObject authPayload) {
         if (authPayload.has(AUTH_TYPE) && Constants.PRIVATE.equals(authPayload.get(AUTH_TYPE).getAsString())) {
-            if (authPayload.has(CLIENT_SECRET)) {
+            if (authPayload.has(CLIENT_SECRET) && authPayload.get(CLIENT_SECRET).getAsString().contains(KRISTA_PREFIX)) {
                 String encryptedSecret = authPayload.get(CLIENT_SECRET).getAsString();
                 String decryptedSecret = EncryptionUtil.decrypt(encryptedSecret);
                 authPayload.addProperty(CLIENT_SECRET, decryptedSecret);
