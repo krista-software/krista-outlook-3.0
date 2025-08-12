@@ -4,8 +4,8 @@
 
 - **Developers**: VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
-- **Global Catalog Version**: 1.0.58
-- **Appliance Release Version**: 3.5.0
+- **Global Catalog Version**: 1.0.59
+- **Appliance Release Version**: 3.5.1
 
 ---
 

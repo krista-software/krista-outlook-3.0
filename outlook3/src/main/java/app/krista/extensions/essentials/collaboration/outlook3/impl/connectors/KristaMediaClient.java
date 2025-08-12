@@ -14,7 +14,10 @@ import java.util.zip.ZipOutputStream;
 @Service
 public class KristaMediaClient {
 
-    private static final String zipDir = "/tmp/";
+    private static final String ZIP_DIR = "/tmp/";
+    private static final int BUFFER_SIZE = 4096;
+    private static final int ZIP_BUFFER_SIZE = 1024;
+
     @Inject
     private FileRepository fileRepository;
 
@@ -26,12 +29,14 @@ public class KristaMediaClient {
      * @throws IOException If an I/O error occurs.
      */
     public app.krista.model.base.File toKristaFile(File file) throws IOException {
-        if (isUnsupportedFileFormat(file.getName())) {
-            String zipFilePath = zipDir + file.getName().substring(0, file.getName().lastIndexOf(".")) + ".zip";
-            compressFile(zipFilePath, file.getAbsolutePath());
-            file = new File(zipFilePath);
+        File sanitizedFile = sanitizeAndCopyFile(file);
+
+        if (isUnsupportedFileFormat(sanitizedFile.getName())) {
+            String zipFilePath = generateZipFilePath(sanitizedFile.getName());
+            compressFile(zipFilePath, sanitizedFile.getAbsolutePath());
+            sanitizedFile = new File(zipFilePath);
         }
-        return uploadFileToRepository(file);
+        return uploadFileToRepository(sanitizedFile);
     }
 
     /**
@@ -73,7 +78,7 @@ public class KristaMediaClient {
      */
     private File convertInputStreamToFile(InputStream inputStream, File input) throws IOException {
         try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(input))) {
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[BUFFER_SIZE];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
@@ -111,7 +116,7 @@ public class KristaMediaClient {
                 ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
                 zipOut.putNextEntry(zipEntry);
 
-                byte[] bytes = new byte[1024];
+                byte[] bytes = new byte[ZIP_BUFFER_SIZE];
                 int length;
                 while ((length = fis.read(bytes)) >= 0) {
                     zipOut.write(bytes, 0, length);
@@ -130,26 +135,47 @@ public class KristaMediaClient {
      * @throws IOException If an I/O error occurs.
      */
     public app.krista.model.base.File toKristaZipFile(File file) throws IOException {
-        String sanitizedFileName = sanitizeFileName(file.getName());
-        File sanitizedFile = file;
-
-        if (!sanitizedFileName.equals(file.getName())) {
-            // Use temp directory if parent is null
-            String parentDir = file.getParent() != null ? file.getParent() : zipDir;
-            String tempPath = parentDir + "/" + sanitizedFileName;
-            sanitizedFile = new File(tempPath);
-            Files.copy(file.toPath(), sanitizedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        String baseName = sanitizedFile.getName();
-        int lastDotIndex = baseName.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            baseName = baseName.substring(0, lastDotIndex);
-        }
-        String zipFilePath = zipDir + baseName + ".zip";
+        File sanitizedFile = sanitizeAndCopyFile(file);
+        String zipFilePath = generateZipFilePath(sanitizedFile.getName());
         compressFile(zipFilePath, sanitizedFile.getAbsolutePath());
         File zipFile = new File(zipFilePath);
         return uploadFileToRepository(zipFile);
+    }
+
+    /**
+     * Downloads a file from Krista's media server. it will take krista's file object as input and returns java.io.File object
+     *
+     * @param file The Krista file object to be downloaded.
+     * @return The downloaded Java file object.
+     * @throws IOException If an I/O error occurs.
+     */
+    private app.krista.model.base.File uploadFileToRepository(File file) throws IOException {
+        try (final FileHandle fileHandle = fileRepository.createNewFileByName(file.getName())) {
+            FileInputStream stream = new FileInputStream(file);
+            fileHandle.setContent(stream);
+            return fileHandle.getFile();
+        }
+    }
+
+    /**
+     * Sanitizes the file name and copies the file to a temporary directory.
+     *
+     * @param file The original file.
+     * @return The sanitized file.
+     * @throws IOException If an I/O error occurs.
+     */
+    private File sanitizeAndCopyFile(File file) throws IOException {
+        String sanitizedFileName = sanitizeFileName(file.getName());
+
+        if (!sanitizedFileName.equals(file.getName())) {
+            String parentDir = file.getParent() != null ? file.getParent() : ZIP_DIR;
+            String tempPath = parentDir + "/" + sanitizedFileName;
+            File sanitizedFile = new File(tempPath);
+            Files.copy(file.toPath(), sanitizedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return sanitizedFile;
+        }
+
+        return file;
     }
 
     /**
@@ -168,13 +194,18 @@ public class KristaMediaClient {
     }
 
     /**
-     * Common method to upload a file to the repository
+     * Generates zip file path from original filename
      */
-    private app.krista.model.base.File uploadFileToRepository(File file) throws IOException {
-        try (final FileHandle fileHandle = fileRepository.createNewFileByName(file.getName())) {
-            FileInputStream stream = new FileInputStream(file);
-            fileHandle.setContent(stream);
-            return fileHandle.getFile();
-        }
+    private String generateZipFilePath(String fileName) {
+        String baseName = getBaseNameWithoutExtension(fileName);
+        return ZIP_DIR + baseName + ".zip";
+    }
+
+    /**
+     * Extracts base name without extension
+     */
+    private String getBaseNameWithoutExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf(".");
+        return lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
     }
 }
