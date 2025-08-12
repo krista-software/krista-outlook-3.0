@@ -11,10 +11,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.G
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.OAuthService;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Notification;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.NotificationProcessQueue;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.*;
 import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.authentication.AuthorizationListener;
 import app.krista.ksdk.context.AuthorizationContext;
@@ -37,10 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 import static com.github.scribejava.core.model.OAuthConstants.CODE;
@@ -64,9 +57,6 @@ public final class OutlookApiResource {
     private final String invokerId;
     private final Invoker invoker;
     private final TestConnectionServiceImpl testConnectionService;
-    private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final AtomicBoolean isRunning = new AtomicBoolean(false);
-
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
@@ -294,6 +284,7 @@ public final class OutlookApiResource {
     @Path("/saveCredentials")
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
+        decryptClientSecretIfPrivate(authPayload);
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(attributes);
         try {
@@ -317,8 +308,19 @@ public final class OutlookApiResource {
     @Path("/testConnection")
     @Produces("text/plain")
     public String testConnection(JsonObject authPayload) {
+        decryptClientSecretIfPrivate(authPayload);
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         return testConnectionService.testConnection(outlookAttributes);
+    }
+
+    private void decryptClientSecretIfPrivate(JsonObject authPayload) {
+        if (authPayload.has(AUTH_TYPE) && Constants.PRIVATE.equals(authPayload.get(AUTH_TYPE).getAsString())) {
+            if (authPayload.has(CLIENT_SECRET)) {
+                String encryptedSecret = authPayload.get(CLIENT_SECRET).getAsString();
+                String decryptedSecret = EncryptionUtil.decrypt(encryptedSecret);
+                authPayload.addProperty(CLIENT_SECRET, decryptedSecret);
+            }
+        }
     }
 
     @GET
@@ -328,10 +330,12 @@ public final class OutlookApiResource {
         LOGGER.info("Loading attributes for auth-type: {} for invoker {}", authType, invokerId);
         final OutlookAttributes loadedAttributes = outlookAttributeStore.load(invokerId);
         if (loadedAttributes != null && authType.equals(loadedAttributes.getAuthType())) {
-            return GSON.toJson(loadedAttributes.toMap());
-        } else {
-            return "";
+            Map<String, Object> attributesMap = loadedAttributes.toMap();
+            String encryptedSecret = EncryptionUtil.encrypt((String) attributesMap.get(CLIENT_SECRET));
+            attributesMap.put(CLIENT_SECRET, encryptedSecret);
+            return GSON.toJson(attributesMap);
         }
+        return "";
     }
 
     @GET

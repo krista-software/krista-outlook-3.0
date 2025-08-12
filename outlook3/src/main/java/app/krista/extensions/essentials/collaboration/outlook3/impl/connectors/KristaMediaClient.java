@@ -6,6 +6,8 @@ import org.jvnet.hk2.annotations.Service;
 
 import javax.inject.Inject;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -128,15 +130,41 @@ public class KristaMediaClient {
      * @throws IOException If an I/O error occurs.
      */
     public app.krista.model.base.File toKristaZipFile(File file) throws IOException {
-        String baseName = file.getName();
+        String sanitizedFileName = sanitizeFileName(file.getName());
+        File sanitizedFile = file;
+
+        if (!sanitizedFileName.equals(file.getName())) {
+            // Use temp directory if parent is null
+            String parentDir = file.getParent() != null ? file.getParent() : zipDir;
+            String tempPath = parentDir + "/" + sanitizedFileName;
+            sanitizedFile = new File(tempPath);
+            Files.copy(file.toPath(), sanitizedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        String baseName = sanitizedFile.getName();
         int lastDotIndex = baseName.lastIndexOf(".");
         if (lastDotIndex > 0) {
             baseName = baseName.substring(0, lastDotIndex);
         }
         String zipFilePath = zipDir + baseName + ".zip";
-        compressFile(zipFilePath, file.getAbsolutePath());
+        compressFile(zipFilePath, sanitizedFile.getAbsolutePath());
         File zipFile = new File(zipFilePath);
         return uploadFileToRepository(zipFile);
+    }
+
+    /**
+     * Sanitizes the file name by replacing problematic characters with underscores.
+     *
+     * @param fileName The original file name.
+     * @return The sanitized file name.
+     */
+    private String sanitizeFileName(String fileName) {
+        if (fileName == null) return "unnamed_file";
+
+        // Replace problematic characters with underscores
+        return fileName.replaceAll("[\\r\\n\\t]", "_")
+                .replaceAll("[<>:\"/\\\\|?*]", "_")
+                .trim();
     }
 
     /**

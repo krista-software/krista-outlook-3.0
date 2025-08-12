@@ -1,6 +1,6 @@
 # Release Notes – Krista Outlook Extension
 
-## Version 3.0.8
+## Version 3.0.9
 
 - **Developers**: VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
@@ -10,6 +10,9 @@
 ---
 
 ## Resolved Bugs
+
+- [**KE-2274**](https://antbrains.atlassian.net/browse/KE-2274):  
+  Outlook3: Credentials are returned in plain text instead of encrypted in extension test connection response
 
 - [**KE-2358**](https://antbrains.atlassian.net/browse/KE-2358):  
   Outlook extension Paging occasionally fails on when iterating over pages - Fetch Mails By Label request
