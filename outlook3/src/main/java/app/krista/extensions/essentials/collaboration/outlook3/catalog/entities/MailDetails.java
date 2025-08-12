@@ -29,7 +29,7 @@ public class MailDetails {
     @Field.File(name = "File Attachment", multipleFileUpload = true, required = false, attributes = {}, options = {})
     public List<File> fileAttachment;
 
-    @Field.Desc(name = "Item attachment", type = "[ Label ]", required = false)
+    @Field.Desc(name = "Item attachment", type = "[ RichText ]", required = false)
     public List<String> itemAttachment;
 
     @Field.File(name = "Reference attachment", multipleFileUpload = false, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})

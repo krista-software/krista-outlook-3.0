@@ -10,6 +10,7 @@ The Outlook Extension supports the following catalog requests.
 > - Files with extensions such as "html", "php5", "pht", "phtml", "shtml", "asa", "cer", "asax", "swf", "xap", "jsp", "
     exe", and "js" are attached as a zip file in the email. Likewise, attachments are received as zip files in the
     email.
+> - If a file name contains control characters (\r, \n, \t) or filesystem problematic characters (<, >, :, ", /, \, |, ?, *), they will be replaced with underscores (_).
 
 > **Error Handling Note :**
 > - If a user makes a mistake when entering data, the system will give them a chance to fix it.
