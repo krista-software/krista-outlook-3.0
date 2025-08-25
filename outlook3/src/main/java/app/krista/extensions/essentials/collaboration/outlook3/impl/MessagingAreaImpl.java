@@ -96,8 +96,13 @@ public class MessagingAreaImpl {
             return null;
         }
 
-        String javaTimeZone = EntityHelperUtil.mapWindowsTimeZoneToJava(
-                Objects.requireNonNull(user != null && user.mailboxSettings != null ? user.mailboxSettings.timeZone : Constants.UTC));
+        String timeZone = Constants.UTC; // Default fallback
+        if (user != null && user.mailboxSettings != null && user.mailboxSettings.timeZone != null) {
+            timeZone = user.mailboxSettings.timeZone;
+            LOGGER.info(" Timezone : {} ", timeZone);
+        }
+
+        String javaTimeZone = EntityHelperUtil.mapWindowsTimeZoneToJava(timeZone);
 
         Long dateToUse = email.getReceivedDateAndTime() != null ? email.getReceivedDateAndTime() : email.getSendDateAndTime();
         if (dateToUse == null) return "";
