@@ -1,6 +1,6 @@
 # Release Notes – Krista Outlook Extension
 
-## Version 3.0.9
+## Version 3.0.10
 
 - **Developers**: VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
@@ -10,6 +10,9 @@
 ---
 
 ## Resolved Bugs
+
+- [**KE-2450**](https://antbrains.atlassian.net/browse/KE-2450):  
+  NullPointerException in Outlook email reply operations when timezone is unavailable
 
 - [**KE-2274**](https://antbrains.atlassian.net/browse/KE-2274):  
   Outlook3: Credentials are returned in plain text instead of encrypted in extension test connection response
