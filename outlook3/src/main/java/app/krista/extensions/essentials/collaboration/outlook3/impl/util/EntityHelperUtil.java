@@ -253,19 +253,53 @@ public class EntityHelperUtil {
     }
 
     public static String formatMessageWithThread(Email email, String message, String bodyType, String originalDate) {
-        if (message == null) {
-            message = "";
-        }
+        // Extract only the new message content, removing any existing thread history
+        String newMessageOnly = extractNewMessageContent(message, bodyType);
 
+        // Format the new message using simple, reliable approach (from commit 6bd834a728)
+        String formattedNewMessage = formattedMessage(newMessageOnly, bodyType);
+        // Create the thread history separately
+        String threadHistory = createThreadHistory(email, bodyType, originalDate);
+        if (Constants.HTML.equals(bodyType)) {
+            return formattedNewMessage + "<br>" + threadHistory;
+        } else {
+            return formattedNewMessage + "\n\n" + threadHistory;
+        }
+    }
+
+    /**
+     * Extracts only the new message content, removing any existing thread history
+     * that might be embedded in the message parameter.
+     */
+    private static String extractNewMessageContent(String message, String bodyType) {
+        if (message == null || message.trim().isEmpty()) {
+            return message != null ? message : "";
+        }
+        int originalMessageIndex = message.indexOf(ORIGINAL_MESSAGE_MARKER);
+
+        if (originalMessageIndex > 0) {
+            String newMessageOnly = message.substring(0, originalMessageIndex).trim();
+
+            if (Constants.HTML.equals(bodyType)) {
+                newMessageOnly = newMessageOnly.replaceAll(HTML_BR_CLEANUP_REGEX, "").trim();
+            } else {
+                newMessageOnly = newMessageOnly.replaceAll(WHITESPACE_CLEANUP_REGEX, "").trim();
+            }
+            return newMessageOnly;
+        }
+        return message;
+    }
+
+    private static String createThreadHistory(Email email, String bodyType, String originalDate) {
         String originalContent = formattedMessage(email.getContent(), bodyType);
         String originalSender = email.getSenderEmailAddress() != null ? formatEmailWithDisplayName(email.getSenderEmailAddress()) : "Unknown Sender";
         String originalTo = formatEmailListWithDisplayNames(email.getToEmailAddresses());
         String originalSubject = email.getSubject();
 
         if (Constants.HTML.equals(bodyType)) {
-            return formatHtmlThreadMessage(message, originalContent, originalSender, originalTo, originalSubject, originalDate);
+            return createHtmlThreadHistory(originalContent, originalSender, originalTo, originalSubject, originalDate);
         } else {
-            return formatTextThreadMessage(message, originalContent, originalSender, originalTo, originalSubject, originalDate);
+            return createTextThreadHistory(originalContent, originalSender, originalTo, originalSubject, originalDate);
         }
     }
 
@@ -292,44 +326,46 @@ public class EntityHelperUtil {
         return emailString.toString();
     }
 
-    private static String formatHtmlThreadMessage(String newMessage, String originalContent, String originalSender,
+    private static String createHtmlThreadHistory(String originalContent, String originalSender,
                                                   String originalTo, String originalSubject, String originalDate) {
         originalContent = originalContent.replaceAll("(?m)^\\s*$\\n", "");
         originalContent = originalContent.replaceAll("(?i)(<br\\s*/?>\\s*){2,}", "<br>");
         originalContent = originalContent.replaceAll("(?i)(</?br\\s*/?>\\s*){2,}", "<br>");
-        return newMessage +
-                "<br>" +
-                "<hr style='border: 1px solid #ccc;'>" +
+        return formatHtmlThreadHeaders(originalSender, originalTo, originalSubject, originalDate) + originalContent;
+    }
+
+    private static String formatHtmlThreadHeaders(String originalSender, String originalTo,
+                                                  String originalSubject, String originalDate) {
+        return "<hr style='border: 1px solid #ccc;'>" +
                 "<b>From:</b> " + escapeAngleBrackets(originalSender) + "<br>" +
                 "<b>Sent:</b> " + originalDate + "<br>" +
                 "<b>To:</b> " + escapeAngleBrackets(originalTo) + "<br>" +
-                "<b>Subject:</b> " + escapeAngleBrackets(originalSubject) + "<br><br>" +
-                originalContent;
+                "<b>Subject:</b> " + escapeAngleBrackets(originalSubject) + "<br><br>";
+    }
+
+    private static String createTextThreadHistory(String originalContent, String originalSender,
+                                                  String originalTo, String originalSubject, String originalDate) {
+        StringBuilder threadHistory = new StringBuilder();
+        threadHistory.append(formatTextThreadHeaders(originalSender, originalTo, originalSubject, originalDate));
+        String origContent = cleanOriginalContent(originalContent);
+        threadHistory.append(origContent);
+        return threadHistory.toString();
+    }
+
+    private static String formatTextThreadHeaders(String originalSender, String originalTo,
+                                                  String originalSubject, String originalDate) {
+        StringBuilder headers = new StringBuilder();
+        headers.append("-----Original Message-----\n");
+        headers.append("FROM: ").append(originalSender).append("\n");
+        headers.append("SENT: ").append(originalDate).append("\n");
+        headers.append("TO: ").append(originalTo).append("\n");
+        headers.append("SUBJECT: ").append(originalSubject).append("\n\n");
+        return headers.toString();
     }
 
     private static String escapeAngleBrackets(String input) {
         if (input == null) return "";
         return input.replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    private static String formatTextThreadMessage(String newMessage, String originalContent,
-                                                  String originalSender, String originalTo,
-                                                  String originalSubject, String originalDate) {
-        StringBuilder threadMessage = new StringBuilder();
-        String newMsg = newMessage == null ? "" : cleanOriginalContent(newMessage.trim());
-
-        if (!newMsg.isEmpty()) {
-            threadMessage.append(newMsg).append("\n\n");
-        }
-        threadMessage.append("-----Original Message-----\n");
-        threadMessage.append("From: ").append(originalSender).append("\n");
-        threadMessage.append("Sent: ").append(originalDate).append("\n");
-        threadMessage.append("To: ").append(originalTo).append("\n");
-        threadMessage.append("Subject: ").append(originalSubject).append("\n\n");
-
-        String origContent = cleanOriginalContent(originalContent);
-        threadMessage.append(origContent);
-        return threadMessage.toString();
     }
 
     private static String cleanOriginalContent(String originalContent) {
