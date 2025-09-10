@@ -39,11 +39,11 @@ const AuthPage = () => {
         } catch (error) {
             console.error('Error fetching credentials:', error);
         }
-    }, []);
+    }, [selectedOption]);
 
     useEffect(() => {
         getAuth().catch(error => console.log(error));
-    }, []);
+    }, [getAuth]);
 
     const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedOption(e.target.value as AuthType);
