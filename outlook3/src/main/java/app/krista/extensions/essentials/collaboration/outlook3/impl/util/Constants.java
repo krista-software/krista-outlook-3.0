@@ -147,6 +147,9 @@ public class Constants {
     public static final String MAILBOX_SETTINGS = "mailboxSettings";
     public static final String UTC = "UTC";
     public static final String DATE_TIME_FORMAT_PATTERN = "dd MMMM yyyy HH:mm";
+    public static final String ORIGINAL_MESSAGE_MARKER = "-----Original Message-----";
+    public static final String HTML_BR_CLEANUP_REGEX = "(<br\\s*/?>\\s*)+$";
+    public static final String WHITESPACE_CLEANUP_REGEX = "\\s+$";
 
     // Error messages for ExtensionResponse
     public static final String USER_DELETED_ERROR = "Your Microsoft account no longer exists. Please contact your administrator.";
