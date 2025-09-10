@@ -79,6 +79,7 @@ public class Constants {
     public static final String ORG_AUTHORITY = "https://login.microsoftonline.com/organizations/";
     public static final String AUTHORITY = "https://login.microsoftonline.com/";
     public static final String USER_ID = "userId";
+    public static final String CLIENT_USER_ID = "clientUserId";
     public static final String AUTH_CONTEXT_ID = "authContextId";
     public static final String UNSUPPORTED_AUTH = "Unsupported authentication type provided. Please select either Public or Private.";
     public static final String REFRESH_TOKEN_EXPIRED = "Refresh Token is no longer valid. Please reauthorize yourself";
@@ -188,6 +189,10 @@ public class Constants {
     public static final String KEYWORD_ACCESS_DENIED = "access_denied";
     public static final String KEYWORD_PASSWORD_CHANGED = "changed or reset their password";
     public static final String GENERIC_INVALID_GRANT_CODE = "invalid_grant";
+
+    //save configuration constants
+    public static final String IS_CONFIGURATION_SUCCESSFUL = "Is Configuration Successful";
+    public static final String EXTENSION_RESPONSE_META  = "Extension Response Meta";
 
     public static final List<AuthErrorRule> AUTH_ERROR_RULES = List.of(
             new AuthErrorRule(List.of(PASSWORD_CHANGED_CODE, KEYWORD_PASSWORD_CHANGED), PASSWORD_CHANGED_ERROR, true),

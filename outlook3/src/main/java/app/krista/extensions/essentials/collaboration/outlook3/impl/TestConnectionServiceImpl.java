@@ -14,6 +14,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.O
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.model.field.NamedValuedField;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import com.microsoft.graph.http.GraphServiceException;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,24 +39,34 @@ public class TestConnectionServiceImpl {
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore outlookAttributeStore;
     private final String baseRoutingUrl;
+    private final AuthorizationContext authorizationContext;
 
     @Inject
     public TestConnectionServiceImpl(GraphServiceClientProviderFactory providerFactory,
                                      OutlookAttributeStore outlookAttributeStore,
-                                     Invoker invoker) {
+                                     Invoker invoker, AuthorizationContext authorizationContext) {
         this.providerFactory = providerFactory;
         this.outlookAttributeStore = outlookAttributeStore;
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        this.authorizationContext = authorizationContext;
     }
 
     public String testConnection(OutlookAttributes outlookAttributes) {
+        return testConnection(outlookAttributes, true);
+    }
+
+    public String testConnection(OutlookAttributes outlookAttributes, boolean isFromCatalog) {
         LOGGER.info("Testing connection with Microsoft Graph API");
         String authContextId = providerFactory.createAttributes(outlookAttributes);
         String authUrl = null;
         try {
             LOGGER.info("Verifying API access for email: {}", outlookAttributes.getEmail());
-            providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
-
+            if(isFromCatalog) {
+                providerFactory.create(authContextId).getGraphServiceClientForUser(false, authorizationContext.getAuthorizedAccount().getAccountId()).me().mailFolders().buildRequest().get();
+            }
+            else {
+                providerFactory.create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+            }
             if (outlookAttributes.isAllowMailAlert()) {
                 LOGGER.info("Mail alerts enabled, creating subscription");
                 boolean subscriptionCreated = MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create(authContextId));
@@ -82,6 +94,8 @@ public class TestConnectionServiceImpl {
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
             return createTestConnectionResponse(false, AUTHORIZATION_PROMPT, authUrl);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             if (authUrl == null) {
                 outlookAttributeStore.remove(authContextId);

@@ -105,7 +105,8 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
         Optional<NamedValuedField> authContext = cause.getDetails().stream()
                 .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
                 .findFirst();
-        String state = userId;
+        String clientUserId = (String) cause.getDetails().get(1).getValue();
+        String state = userId + Constants.HASH + clientUserId;
         OutlookAttributes attributes;
         if (authContext.isPresent()) {
             String authContextId = (String) authContext.get().getValue();

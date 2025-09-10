@@ -58,18 +58,20 @@ public final class OutlookApiResource {
     private final String invokerId;
     private final Invoker invoker;
     private final TestConnectionServiceImpl testConnectionService;
+    private final SaveConfigurationImpl saveConfigurationImpl;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
                               GraphServiceClientProviderFactory providerFactory, EventHandler eventHandler,
                               Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener,
-                              TestConnectionServiceImpl testConnectionService) {
+                              TestConnectionServiceImpl testConnectionService, SaveConfigurationImpl saveConfigurationImpl) {
         this.outlookAttributeStore = outlookAttributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.providerFactory = providerFactory;
         this.eventHandler = eventHandler;
         this.context = context;
         this.authorizationListener = authorizationListener;
+        this.saveConfigurationImpl = saveConfigurationImpl;
         this.notificationProcessQueue = new NotificationProcessQueue(providerFactory, invoker);
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
@@ -105,6 +107,8 @@ public final class OutlookApiResource {
         }
 
         String key = parts[0];
+        String clientKey = parts[1];
+
         String authContextId = AuthHelper.getAuthContextId(state);
 
         LOGGER.debug("Parsed key: [{}] from state. AuthContextId resolved: [{}]", key, authContextId);
@@ -124,6 +128,7 @@ public final class OutlookApiResource {
             LOGGER.info("Access token retrieved successfully.");
 
             refreshTokenStore.put(key, accessToken.getRefreshToken());
+            refreshTokenStore.put(clientKey, accessToken.getRefreshToken());
             LOGGER.debug("Refresh token stored for key: {}", key);
 
             if (!key.startsWith(Constants.WS_CONTACT) && !hasUserAccess(clientProvider)) {
@@ -286,22 +291,7 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
         decryptClientSecretIfPrivate(authPayload);
-        OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        String authContextId = providerFactory.createAttributes(attributes);
-        try {
-            providerFactory.create(authContextId).getGraphServiceClientForAdmin()
-                    .users(attributes.getEmail())
-                    .mailFolders().buildRequest().get();
-            boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
-            return isSaved
-                    ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
-                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
-        } catch (Exception cause) {
-            LOGGER.error(FAILED_TO_SAVE_ATTRIBUTES + ": {} ", cause.getMessage(), cause);
-            return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
-        } finally {
-            outlookAttributeStore.remove(authContextId);
-        }
+        return saveConfigurationImpl.saveCredentials(authPayload, false);
     }
 
 
@@ -311,7 +301,7 @@ public final class OutlookApiResource {
     public String testConnection(JsonObject authPayload) {
         decryptClientSecretIfPrivate(authPayload);
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        return testConnectionService.testConnection(outlookAttributes);
+        return testConnectionService.testConnection(outlookAttributes, false);
     }
 
     private void decryptClientSecretIfPrivate(JsonObject authPayload) {
