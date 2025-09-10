@@ -268,8 +268,12 @@ public class EntityHelperUtil {
     }
 
     /**
-     * Extracts only the new message content, removing any existing thread history
-     * that might be embedded in the message parameter.
+     * Extracts content before the original message marker, removing any existing thread history.
+     *
+     * @param message the input message that may contain thread history
+     * @param bodyType the body type (HTML or Text) for appropriate cleaning
+     * @return the content before the original message marker, or the entire message if no marker found.
+     *         Returns empty string if the marker is at the beginning of the message.
      */
     private static String extractNewMessageContent(String message, String bodyType) {
         if (message == null || message.trim().isEmpty()) {
@@ -356,10 +360,10 @@ public class EntityHelperUtil {
                                                   String originalSubject, String originalDate) {
         StringBuilder headers = new StringBuilder();
         headers.append("-----Original Message-----\n");
-        headers.append("FROM: ").append(originalSender).append("\n");
-        headers.append("SENT: ").append(originalDate).append("\n");
-        headers.append("TO: ").append(originalTo).append("\n");
-        headers.append("SUBJECT: ").append(originalSubject).append("\n\n");
+        headers.append("From: ").append(originalSender).append("\n");
+        headers.append("Sent: ").append(originalDate).append("\n");
+        headers.append("To: ").append(originalTo).append("\n");
+        headers.append("Subject: ").append(originalSubject).append("\n\n");
         return headers.toString();
     }
 
