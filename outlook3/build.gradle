@@ -9,16 +9,16 @@ group 'app.krista.extensions.essentials.collaboration'
 
 /*
  * Use extension.name for archiveBaseName, extension.version for version.
- * Resulting jar: <extension.name>-<extension.version>.jar e.g. OutlookV3-3.0.4-rc1.jar
+ * Resulting jar: <extension.name>-<extension.version>.jar e.g. Outlook-3.0.11.jar
  */
-def computedBaseName = "OutlookV3"
+def computedBaseName = "Outlook"
 def computedVersion = "local"
 def releasePropsFile = file('release.properties')
 if (releasePropsFile.exists()) {
     def props = new Properties()
     releasePropsFile.withInputStream { stream -> props.load(stream) }
     // Remove whitespace for base name, but allow dashes/underscores
-    computedBaseName = (props['extension.name'] ?: "OutlookV3").replaceAll(/\s+/, "")
+    computedBaseName = (props['extension.name'] ?: "Outlook").replaceAll(/\s+/, "")
     computedVersion = props['extension.version'] ?: "local"
 }
 version = computedVersion
@@ -207,95 +207,119 @@ tasks.register('cleanDir', Delete) {
 
 
 import java.util.regex.Pattern
-/*
-    Task to generate release.properties files in below format.
-    extension.version=<version>
-    extension.name=<name>
-    domain.name=<domain>
-    ecosystem.name=<ecosystem>
-    Every extension developer should update extensionFile and areaFileName with relative path.
- */
-abstract class  GenerateReleasePropertiesTask extends DefaultTask {
-    @TaskAction
-    def generateProperties() {
+
+tasks.register('generateReleaseProperties') {
+    group = 'build'
+    description = 'Generates release.properties file with extension version and domain information'
+
+    doLast {
         def extensionFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/OutlookExtension.java'
-        def areaFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/catalog/MessagingArea.java'
+        def messagingAreaFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/catalog/MessagingArea.java'
+        def setupAreaFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/catalog/SetupArea.java'
+
         def extensionFile = project.file(extensionFilePath)
-        def areaFile = project.file(areaFilePath)
+        def messagingAreaFile = project.file(messagingAreaFilePath)
+        def setupAreaFile = project.file(setupAreaFilePath)
+
         if (!extensionFile.exists()) {
             throw new GradleException("Extension file not found: ${extensionFilePath}")
         }
-        if (!areaFile.exists()) {
-            throw new GradleException("Area file not found: ${areaFilePath}")
+
+        // Check that at least one area file exists
+        if (!messagingAreaFile.exists() && !setupAreaFile.exists()) {
+            throw new GradleException("None of the area files found. At least one must exist.")
         }
+
         def properties = new Properties()
         // Pre-compile the regex pattern for better performance
         def keyValuePattern = Pattern.compile(/(\w+)\s*=\s*"([^"]+)"/)
+
         // Extract Extension annotation information
         extractAnnotationInfo(extensionFile, "@Extension", keyValuePattern) { key, value ->
-            if (key == "name") {
-                properties.setProperty("extension.name", value)
-                logger.lifecycle("Found extension name: ${value}")
-            } else if (key == "version") {
+            if (key == "version") {
                 properties.setProperty("extension.version", value)
                 logger.lifecycle("Found extension version: ${value}")
+            } else if (key == "name") {
+                properties.setProperty("extension.name", value)
+                logger.lifecycle("Found extension name: ${value}")
             }
         }
-        // Extract Domain annotation information
-        extractAnnotationInfo(areaFile, "@Domain", keyValuePattern) { key, value ->
-            if (key == "name") {
-                properties.setProperty("domain.name", value)
-                logger.lifecycle("Found domain name: ${value}")
-            } else if (key == "ecosystemName") {
-                properties.setProperty("ecosystem.name", value)
-                logger.lifecycle("Found ecosystem name: ${value}")
+
+        // Set default extension name if not found
+        if (!properties.getProperty('extension.name')) {
+            properties.setProperty("extension.name", "Outlook")
+            logger.lifecycle("Set default extension name: Outlook")
+        }
+
+        // Try to extract Domain annotation information from all area files
+        def domainFound = false
+        def ecosystemFound = false
+
+        // Check each area file if it exists
+        [messagingAreaFile, setupAreaFile].each { areaFile ->
+            if (areaFile.exists()) {
+                extractAnnotationInfo(areaFile, "@Domain", keyValuePattern) { key, value ->
+                    if (key == "name" && !domainFound) {
+                        properties.setProperty("domain.name", value)
+                        logger.lifecycle("Found domain name: ${value} from ${areaFile.name}")
+                        domainFound = true
+                    } else if (key == "ecosystemName" && !ecosystemFound) {
+                        properties.setProperty("ecosystem.name", value)
+                        logger.lifecycle("Found ecosystem name: ${value} from ${areaFile.name}")
+                        ecosystemFound = true
+                    }
+                }
             }
         }
+
         if (!properties.getProperty('extension.version')) {
             throw new GradleException("Could not find extension version in ${extensionFilePath}")
         }
-        if (!properties.getProperty('domain.name') || !properties.getProperty('ecosystem.name')) {
-            throw new GradleException("Could not find domain name or ecosystem name in ${areaFilePath}")
+
+        // Set default values if not found in annotations
+        if (!properties.getProperty('domain.name')) {
+            properties.setProperty("domain.name", "Collaboration")
+            logger.lifecycle("Set default domain name: Collaboration")
         }
+
+        if (!properties.getProperty('ecosystem.name')) {
+            properties.setProperty("ecosystem.name", "Essentials")
+            logger.lifecycle("Set default ecosystem name: Essentials")
+        }
+
         def releasePropertiesFile = project.file('release.properties')
         def content = properties.collect { key, value -> "${key}=${value}" }.join('\n')
         releasePropertiesFile.text = content + '\n'
         logger.lifecycle("Generated release.properties with content:\n${content}")
     }
-    /**
-     * Extracts annotation information from a file
-     * @param file The file to extract from
-     * @param annotationName The annotation name to look for
-     * @param keyValuePattern The regex pattern to extract key-value pairs
-     * @param processProperty Closure to process each property
-     */
-    private static void extractAnnotationInfo(File file, String annotationName, Pattern keyValuePattern, Closure processProperty) {
-        StringBuilder annotationText = new StringBuilder()
-        boolean inAnnotation = false
-        file.eachLine { line ->
-            line = line.trim()
-            if (line.contains(annotationName)) {
-                inAnnotation = true
-            }
-            if (inAnnotation) {
-                annotationText.append(line)
-                if (line.contains(")")) {
-                    inAnnotation = false
-                    def matcher = keyValuePattern.matcher(annotationText.toString())
-                    while (matcher.find()) {
-                        def key = matcher.group(1)
-                        def value = matcher.group(2)
-                        processProperty.call(key, value)
-                    }
-                }
+}
+
+// Helper method to extract annotation information
+def extractAnnotationInfo(File file, String annotationName, Pattern keyValuePattern, Closure processProperty) {
+    StringBuilder annotationText = new StringBuilder()
+    boolean inAnnotation = false
+    file.eachLine { line ->
+        line = line.trim()
+        if (line.contains(annotationName)) {
+            inAnnotation = true
+            annotationText.setLength(0) // Reset the buffer when starting a new annotation
+            annotationText.append(line)
+        } else if (inAnnotation) {
+            annotationText.append(line)
+        }
+
+        if (inAnnotation && line.contains(")")) {
+            inAnnotation = false
+            def matcher = keyValuePattern.matcher(annotationText.toString())
+            while (matcher.find()) {
+                def key = matcher.group(1)
+                def value = matcher.group(2)
+                processProperty.call(key, value)
             }
         }
     }
 }
-tasks.register('generateReleaseProperties', GenerateReleasePropertiesTask) {
-    group = 'build'
-    description = 'Generates release.properties file with extension version and domain information'
-}
+
 tasks.named("jar") {
     dependsOn tasks.named("generateReleaseProperties")
     dependsOn tasks.named("buildAndCopyUI")
@@ -316,7 +340,7 @@ jar {
             def props = new Properties()
             jarReleasePropsFile.withInputStream { stream -> props.load(stream) }
             // Use extension.name if available, otherwise fall back to default
-            def actualBaseName = (props['extension.name'] ?: "OutlookV3").replaceAll(/\s+/, "")
+            def actualBaseName = (props['extension.name'] ?: "Outlook").replaceAll(/\s+/, "")
             def actualVersion = props['extension.version'] ?: "local"
 
             println "Using jar name from release.properties: ${actualBaseName}-${actualVersion}.jar"
