@@ -106,7 +106,7 @@ public class SaveConfigurationImpl {
         }
 
         LOGGER.info("Saving Outlook Attributes: {}", attributes);
-        String saveResult = saveCredentials(authPayload, true);
+        String saveResult = saveCredentials(authPayload);
 
         if (saveResult.contains("true")) {
             ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
@@ -124,12 +124,12 @@ public class SaveConfigurationImpl {
 
     @NotNull
     private static List<NamedValuedField> getNamedValuedFields(String accountId, OutlookAttributes attributes, String authContextId) {
-        String clientUserId = attributes.getEmail() + Constants.UNDER_SCORE + attributes.getClientId() + Constants.UNDER_SCORE + attributes.getAuthType();
         List<NamedValuedField> details = new ArrayList<>();
-        NamedValuedField userIdField = new NamedValuedField(Constants.USER_ID, Constants.TEXT, accountId, new HashMap<>(), new HashMap<>());
-        details.add(userIdField);
-        NamedValuedField clientUserIdField = new NamedValuedField(Constants.CLIENT_USER_ID, Constants.TEXT, clientUserId, new HashMap<>(), new HashMap<>());
+        NamedValuedField clientUserIdField = new NamedValuedField(Constants.CLIENT_USER_ID, Constants.TEXT, accountId, new HashMap<>(), new HashMap<>());
         details.add(clientUserIdField);
+        String userId = attributes.getEmail() + Constants.UNDER_SCORE + attributes.getClientId() + Constants.UNDER_SCORE + attributes.getAuthType();
+        NamedValuedField userIdField = new NamedValuedField(Constants.USER_ID, Constants.TEXT, userId, new HashMap<>(), new HashMap<>());
+        details.add(userIdField);
         if (authContextId != null) {
             NamedValuedField contextIdField = new NamedValuedField(Constants.AUTH_CONTEXT_ID, Constants.TEXT, authContextId, new HashMap<>(), new HashMap<>());
             details.add(contextIdField);
@@ -137,7 +137,7 @@ public class SaveConfigurationImpl {
         return details;
     }
 
-    public String saveCredentials(JsonObject authPayload, boolean isFromCatalog) {
+    public String saveCredentials(JsonObject authPayload) {
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         String authContextId = providerFactory.createAttributes(attributes);
         try {

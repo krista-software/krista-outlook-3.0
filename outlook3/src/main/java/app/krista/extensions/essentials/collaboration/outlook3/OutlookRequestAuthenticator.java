@@ -101,12 +101,23 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
 
     @Override
     public AuthorizationResponse getMustAuthorizeResponse(MustAuthorizeException cause) {
-        String userId = (String) cause.getDetails().get(0).getValue();
+        String userId;
+        Optional<String> clientUserId = cause.getDetails().stream()
+                .filter(field -> Objects.equals(field.getName(), Constants.USER_ID))
+                .map(field -> (String) field.getValue())
+                .findFirst();
+        userId = (String) cause.getDetails().getFirst().getValue();
+        if (clientUserId.isPresent()) {
+            userId = (String) cause.getDetails().getFirst().getValue();
+        }
         Optional<NamedValuedField> authContext = cause.getDetails().stream()
                 .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
                 .findFirst();
-        String clientUserId = (String) cause.getDetails().get(1).getValue();
-        String state = userId + Constants.HASH + clientUserId;
+        String state;
+        state = userId;
+        if (clientUserId.isPresent()) {
+            state = userId + Constants.HASH + clientUserId.get();
+        }
         OutlookAttributes attributes;
         if (authContext.isPresent()) {
             String authContextId = (String) authContext.get().getValue();

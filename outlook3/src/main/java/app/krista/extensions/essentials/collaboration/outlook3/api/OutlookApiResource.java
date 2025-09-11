@@ -107,8 +107,11 @@ public final class OutlookApiResource {
         }
 
         String key = parts[0];
-        String clientKey = parts[1];
+        String clientKey = null;
 
+        if (parts.length >= 4) {
+            clientKey = parts[1];
+        }
         String authContextId = AuthHelper.getAuthContextId(state);
 
         LOGGER.debug("Parsed key: [{}] from state. AuthContextId resolved: [{}]", key, authContextId);
@@ -128,7 +131,9 @@ public final class OutlookApiResource {
             LOGGER.info("Access token retrieved successfully.");
 
             refreshTokenStore.put(key, accessToken.getRefreshToken());
-            refreshTokenStore.put(clientKey, accessToken.getRefreshToken());
+            if (clientKey != null) {
+                refreshTokenStore.put(clientKey, accessToken.getRefreshToken());
+            }
             LOGGER.debug("Refresh token stored for key: {}", key);
 
             if (!key.startsWith(Constants.WS_CONTACT) && !hasUserAccess(clientProvider)) {
@@ -291,7 +296,7 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
         decryptClientSecretIfPrivate(authPayload);
-        return saveConfigurationImpl.saveCredentials(authPayload, false);
+        return saveConfigurationImpl.saveCredentials(authPayload);
     }
 
 

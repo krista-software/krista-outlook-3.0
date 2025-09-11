@@ -48,14 +48,22 @@ public class MessagingAreaImpl {
     private final Account account;
     private final MailHandler mailHandler;
     private Entities registry;
-    private final GraphServiceClientProvider provider;
+    private GraphServiceClientProvider provider;
+    private GraphServiceClientProviderFactory providerFactory;
 
     @Inject
     public MessagingAreaImpl(Account account, MailHandler mailHandler, Entities registry, GraphServiceClientProviderFactory providerFactory) {
         this.account = account;
         this.mailHandler = mailHandler;
         this.registry = registry;
-        this.provider = providerFactory.create();
+        this.providerFactory = providerFactory;
+    }
+
+    public GraphServiceClientProvider getProvider() {
+        if (provider == null) {
+            return providerFactory.create();
+        }
+        return provider;
     }
 
 
@@ -86,7 +94,7 @@ public class MessagingAreaImpl {
     private String getReceivedDateAndTime(Email email) {
         User user;
         try {
-            user = provider.getGraphServiceClientForUser(true, null)
+            user = getProvider().getGraphServiceClientForUser(true, null)
                     .me()
                     .buildRequest()
                     .select(Constants.MAILBOX_SETTINGS)

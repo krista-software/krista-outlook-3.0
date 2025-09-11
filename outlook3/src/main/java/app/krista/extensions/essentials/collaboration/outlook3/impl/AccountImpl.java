@@ -34,11 +34,19 @@ public class AccountImpl implements Account {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountImpl.class);
 
-    private final GraphServiceClientProvider provider;
+    private GraphServiceClientProvider provider;
+    private GraphServiceClientProviderFactory providerFactory;
 
     @Inject
     public AccountImpl(GraphServiceClientProviderFactory factory) {
-        this(factory.create());
+        this.providerFactory = factory;
+    }
+
+    public GraphServiceClientProvider getProvider() {
+        if (provider == null) {
+            return providerFactory.create();
+        }
+        return provider;
     }
 
     public AccountImpl(GraphServiceClientProvider provider) {
@@ -76,7 +84,7 @@ public class AccountImpl implements Account {
         while (page != null && !page.getCurrentPage().isEmpty()) {
             for (MailFolder folderInPage : page.getCurrentPage()) {
                 if (folderInPage.displayName != null && Objects.equals(folderName.toLowerCase(), folderInPage.displayName.toLowerCase())) {
-                    return new FolderImpl(this, provider, folderInPage);
+                    return new FolderImpl(this, getProvider(), folderInPage);
                 }
             }
             MailFolderCollectionRequestBuilder nextPage = page.getNextPage();
@@ -110,7 +118,7 @@ public class AccountImpl implements Account {
             if (mailFolder == null) {
                 throw new IllegalArgumentException(Constants.FOLDER_WITH_ID + folderId + Constants.NOT_FOUND);
             }
-            return new FolderImpl(this, provider, mailFolder);
+            return new FolderImpl(this, getProvider(), mailFolder);
         } catch (RuntimeException cause) {
             throw new IllegalStateException(Constants.FOLDER_WITH_ID + folderId + Constants.NOT_FOUND, cause.getCause());
         }
@@ -180,7 +188,7 @@ public class AccountImpl implements Account {
                             new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
                     )
                     .get();
-            return new EmailImpl(provider, message);
+            return new EmailImpl(getProvider(), message);
         } catch (Exception cause) {
             LOGGER.error("Error getting email with ID {}: {}", emailId, cause.getMessage(), cause);
             return null;
@@ -200,7 +208,7 @@ public class AccountImpl implements Account {
                     )
                     .top(15).get();
             return (messages == null || messages.getCurrentPage() == null) ? List.of()
-                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
+                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(getProvider(), m)).collect(Collectors.toList());
         } catch (Exception cause) {
             LOGGER.error("Error while searching emails with query '{}': {}", searchString, cause.getMessage(), cause);
             return List.of();
@@ -209,7 +217,7 @@ public class AccountImpl implements Account {
 
     @Override
     public EmailBuilder newEmail() {
-        return EmailBuilderImpl.create(provider);
+        return EmailBuilderImpl.create(getProvider());
     }
 
     private MailFolderCollectionRequestBuilder getFoldersRequestBuilder(Boolean useEmail, String accountID) {
@@ -217,7 +225,7 @@ public class AccountImpl implements Account {
     }
 
     private UserRequestBuilder getUserRequestBuilder(Boolean useEmail, String accountID) {
-        return provider.getUserRequestBuilder(useEmail, accountID);
+        return getProvider().getUserRequestBuilder(useEmail, accountID);
     }
 
 
@@ -261,7 +269,7 @@ public class AccountImpl implements Account {
     public List<String> fetchNotificationDeltaQuery() {
         OffsetDateTime startOfTodayUtc = OffsetDateTime.now(ZoneOffset.UTC).minusDays(1);
 
-        String deltaLink = provider.getDeltaLink();
+        String deltaLink = getProvider().getDeltaLink();
         LOGGER.info("Search for the existing delta link: {}", deltaLink);
         MessageDeltaCollectionPage deltaCollectionPage = null;
         UserRequestBuilder userRequestBuilder = getUserRequestBuilder(null, null);
@@ -287,7 +295,7 @@ public class AccountImpl implements Account {
 
         LOGGER.info("All the Notification being fetched Storing new delta link.");
         if (deltaCollectionPage != null) {
-            provider.storeDeltaLink(deltaCollectionPage.deltaLink);
+            getProvider().storeDeltaLink(deltaCollectionPage.deltaLink);
         }
         return messageIds;
     }
@@ -311,7 +319,7 @@ public class AccountImpl implements Account {
     }
 
     private boolean isMessageFromTheConfiguredEmail(String email) {
-        String configuredEmail = provider.getOutlookAttributes().getEmail();
+        String configuredEmail = getProvider().getOutlookAttributes().getEmail();
         return configuredEmail.equalsIgnoreCase(email);
     }
 
