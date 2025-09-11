@@ -1,15 +1,18 @@
 # Release Notes – Krista Outlook Extension
 
-## Version 3.0.10
+## Version 3.0.11
 
 - **Developers**: VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
-- **Global Catalog Version**: 1.0.59
+- **Global Catalog Version**: GC-2025.09.2
 - **Appliance Release Version**: 3.5.1
 
 ---
 
 ## Resolved Bugs
+
+- [**KE-2465**](https://antbrains.atlassian.net/browse/KE-2465):  
+  Real Auction - Rich Text auto-response emails sent via Outlook extension improperly formatted
 
 - [**KE-2450**](https://antbrains.atlassian.net/browse/KE-2450):  
   NullPointerException in Outlook email reply operations when timezone is unavailable
