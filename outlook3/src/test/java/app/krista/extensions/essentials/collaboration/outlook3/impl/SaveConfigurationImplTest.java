@@ -9,7 +9,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.SaveConfigurationImpl;
 import app.krista.ksdk.context.AuthorizationContext;
 import com.google.gson.JsonObject;
 import com.microsoft.graph.requests.GraphServiceClient;

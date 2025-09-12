@@ -4,7 +4,7 @@ import app.krista.extension.executor.*;
 import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.*;
 import app.krista.extensions.essentials.collaboration.outlook3.health.HealthCheck;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.util.SaveConfigurationImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.SaveConfigurationImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

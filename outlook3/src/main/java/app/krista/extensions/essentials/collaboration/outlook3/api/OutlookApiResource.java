@@ -5,6 +5,7 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.SaveConfigurationImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;

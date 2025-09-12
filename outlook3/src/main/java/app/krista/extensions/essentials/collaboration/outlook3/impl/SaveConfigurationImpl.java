@@ -1,4 +1,4 @@
-package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
+package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
 import app.krista.extension.authorization.MustAuthorizeException;
 import app.krista.extension.executor.ExtensionResponse;
@@ -8,9 +8,10 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
-import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.model.field.NamedValuedField;
 import com.google.gson.JsonObject;
@@ -42,6 +43,7 @@ public class SaveConfigurationImpl {
     private final AuthorizationContext authorizationContext;
     private String publicClientId;
     private String publicClientSecret;
+    private final Invoker invoker;
 
     @Inject
     public SaveConfigurationImpl(GraphServiceClientProviderFactory providerFactory,
@@ -53,6 +55,7 @@ public class SaveConfigurationImpl {
         this.invokerId = invoker.getInvokerId();
         this.testConnectionServiceImpl = testConnectionServiceImpl;
         this.authorizationContext = authorizationContext;
+        this.invoker = invoker;
         loadPublicConfig();
     }
 
