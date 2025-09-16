@@ -108,7 +108,6 @@ public class SaveConfigurationImpl {
             throw new MustAuthorizeException(Constants.AUTHORIZATION_PROMPT, details);
         }
 
-        LOGGER.info("Saving Outlook Attributes: {}", attributes);
         String saveResult = saveCredentials(authPayload);
 
         if (saveResult.contains("true")) {
