@@ -66,14 +66,12 @@ public class SaveConfigurationImpl {
             properties.load(inputStream);
             this.publicClientId = properties.getProperty("public.clientId");
             this.publicClientSecret = properties.getProperty("public.clientSecret");
-            System.out.println("Public Client ID: " + publicClientId + " Public Client Secret: " + publicClientSecret);
         } catch (IOException cause) {
             throw new RuntimeException("Failed to load public configuration file.", cause);
         }
     }
 
     public ExtensionResponse saveConfiguration(JsonObject authPayload) {
-        LOGGER.info("Saving Outlook Attributes: {}", authPayload);
         long startTime = System.currentTimeMillis();
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
         if (Constants.PRIVATE.equals(attributes.getAuthType())) {
