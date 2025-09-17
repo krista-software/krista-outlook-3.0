@@ -110,7 +110,7 @@ public final class OutlookApiResource {
         String key = parts[0];
         String clientKey = null;
 
-        if (parts.length >= 4 || parts.length == 3 && key.startsWith(WS_CONTACT)) {
+        if (parts.length >= 4 || (parts.length == 3 && key.startsWith(WS_CONTACT))) {
             clientKey = parts[1];
         }
         String authContextId = AuthHelper.getAuthContextId(state);

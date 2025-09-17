@@ -47,7 +47,7 @@ public class EmailImpl implements Email {
 
     public GraphServiceClientProvider getProvider() {
         if (provider == null) {
-            return providerFactory.create();
+            this.provider = providerFactory.create();
         }
         return provider;
     }

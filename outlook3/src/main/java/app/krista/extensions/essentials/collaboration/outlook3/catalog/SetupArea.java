@@ -3,8 +3,13 @@ package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 import app.krista.extension.executor.*;
 import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.*;
+import app.krista.extension.request.RoutingInfo;
+import app.krista.extension.request.protos.http.HttpProtocol;
+import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.health.HealthCheck;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.SaveConfigurationImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,11 +26,16 @@ public class SetupArea {
 
     private final HealthCheck healthCheck;
     private final SaveConfigurationImpl saveConfigurationImpl;
+    private final String baseRoutingUrl;
+    private final Invoker invoker;
+
 
     @Inject
-    public SetupArea(HealthCheck healthCheck, SaveConfigurationImpl saveConfigurationImpl) {
+    public SetupArea(HealthCheck healthCheck, SaveConfigurationImpl saveConfigurationImpl, Invoker invoker) {
         this.healthCheck = healthCheck;
         this.saveConfigurationImpl = saveConfigurationImpl;
+        this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
+        this.invoker = invoker;
     }
 
     @CatalogRequest(
@@ -52,7 +62,9 @@ public class SetupArea {
     public ExtensionResponse saveOutlookPublicConfiguration(
             @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The primary Outlook email address used for authentication and integration.'")}, options = {}) String email,
             @Field.Boolean(name = "Allow Mail Alert", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean allowMailAlert) {
-        return saveConfigurationImpl.outlookPublicConfiguration(email,allowMailAlert);
+        LOGGER.info("Saving Outlook Public Configuration: {}", email);
+        JsonObject publicPayload = OutlookAttributes.createJsonAttributes(email, null, null, null, allowMailAlert, Constants.PUBLIC, null);
+        return saveConfigurationImpl.saveConfiguration(publicPayload);
     }
 
     @CatalogRequest(
@@ -69,6 +81,8 @@ public class SetupArea {
             @Field.Text(name = "Client Secret", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Client Secret generated in Azure AD for Outlook integration. Keep this value secure.'")}, options = {}) String clientSecret,
             @Field.Text(name = "Tenant ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Directory (Tenant) ID of your Microsoft 365 organization required for Outlook authentication.'")}, options = {}) String tenantID,
             @Field.Boolean(name = "Allow Mail Alert", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean allowMailAlert) {
-        return saveConfigurationImpl.outlookPrivateConfiguration(email,clientID,clientSecret,tenantID,allowMailAlert);
+        LOGGER.info("Saving Outlook Private Configuration: {}", email);
+        JsonObject privatePayload = OutlookAttributes.createJsonAttributes(email, clientID, clientSecret, tenantID, allowMailAlert, Constants.PRIVATE, baseRoutingUrl);
+        return saveConfigurationImpl.saveConfiguration(privatePayload);
     }
 }

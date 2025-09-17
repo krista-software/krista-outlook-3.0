@@ -37,7 +37,7 @@ public class EmailBuilderImpl implements EmailBuilder {
 
     public GraphServiceClientProvider getProvider() {
         if (provider == null) {
-            return providerFactory.create();
+            this.provider = providerFactory.create();
         }
         return provider;
     }

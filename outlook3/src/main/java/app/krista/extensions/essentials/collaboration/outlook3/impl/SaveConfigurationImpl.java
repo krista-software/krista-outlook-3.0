@@ -8,6 +8,7 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
+import app.krista.extensions.essentials.collaboration.outlook3.catalog.validators.OutlookCredentialValidator;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.AuthenticationResponse;
@@ -71,33 +72,14 @@ public class SaveConfigurationImpl {
         }
     }
 
-    public ExtensionResponse outlookPublicConfiguration(String email, boolean mailAlert) {
-        JsonObject publicPayload = new JsonObject();
-        publicPayload.addProperty(AUTH_TYPE, PUBLIC);
-        publicPayload.addProperty(EMAIL, email);
-        publicPayload.addProperty(CLIENT_ID, publicClientId);
-        publicPayload.addProperty(CLIENT_SECRET, publicClientSecret);
-        publicPayload.addProperty(ALLOW_MAIL_ALERT, mailAlert);
-
-        return saveConfiguration(publicPayload);
-    }
-
-    public ExtensionResponse outlookPrivateConfiguration(String email, String clientId, String clientSecret, String tenantId, boolean mailAlert) {
-        JsonObject privatePayload = new JsonObject();
-        privatePayload.addProperty(AUTH_TYPE, PRIVATE);
-        privatePayload.addProperty(EMAIL, email);
-        privatePayload.addProperty(CLIENT_ID, clientId);
-        privatePayload.addProperty(CLIENT_SECRET, clientSecret);
-        privatePayload.addProperty(TENANT_ID, tenantId);
-        privatePayload.addProperty(ALLOW_MAIL_ALERT, mailAlert);
-
-        return saveConfiguration(privatePayload);
-    }
-
     public ExtensionResponse saveConfiguration(JsonObject authPayload) {
         LOGGER.info("Saving Outlook Attributes: {}", authPayload);
         long startTime = System.currentTimeMillis();
         OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
+        if (Constants.PRIVATE.equals(attributes.getAuthType())) {
+            OutlookCredentialValidator validator = new OutlookCredentialValidator();
+            validator.validateToken(attributes.getClientId(), attributes.getClientSecret(), attributes.getTenantId());
+        }
         String testConnectionResult = testConnectionServiceImpl.testConnection(attributes);
 
         AuthenticationResponse testResponse = Constants.GSON.fromJson(testConnectionResult, AuthenticationResponse.class);
@@ -107,9 +89,7 @@ public class SaveConfigurationImpl {
             List<NamedValuedField> details = getNamedValuedFields(authorizationContext.getAuthorizedAccount().getAccountId(), attributes, authContextId);
             throw new MustAuthorizeException(Constants.AUTHORIZATION_PROMPT, details);
         }
-
         String saveResult = saveCredentials(authPayload);
-
         if (saveResult.contains("true")) {
             ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
             extensionResponseMeta.message = "Outlook Attributes Saved Successfully";

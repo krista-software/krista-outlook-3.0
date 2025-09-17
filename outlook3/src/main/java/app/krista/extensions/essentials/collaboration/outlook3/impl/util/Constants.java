@@ -197,6 +197,13 @@ public class Constants {
     public static final String IS_CONFIGURATION_SUCCESSFUL = "Is Configuration Successful";
     public static final String EXTENSION_RESPONSE_META  = "Extension Response Meta";
 
+    public static final String BASE_URL_FORMAT = "https://login.microsoftonline.com/%s/oauth2/v2.0/token";
+    public static final String REQUEST_BODY_SCOPE_AND_GRANT_TYPE =
+            "&scope=https://graph.microsoft.com/.default&grant_type=client_credentials";
+
+    public static final String ERROR_INVALID_CLIENT_ID = "AADSTS700016";
+    public static final String ERROR_INVALID_TENANT_ID = "AADSTS900023";
+
     public static final List<AuthErrorRule> AUTH_ERROR_RULES = List.of(
             new AuthErrorRule(List.of(PASSWORD_CHANGED_CODE, KEYWORD_PASSWORD_CHANGED), PASSWORD_CHANGED_ERROR, true),
             new AuthErrorRule(List.of(USER_DELETED_CODE, KEYWORD_USER_DELETED), USER_DELETED_ERROR, false),
