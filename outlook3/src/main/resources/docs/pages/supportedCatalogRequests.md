@@ -722,11 +722,6 @@ otherwise returns `false`. This can be used to prevent duplicate processing of e
 | Is Configuration Successful  | Boolean                               | true        |
 | Extension Response Meta      | Entity(Extension Response Meta)       | -           |
 
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Client ID       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Client Secret   | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Tenant ID       | Status As Success | The remediation action will be received, and the data will be re-entered. |
 
 ### Health Check
 

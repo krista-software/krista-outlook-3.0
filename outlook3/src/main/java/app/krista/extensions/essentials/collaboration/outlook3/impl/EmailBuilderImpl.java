@@ -15,24 +15,16 @@ import java.util.stream.Collectors;
 public class EmailBuilderImpl implements EmailBuilder {
     private final Message message;
     private GraphServiceClientProvider provider;
-    private GraphServiceClientProviderFactory providerFactory;
+    private final GraphServiceClientProviderFactory providerFactory;
 
-    public EmailBuilderImpl(GraphServiceClientProvider provider, Message message) {
+    public EmailBuilderImpl(GraphServiceClientProvider provider, Message message, GraphServiceClientProviderFactory providerFactory) {
         this.provider = provider;
         this.message = message;
-    }
-
-    public EmailBuilderImpl(GraphServiceClientProviderFactory providerFactory, Message message) {
         this.providerFactory = providerFactory;
-        this.message = message;
     }
 
     public static EmailBuilderImpl create(GraphServiceClientProvider provider) {
-        return new EmailBuilderImpl(provider, new Message());
-    }
-
-    public static EmailBuilderImpl create(GraphServiceClientProviderFactory providerFactory) {
-        return new EmailBuilderImpl(providerFactory, new Message());
+        return new EmailBuilderImpl(provider, new Message(), null);
     }
 
     public GraphServiceClientProvider getProvider() {
