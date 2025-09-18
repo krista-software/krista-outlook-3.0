@@ -26,7 +26,7 @@ public class ValidationOrchestrator {
         validators.put(Validator.ValidationResource.PAGE_SIZE, new PageSizeValidator());
     }
 
-    public class ValidationResult {
+    public static class ValidationResult {
         private final String confirmStepMessage;
         private final String fetchFieldName;
         private final String fetchStepMessage;
@@ -72,7 +72,7 @@ public class ValidationOrchestrator {
             assert validator != null;
             if (!validator.validate(entry.getValue(), resources)) {
                 results.add(new ValidationResult(validator.getConfirmationStepMessage(entry.getValue(), resources),
-                        validator.getFetchFieldName(),  validator.getFetchStepMessage(),
+                        validator.getFetchFieldName(), validator.getFetchStepMessage(),
                         validator.getErrMessage(entry.getValue()), validator.getFieldType()));
             }
         }

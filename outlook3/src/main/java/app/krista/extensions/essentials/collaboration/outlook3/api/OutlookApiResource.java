@@ -242,8 +242,8 @@ public final class OutlookApiResource {
      * isDuplicateMessageID to break the loop.
      * Microsoft sends the notification twice when there is no acknowledgement from krista that it received the mail.
      *
-     * @param notification
-     * @return
+     * @param notification the JSON payload from Microsoft Graph API containing mail event details
+     * @return a 200 OK response after processing or ignoring the notification
      */
     @POST
     @Path("/mailNotification")

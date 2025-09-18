@@ -106,7 +106,7 @@ public class EntityHelperUtil {
                 }
             }
 
-            List<String> headerKeys = new ArrayList<>(entitiesData.get(0).keySet());
+            List<String> headerKeys = new ArrayList<>(entitiesData.getFirst().keySet());
             int headerSize = headerKeys.size();
             addTableHeader(htmlContent, headerKeys, headerSize);
             addTableData(htmlContent, entitiesData, headerKeys, headerSize);
@@ -128,12 +128,11 @@ public class EntityHelperUtil {
 
     private static void addTableData(StringBuilder htmlContent, List<Map<String, Object>> entitiesData, List<String> headerKeys, int headerSize) {
 
-        for (int i = 0; i < entitiesData.size(); i++) {
+        for (Map<String, Object> entitiesDatum : entitiesData) {
             htmlContent.append(Constants.TR_TAG);
-            Map<String, Object> rowData = entitiesData.get(i);
             for (int cellIndex = 0; cellIndex < headerSize; cellIndex++) {
                 htmlContent.append(Constants.TD_TAG);
-                Object cellData = rowData.getOrDefault(headerKeys.get(cellIndex), "");
+                Object cellData = entitiesDatum.getOrDefault(headerKeys.get(cellIndex), "");
                 String value = (cellData instanceof Long)
                         ? EntityHelperUtil.fetchDateTime(cellData, headerKeys.get(cellIndex))
                         : (cellData instanceof Double)
@@ -236,7 +235,7 @@ public class EntityHelperUtil {
      * This function removes zeros from number when number contains Only zeros after decimal
      *
      * @param number any double value to parse
-     * @return
+     * @return the string representation of the number without trailing zeros after the decimal
      */
     public static String removeTrailingZeros(double number) {
         String stringValue = String.valueOf(number);

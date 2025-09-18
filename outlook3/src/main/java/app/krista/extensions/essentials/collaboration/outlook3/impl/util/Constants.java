@@ -2,7 +2,6 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
 
 import com.google.gson.*;
 
-import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

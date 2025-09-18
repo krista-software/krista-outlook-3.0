@@ -60,7 +60,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
                     EXTENSION_OAUTH_VERIFICATION_PATH_V2.equals(httpRequest.getUri().getPath())) {
                 httpRequest.bufferBody();
                 MultivaluedMap<String, String> queryParameters = httpRequest.getQueryParameters();
-                String state = String.valueOf(queryParameters.get(STATE).get(0));
+                String state = String.valueOf(queryParameters.get(STATE).getFirst());
                 String[] parts = state.split(Constants.HASH);
                 return parts[0];
             } else if (OUTLOOK_MAIL_NOTIFICATION.equals(httpRequest.getUri().getPath())) {

@@ -13,56 +13,56 @@ import java.util.List;
 @Entity(name = "Mail Details", id = "localDomainEntity_0fb99723-377c-419e-b24e-0ab0ce948e8c", primaryKey = "Message ID", supportStore = false)
 public class MailDetails {
 
-    @Field.Text(name = "From", required = false, attributes = {}, options = {})
+    @Field.Text(name = "From", required = false)
     public String from;
 
-    @Field.Text(name = "To", required = true, attributes = {}, options = {})
+    @Field.Text(name = "To")
     public String to;
 
-    @Field(name = "Message", type = "RichText", required = true, attributes = {}, options = {})
+    @Field(name = "Message", type = "RichText")
     public String message;
 
     @Searchable
-    @Field.Text(name = "Subject", required = true, attributes = {}, options = {})
+    @Field.Text(name = "Subject")
     public String subject;
 
-    @Field.File(name = "File Attachment", multipleFileUpload = true, required = false, attributes = {}, options = {})
+    @Field.File(name = "File Attachment", multipleFileUpload = true, required = false)
     public List<File> fileAttachment;
 
     @Field.Desc(name = "Item attachment", type = "[ RichText ]", required = false)
     public List<String> itemAttachment;
 
-    @Field.File(name = "Reference attachment", multipleFileUpload = false, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.File(name = "Reference attachment", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public File referenceAttachment;
 
-    @Field.Text(name = "Message ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Message ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public String messageID;
 
-    @Field.Text(name = "Cc", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Cc", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public String cc;
 
-    @Field.Text(name = "Bcc", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Bcc", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public String bcc;
 
-    @Field.Boolean(name = "Is Read", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Is Read", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public Boolean isRead;
 
-    @Field.Text(name = "Reply To", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Reply To", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public String replyTo;
 
-    @Field.Date(name = "Send Date and Time", required = false, includeTimeOfDay = true, showHowManyDaysInViewer = 60, allowPast = false, allowToday = false, allowFuture = false, defaultTimeSpan = 1, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Date(name = "Send Date and Time", showHowManyDaysInViewer = 60, allowPast = false, allowToday = false, allowFuture = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public Long sendDateAndTime;
 
-    @Field.Date(name = "Received Date and Time", required = false, includeTimeOfDay = true, showHowManyDaysInViewer = 60, allowPast = false, allowToday = false, allowFuture = false, defaultTimeSpan = 1, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Date(name = "Received Date and Time", showHowManyDaysInViewer = 60, allowPast = false, allowToday = false, allowFuture = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public Long receivedDateAndTime;
 
     @Field.Desc(name = "Categories", type = "[ Text ]", required = false)
     public List<String> categories;
 
-    @Field.Text(name = "Conversation ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Conversation ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public String conversationID;
 
-    @Field(name = "Unique Body", type = "RichText", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")}, options = {})
+    @Field(name = "Unique Body", type = "RichText", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")})
     public String uniqueBody;
 
     @Override

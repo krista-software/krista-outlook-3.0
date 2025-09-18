@@ -138,7 +138,7 @@ public interface Email {
      * @param ccRecipients  list of cc email addresses
      * @param bccRecipients list of bcc email addresses
      * @param replyTo       reply to email address
-     * @param bodyType
+     * @param bodyType     type of the email body (e.g., "Text" or "HTML")
      * @return {@link Email} object of outlook
      */
     Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, List<EmailAddress> toRecipients, List<EmailAddress> ccRecipients,
@@ -149,7 +149,7 @@ public interface Email {
      *
      * @param message     message to be sent
      * @param attachments attachments to be added
-     * @param bodyType
+     * @param bodyType    type of the email body (e.g., "Text" or "HTML")
      * @return {@link Email} object of outlook
      */
     Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType);

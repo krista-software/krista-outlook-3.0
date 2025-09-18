@@ -123,7 +123,7 @@ public class FolderImpl implements Folder {
             throw new IllegalArgumentException(Constants.FOLDER_PATH_IS_EMPTY_OR_NULL);
         }
 
-        Folder childFolder = getChildFolderByName(childFolderPath.get(0));
+        Folder childFolder = getChildFolderByName(childFolderPath.getFirst());
         if (childFolderPath.size() > 1 && childFolder != null) {
             return childFolder.getChildFolderByName(childFolderPath.subList(1, childFolderPath.size()));
         }

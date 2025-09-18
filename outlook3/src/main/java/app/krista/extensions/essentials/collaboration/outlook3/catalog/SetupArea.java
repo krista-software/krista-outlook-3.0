@@ -1,7 +1,6 @@
 package app.krista.extensions.essentials.collaboration.outlook3.catalog;
 
 import app.krista.extension.executor.*;
-import app.krista.extension.impl.anno.CatalogRequest;
 import app.krista.extension.impl.anno.*;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
@@ -57,10 +56,10 @@ public class SetupArea {
             description = "Configure Outlook authentication with Public access. Requires only Email and optional Mail Alert setting.",
             area = "Setup",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Is Configuration Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if Outlook Private configuration is successful.'")}, options = {})
+    @Field.Boolean(name = "Is Configuration Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if Outlook Private configuration is successful.'")})
     @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)",required = false)
     public ExtensionResponse saveOutlookPublicConfiguration(
-            @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The primary Outlook email address used for authentication and integration.'")}, options = {}) String email,
+            @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The primary Outlook email address used for authentication and integration.'")}) String email,
             @Field.Boolean(name = "Allow Mail Alert", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean allowMailAlert) {
         LOGGER.info("Saving Outlook Public Configuration: {}", email);
         JsonObject publicPayload = OutlookAttributes.createJsonAttributes(email, null, null, null, allowMailAlert, Constants.PUBLIC, null);
@@ -76,10 +75,10 @@ public class SetupArea {
     @Field.Boolean(name = "Is Configuration Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if Outlook Private configuration is successful.'")}, options = {})
     @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)",required = false)
     public ExtensionResponse saveOutlookPrivateConfiguration(
-            @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The primary Outlook email address used for authentication and integration.'")}, options = {}) String email,
-            @Field.Text(name = "Client ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Application (Client) ID from Azure AD used to authenticate Outlook integration.'")}, options = {}) String clientID,
-            @Field.Text(name = "Client Secret", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Client Secret generated in Azure AD for Outlook integration. Keep this value secure.'")}, options = {}) String clientSecret,
-            @Field.Text(name = "Tenant ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Directory (Tenant) ID of your Microsoft 365 organization required for Outlook authentication.'")}, options = {}) String tenantID,
+            @Field(name = "Email", type = "Email", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The primary Outlook email address used for authentication and integration.'")}) String email,
+            @Field.Text(name = "Client ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Application (Client) ID from Azure AD used to authenticate Outlook integration.'")}) String clientID,
+            @Field.Text(name = "Client Secret", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Client Secret generated in Azure AD for Outlook integration. Keep this value secure.'")}) String clientSecret,
+            @Field.Text(name = "Tenant ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'The Directory (Tenant) ID of your Microsoft 365 organization required for Outlook authentication.'")}) String tenantID,
             @Field.Boolean(name = "Allow Mail Alert", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean allowMailAlert) {
         LOGGER.info("Saving Outlook Private Configuration: {}", email);
         JsonObject privatePayload = OutlookAttributes.createJsonAttributes(email, clientID, clientSecret, tenantID, allowMailAlert, Constants.PRIVATE, baseRoutingUrl);

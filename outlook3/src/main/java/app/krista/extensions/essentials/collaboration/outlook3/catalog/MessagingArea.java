@@ -255,7 +255,7 @@ public class MessagingArea {
             description = "In this request, the user can respond to everyone on the thread. Other recipients will see a message user 'Reply All' to, whether they're in the 'To' or 'Cc' fields. 'To', Cc' and 'Bcc' fields are optional to update the existing users.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public ExtensionResponse replyToAllWithCCAndBCC(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "To", type = "Text", required = false) String to,
@@ -265,7 +265,7 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
 
         long startTime = System.currentTimeMillis();
         try {
@@ -326,13 +326,13 @@ public class MessagingArea {
             description = "In this request, the user can respond to everyone on the thread. Other recipients will see a message user 'Reply All' to, whether they're in the 'To' or 'Cc' fields.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public ExtensionResponse replyToAll(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
 
         long startTime = System.currentTimeMillis();
         try {
@@ -452,7 +452,7 @@ public class MessagingArea {
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "To", type = "Text") String to,
             @Field(name = "Message", type = "RichText", required = false) String message,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.forwardMail");
@@ -531,7 +531,7 @@ public class MessagingArea {
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.sendMail");
@@ -683,8 +683,8 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
     public ExtensionResponse fetchInboxWithPreferences(
-            @Field(name = "Page Number", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageNumber,
-            @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Double pageSize,
+            @Field(name = "Page Number", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Double pageNumber,
+            @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Double pageSize,
             @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference) {
 
         long startTime = System.currentTimeMillis();
@@ -836,7 +836,7 @@ public class MessagingArea {
             description = "Accepts message ID, message, attachments, cc, bcc and reply to as inputs and returns response message.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field(name = "Message", type = "Text", required = false, attributes = {}, options = {})
+    @Field(name = "Message", type = "Text", required = false)
     public ExtensionResponse replyToMailWithCCAndBCC(
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "Message", type = "RichText", required = false) String message,
@@ -845,7 +845,7 @@ public class MessagingArea {
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.replyToMailWithCCAndBCC");
@@ -910,7 +910,7 @@ public class MessagingArea {
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.replyToMail");
@@ -1177,7 +1177,7 @@ public class MessagingArea {
         try {
             LOGGER.info("fetchLatestMail: start");
             List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
-            MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.get(0);
+            MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.getFirst();
 
             if (mailDetails != null) {
                 telemetryHelper.recordSuccess("outlook3.fetchLatestMail", startTime, Map.of(
@@ -1239,11 +1239,11 @@ public class MessagingArea {
             description = "This request will add category to the given mail ID.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public ExtensionResponse addCategoryToMessage(
-            @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
-            @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category,
-            @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) Boolean createCategory) {
+            @Field.Text(name = "Message ID", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageID,
+            @Field.Text(name = "Category", attributes = {@Attribute(name = "visualWidth", value = "S")}) String category,
+            @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean createCategory) {
 
         long startTime = System.currentTimeMillis();
         try {
@@ -1279,10 +1279,10 @@ public class MessagingArea {
             description = "This request will remove the given category for the given Message Id",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public ExtensionResponse removeCategoryFromMessage(
-            @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
-            @Field.Text(name = "Category", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+            @Field.Text(name = "Message ID", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageID,
+            @Field.Text(name = "Category", attributes = {@Attribute(name = "visualWidth", value = "S")}) String category) {
 
         long startTime = System.currentTimeMillis();
         String baseMetric = "outlook3.removeCategoryFromMessage";
@@ -1356,7 +1356,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     public void sendAlertUsingNotificationDelta(
-            @Field.Text(name = "Message Id", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageId) {
+            @Field.Text(name = "Message Id", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageId) {
         long startTime = System.currentTimeMillis();
         String baseMetric = "outlook3.sendAlertUsingNotificationDelta";
 
@@ -1383,11 +1383,11 @@ public class MessagingArea {
             description = "Applies a category to the message and updates its read/unread status.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Text(name = "Response", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Response", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public ExtensionResponse markMessageCategoryAndStatus(
-            @Field.Text(name = "Message ID", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageID,
-            @Field.PickOne(name = "Label", values = {"Read", "Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String label,
-            @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String category) {
+            @Field.Text(name = "Message ID", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageID,
+            @Field.PickOne(name = "Label", values = {"Read", "Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String label,
+            @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String category) {
         long startTime = System.currentTimeMillis();
         String baseMetric = "mark_message_category_and_status";
         Map<String, String> tags = safeTagMap("message_id", messageID);
@@ -1433,9 +1433,9 @@ public class MessagingArea {
             description = "Checks whether a specific mail ID exists in the triggered mail IDs set.",
             area = "Messaging",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "IsExist", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "IsExist", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public Boolean checkIfTriggeredMailIdsExist(
-            @Field.Text(name = "MessageId", required = true, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {}) String messageId) {
+            @Field.Text(name = "MessageId", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageId) {
         try {
             LOGGER.info("Checking if message ID exists in triggered mail IDs: {}", messageId);
 
@@ -1460,7 +1460,7 @@ public class MessagingArea {
             description = "This test connection request validates the connection using stored or provided configuration parameters. It performs comprehensive connectivity tests including OAuth token acquisition, mailbox connectivity, and scope validation to ensure the integration is working properly.",
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
-    @Field.Boolean(name = "Is Connection Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if all connection tests passed successfully, including OAuth authentication, API connectivity, and mailbox access.'")}, options = {})
+    @Field.Boolean(name = "Is Connection Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S"), @Attribute(name = "toolTip", value = "'Returns true if all connection tests passed successfully, including OAuth authentication, API connectivity, and mailbox access.'")})
     @Field.Desc(name = "Test Connection Summary", type = "{ Summary: Text, Email: Text, Allow Mail Alert: Text, Tenant ID: Text, Client ID: Text, Auth Type: Text, Mailbox Accessible: Text }", required = false)
     @Field.Desc(name = "Extension Response Meta", type = "Entity(Extension Response Meta)", required = false)
     public ExtensionResponse testConnection() {

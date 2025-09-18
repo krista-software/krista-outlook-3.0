@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -192,7 +191,7 @@ public class MessagingAreaImpl {
                 builder.withAttachment(mailHandler.toAttachment(attachments));
             }
 
-            LOGGER.info("Sending email: " + ReflectionToStringBuilder.toString(builder));
+            LOGGER.info("Sending email: {}", ReflectionToStringBuilder.toString(builder));
 
             builder.send();
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
@@ -372,7 +371,7 @@ public class MessagingAreaImpl {
             List<Email> emails = folder.getEmails(pageNumber, pageSize);
             return ExtensionResponseFactory.create(Map.of(MAILS, emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
         } catch (GraphServiceException graphServiceException) {
-            LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + graphServiceException.getCause(), graphServiceException);
+            LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + "{}", graphServiceException.getCause(), graphServiceException);
             return ExtensionResponseFactory.create(Map.of(MAILS, Collections.emptyList()));
         }
     }

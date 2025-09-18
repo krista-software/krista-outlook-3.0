@@ -66,7 +66,7 @@ public class AccountImpl implements Account {
         if (Validators.isListNullOrEmpty(folderNames)) {
             throw new IllegalArgumentException(Constants.FOLDER_NAME_LIST_IS_EMPTY_OR_NULL);
         }
-        Folder folder = getFolderByName(folderNames.get(0), null, null);
+        Folder folder = getFolderByName(folderNames.getFirst(), null, null);
         if (folderNames.size() > 1 && folder != null) {
             return folder.getChildFolderByName(folderNames.subList(1, folderNames.size()));
         }
