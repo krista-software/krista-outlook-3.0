@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -48,14 +47,22 @@ public class MessagingAreaImpl {
     private final Account account;
     private final MailHandler mailHandler;
     private Entities registry;
-    private final GraphServiceClientProvider provider;
+    private GraphServiceClientProvider provider;
+    private GraphServiceClientProviderFactory providerFactory;
 
     @Inject
     public MessagingAreaImpl(Account account, MailHandler mailHandler, Entities registry, GraphServiceClientProviderFactory providerFactory) {
         this.account = account;
         this.mailHandler = mailHandler;
         this.registry = registry;
-        this.provider = providerFactory.create();
+        this.providerFactory = providerFactory;
+    }
+
+    public GraphServiceClientProvider getProvider() {
+        if (provider == null) {
+            this.provider = providerFactory.create();
+        }
+        return provider;
     }
 
 
@@ -86,7 +93,7 @@ public class MessagingAreaImpl {
     private String getReceivedDateAndTime(Email email) {
         User user;
         try {
-            user = provider.getGraphServiceClientForUser(true, null)
+            user = getProvider().getGraphServiceClientForUser(true, null)
                     .me()
                     .buildRequest()
                     .select(Constants.MAILBOX_SETTINGS)
@@ -184,7 +191,7 @@ public class MessagingAreaImpl {
                 builder.withAttachment(mailHandler.toAttachment(attachments));
             }
 
-            LOGGER.info("Sending email: " + ReflectionToStringBuilder.toString(builder));
+            LOGGER.info("Sending email: {}", ReflectionToStringBuilder.toString(builder));
 
             builder.send();
             return ExtensionResponseFactory.create(Map.of(RESPONSE_MESSAGE, Constants.SUCCESS));
@@ -364,7 +371,7 @@ public class MessagingAreaImpl {
             List<Email> emails = folder.getEmails(pageNumber, pageSize);
             return ExtensionResponseFactory.create(Map.of(MAILS, emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList())));
         } catch (GraphServiceException graphServiceException) {
-            LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + graphServiceException.getCause(), graphServiceException);
+            LOGGER.error(Constants.FETCH_MAIL_FAILED_NO_FOLDER + "{}", graphServiceException.getCause(), graphServiceException);
             return ExtensionResponseFactory.create(Map.of(MAILS, Collections.emptyList()));
         }
     }

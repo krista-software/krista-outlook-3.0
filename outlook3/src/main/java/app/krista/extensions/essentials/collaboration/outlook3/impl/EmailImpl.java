@@ -30,17 +30,26 @@ import java.util.stream.Collectors;
 public class EmailImpl implements Email {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailImpl.class);
-    private final GraphServiceClientProvider provider;
+    private GraphServiceClientProvider provider;
+    private GraphServiceClientProviderFactory providerFactory;
     private final Message message;
 
     public EmailImpl(GraphServiceClientProviderFactory factory, Message message) {
-        this(factory.create(), message);
+        this.providerFactory = factory;
+        this.message = message;
     }
 
     @Inject
     public EmailImpl(GraphServiceClientProvider provider, Message message) {
         this.provider = provider;
         this.message = message;
+    }
+
+    public GraphServiceClientProvider getProvider() {
+        if (provider == null) {
+            this.provider = providerFactory.create();
+        }
+        return provider;
     }
 
     @Override
@@ -182,7 +191,7 @@ public class EmailImpl implements Email {
 
             LOGGER.info("Calling Graph API reply for messageId: {}", this.message.id);
             messageRequestBuilder.reply(MessageReplyParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
-            Email resultEmail = new EmailImpl(provider, replyMessage);
+            Email resultEmail = new EmailImpl(getProvider(), replyMessage);
             LOGGER.info("Created result EmailImpl for messageId: {}, resultEmailId: {}",
                     this.message.id, resultEmail.getEmailId());
 
@@ -231,10 +240,10 @@ public class EmailImpl implements Email {
             LOGGER.info("Setting reply message values for messageId: {}", this.message.id);
             Message replyMessage = setReplyMessageValues(message, attachments, toRecipients, ccRecipients, bccRecipients, replyTo, bodyType);
             messageRequestBuilder.replyAll(MessageReplyAllParameterSet.newBuilder().withMessage(replyMessage).build()).buildRequest().post();
-            if (provider == null || provider.getOutlookAttributes() == null) {
+            if (getProvider() == null || getProvider().getOutlookAttributes() == null) {
                 LOGGER.error("Provider or OutlookAttributes is null for messageId: {}", this.message.id);
             }
-            return new EmailImpl(provider, replyMessage);
+            return new EmailImpl(getProvider(), replyMessage);
         } catch (GraphServiceException graphServiceException) {
             String errorMessage = graphServiceException.getMessage();
             if (errorMessage != null && errorMessage.contains(Constants.ONE_INVALID_MAIL)) {
@@ -402,11 +411,11 @@ public class EmailImpl implements Email {
             return null;
         }
         LOGGER.info("Getting user request builder - useEmail: {}", useEmail);
-        if (provider == null) {
+        if (getProvider() == null) {
             LOGGER.error("Provider is null in getMessageRequestBuilder");
             return null;
         }
-        UserRequestBuilder userRequestBuilder = provider.getUserRequestBuilder(useEmail, null);
+        UserRequestBuilder userRequestBuilder = getProvider().getUserRequestBuilder(useEmail, null);
         if (userRequestBuilder == null) {
             LOGGER.error("UserRequestBuilder is null from provider - useEmail: {}", useEmail);
             return null;

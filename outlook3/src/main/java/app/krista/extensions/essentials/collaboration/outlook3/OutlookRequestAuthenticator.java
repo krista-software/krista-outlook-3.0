@@ -60,7 +60,7 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
                     EXTENSION_OAUTH_VERIFICATION_PATH_V2.equals(httpRequest.getUri().getPath())) {
                 httpRequest.bufferBody();
                 MultivaluedMap<String, String> queryParameters = httpRequest.getQueryParameters();
-                String state = String.valueOf(queryParameters.get(STATE).get(0));
+                String state = String.valueOf(queryParameters.get(STATE).getFirst());
                 String[] parts = state.split(Constants.HASH);
                 return parts[0];
             } else if (OUTLOOK_MAIL_NOTIFICATION.equals(httpRequest.getUri().getPath())) {
@@ -101,11 +101,21 @@ public class OutlookRequestAuthenticator implements RequestAuthenticator {
 
     @Override
     public AuthorizationResponse getMustAuthorizeResponse(MustAuthorizeException cause) {
-        String userId = (String) cause.getDetails().get(0).getValue();
+        String userId;
+        String state;
+        Optional<String> clientUserId = cause.getDetails().stream()
+                .filter(field -> Objects.equals(field.getName(), Constants.USER_ID))
+                .map(field -> (String) field.getValue())
+                .findFirst();
+        userId = (String) cause.getDetails().getFirst().getValue();
+        state = userId;
+        if (clientUserId.isPresent()) {
+            userId = (String) cause.getDetails().getFirst().getValue();
+            state = userId + Constants.HASH + clientUserId.get();
+        }
         Optional<NamedValuedField> authContext = cause.getDetails().stream()
                 .filter(namedValuedField -> Objects.equals(namedValuedField.getName(), Constants.AUTH_CONTEXT_ID))
                 .findFirst();
-        String state = userId;
         OutlookAttributes attributes;
         if (authContext.isPresent()) {
             String authContextId = (String) authContext.get().getValue();

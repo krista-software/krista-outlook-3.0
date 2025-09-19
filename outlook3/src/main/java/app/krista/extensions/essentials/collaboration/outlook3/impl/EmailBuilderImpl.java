@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailAddress;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
@@ -13,15 +14,24 @@ import java.util.stream.Collectors;
 
 public class EmailBuilderImpl implements EmailBuilder {
     private final Message message;
-    private final GraphServiceClientProvider provider;
+    private GraphServiceClientProvider provider;
+    private final GraphServiceClientProviderFactory providerFactory;
 
-    public EmailBuilderImpl(GraphServiceClientProvider provider, Message message) {
+    public EmailBuilderImpl(GraphServiceClientProvider provider, Message message, GraphServiceClientProviderFactory providerFactory) {
         this.provider = provider;
         this.message = message;
+        this.providerFactory = providerFactory;
     }
 
     public static EmailBuilderImpl create(GraphServiceClientProvider provider) {
-        return new EmailBuilderImpl(provider, new Message());
+        return new EmailBuilderImpl(provider, new Message(), null);
+    }
+
+    public GraphServiceClientProvider getProvider() {
+        if (provider == null) {
+            this.provider = providerFactory.create();
+        }
+        return provider;
     }
 
     @Override
@@ -93,7 +103,7 @@ public class EmailBuilderImpl implements EmailBuilder {
     }
 
     private UserRequestBuilder getUserRequestBuilder() {
-        return provider.getUserRequestBuilder(null, null);
+        return getProvider().getUserRequestBuilder(null, null);
     }
 
 }

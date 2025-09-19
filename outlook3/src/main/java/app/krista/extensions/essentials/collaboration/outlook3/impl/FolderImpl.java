@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
@@ -30,13 +31,27 @@ public class FolderImpl implements Folder {
     private static final Logger LOGGER = LoggerFactory.getLogger(FolderImpl.class);
 
     private final Account account;
-    private final GraphServiceClientProvider provider;
+    private GraphServiceClientProvider provider;
+    private GraphServiceClientProviderFactory providerFactory;
     private final MailFolder mailFolder;
 
     public FolderImpl(Account account, GraphServiceClientProvider provider, MailFolder mailFolder) {
         this.account = account;
         this.provider = provider;
         this.mailFolder = mailFolder;
+    }
+
+    public FolderImpl(Account account, GraphServiceClientProviderFactory providerFactory, MailFolder mailFolder) {
+        this.account = account;
+        this.providerFactory = providerFactory;
+        this.mailFolder = mailFolder;
+    }
+
+    public GraphServiceClientProvider getProvider() {
+        if (provider == null) {
+            this.provider = providerFactory.create();
+        }
+        return provider;
     }
 
     @Override
@@ -88,7 +103,7 @@ public class FolderImpl implements Folder {
         while (childFolderPage != null && !childFolderPage.getCurrentPage().isEmpty()) {
             for (MailFolder folder : childFolderPage.getCurrentPage()) {
                 if (folder.displayName != null && Objects.equals(childFolderName.toLowerCase(), folder.displayName.toLowerCase())) {
-                    return new FolderImpl(account, provider, folder);
+                    return new FolderImpl(account, getProvider(), folder);
                 }
             }
 
@@ -108,7 +123,7 @@ public class FolderImpl implements Folder {
             throw new IllegalArgumentException(Constants.FOLDER_PATH_IS_EMPTY_OR_NULL);
         }
 
-        Folder childFolder = getChildFolderByName(childFolderPath.get(0));
+        Folder childFolder = getChildFolderByName(childFolderPath.getFirst());
         if (childFolderPath.size() > 1 && childFolder != null) {
             return childFolder.getChildFolderByName(childFolderPath.subList(1, childFolderPath.size()));
         }
@@ -143,7 +158,7 @@ public class FolderImpl implements Folder {
             throw new IllegalArgumentException(Constants.CHILD_FOLDER_ID_IS_EMPTY_OR_NULL);
         }
 
-        return new FolderImpl(account, provider, Objects.requireNonNull(getFolderRequestBuilder(null))
+        return new FolderImpl(account, getProvider(), Objects.requireNonNull(getFolderRequestBuilder(null))
                 .childFolders(childFolderId).buildRequest().get());
     }
 
@@ -159,7 +174,7 @@ public class FolderImpl implements Folder {
                     )
                     .top(top).skip(skip).get();
             return (messages == null || messages.getCurrentPage() == null) ? List.of()
-                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
+                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(getProvider(), m)).collect(Collectors.toList());
         } catch (Exception cause) {
             LOGGER.error("Error retrieving paginated emails: {}", cause.getMessage(), cause);
             return List.of();
@@ -180,7 +195,7 @@ public class FolderImpl implements Folder {
                     )
                     .top(top).skip(skip).get();
             return (messages == null || messages.getCurrentPage() == null) ? List.of()
-                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(provider, m)).collect(Collectors.toList());
+                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(getProvider(), m)).collect(Collectors.toList());
         } catch (Exception cause) {
             LOGGER.error("Error fetching paginated emails: {}", cause.getMessage(), cause);
             return List.of();
@@ -198,7 +213,7 @@ public class FolderImpl implements Folder {
         while (messages != null && !messages.getCurrentPage().isEmpty() && mailCount < 500) {
             mailCount += messages.getCurrentPage().size();
             for (Message message : messages.getCurrentPage()) {
-                emails.add(new EmailImpl(provider, message));
+                emails.add(new EmailImpl(getProvider(), message));
             }
 
             MessageCollectionRequestBuilder nextPage = messages.getNextPage();
@@ -258,7 +273,7 @@ public class FolderImpl implements Folder {
 
     private MailFolderRequestBuilder getFolderRequestBuilder(Boolean useEmail) {
         return mailFolder.id != null
-                ? provider.getUserRequestBuilder(useEmail, null).mailFolders(mailFolder.id)
+                ? getProvider().getUserRequestBuilder(useEmail, null).mailFolders(mailFolder.id)
                 : null;
     }
 

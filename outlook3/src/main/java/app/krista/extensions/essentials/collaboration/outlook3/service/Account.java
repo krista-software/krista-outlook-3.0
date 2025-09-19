@@ -21,7 +21,7 @@ public interface Account {
      * Returns {@link Folder} object of outlook from the name provided. Ex Inbox
      *
      * @param name      names of the folder
-     * @param accountID
+     * @param accountID  account Id
      * @return {@link Folder} object
      */
     Folder getFolderByName(String name, Boolean useEmail, String accountID);

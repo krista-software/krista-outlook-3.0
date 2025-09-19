@@ -47,7 +47,7 @@ public class HealthCheck {
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheck.class);
 
     // Timestamp when the service was started, used for uptime calculation.
-    private static Instant START_TIME = Instant.now();
+    private static final Instant START_TIME = Instant.now();
 
     private static long lastHealthCheckTime = 0;
     private final OutlookAttributeStore attributeStore;
@@ -277,8 +277,7 @@ public class HealthCheck {
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
 
             // Check if we have access to more detailed CPU metrics
-            if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
-                com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
                 double cpuUsage = sunOsBean.getProcessCpuLoad() * 100;
 
                 // If process CPU load is available and valid, use it
@@ -287,7 +286,7 @@ public class HealthCheck {
                 }
 
                 // Try system CPU load as fallback
-                double systemCpuUsage = sunOsBean.getSystemCpuLoad() * 100;
+                double systemCpuUsage = sunOsBean.getCpuLoad() * 100;
                 if (systemCpuUsage >= 0 && systemCpuUsage <= 100) {
                     return Math.round(systemCpuUsage * 100.0) / 100.0;
                 }
@@ -415,8 +414,8 @@ public class HealthCheck {
      * @param isHealthy            Whether the system is healthy
      * @param healthStatus         The health status entity
      * @param timeTakenInSeconds   Time taken to perform the health check
-     * @param exception
-     * @param healthSummaryMessage
+     * @param exception              exception thrown during the health check (if any), otherwise {@code null}
+     * @param healthSummaryMessage   summary message describing the overall health
      * @return A map containing the extension response
      */
     private Map<String, Object> getExtensionResponse(boolean isHealthy, HealthStatus healthStatus, double timeTakenInSeconds, Exception exception, String healthSummaryMessage) {

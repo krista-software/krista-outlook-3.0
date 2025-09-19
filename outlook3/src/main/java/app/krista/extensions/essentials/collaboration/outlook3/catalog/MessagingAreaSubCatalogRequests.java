@@ -110,7 +110,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterFetchMail(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text}", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text}") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -158,7 +158,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterMoveMessage(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Folder Name: Text}", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Folder Name: Text}") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -213,7 +213,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToAllWithFields(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML)}", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments:  File, BodyType: PickOne(Text|HTML)}") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -233,7 +233,7 @@ public class MessagingAreaSubCatalogRequests {
             name = HANDLE_REENTER_REPLY_TO_ALL_WITH_FIELDS,
             description = "Handle Reply To ALL With CC BCC",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToAllWithFields(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
@@ -263,7 +263,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToAll(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -283,7 +283,7 @@ public class MessagingAreaSubCatalogRequests {
             name = HANDLE_REENTER_REPLY_TO_ALL,
             description = "Handle Reply To ALL",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Is Successful", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToAll(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
@@ -309,7 +309,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterForwardMail(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text, Message: RichText, BodyType: PickOne(Text|HTML) }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -355,7 +355,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterSendMail(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -405,7 +405,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterSendMailWithTable(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Subject: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -460,7 +460,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterMarkMessage(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Label: PickOne(Read|Unread) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Label: PickOne(Read|Unread) }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -503,7 +503,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToMailWithFields(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -523,7 +523,7 @@ public class MessagingAreaSubCatalogRequests {
             name = HANDLE_REENTER_REPLY_TO_MAIL_WITH_FIELDS,
             description = "Handle Reply To Mail with cc, bcc, to, Reply to",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field(name = "Message", type = "Text", required = false, attributes = {}, options = {})
+    @Field(name = "Message", type = "Text", required = false)
     @SuppressWarnings("unchecked")
     public app.krista.extension.executor.ExtensionResponse handleReenterReplyToMailWithFields(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, To: Text,  Cc: Text, Bcc: Text, Reply To: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map
@@ -554,7 +554,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterReplyToMail(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Message: RichText, Attachments: File, BodyType: PickOne(Text|HTML) }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -601,7 +601,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterFetchMailByLabel(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Label: Text, Page Number: Number, Page Size: Number }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Label: Text, Page Number: Number, Page Size: Number }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -644,7 +644,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterAddCategoryToMessage(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Category: Text, Create Category: Boolean }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Category: Text, Create Category: Boolean }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -664,7 +664,7 @@ public class MessagingAreaSubCatalogRequests {
             name = "handleReenterAddCategoryToMessage",
             description = "Handle reenter Add Category Message",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Category Added", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public app.krista.extension.executor.ExtensionResponse handleReenterAddCategoryToMessage(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Category: Text, Create Category: Boolean }") Map<String, Object> map) {
         LOGGER.info("SubCatalogRequest handleReenterFetchMailByLabel start: {}", map);
@@ -688,7 +688,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterRemoveCategory(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Category: Text }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Message ID: Text, Category: Text }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -708,7 +708,7 @@ public class MessagingAreaSubCatalogRequests {
             name = "handleReenterRemoveCategory",
             description = "Handle reenter remove category",
             type = CatalogRequest.Type.CHANGE_SYSTEM)
-    @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public app.krista.extension.executor.ExtensionResponse handleReenterRemoveCategory(
             @Field.Desc(name = "inputMap", type = "{ stateId: Text, Message ID: Text, Category: Text }") Map<String, Object> map) {
         LOGGER.info("SubCatalogRequest handleReenterRemoveCategory start: {}", map);
@@ -730,7 +730,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterFetchInbox(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);
@@ -775,8 +775,8 @@ public class MessagingAreaSubCatalogRequests {
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterFetchInboxWithPreferences(
             @Field.Desc(name = "inputMap",
-                    type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number, Preference: { Mail Body: PickOne(Text|Html) } }",
-                    required = true) Map<String, Object> map) {
+                    type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number, Preference: { Mail Body: PickOne(Text|Html) } }"
+            ) Map<String, Object> map) {
         LOGGER.info("SubCatalogRequest confirmReenterFetchInboxWithPreferences start: {}", map);
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
@@ -825,7 +825,7 @@ public class MessagingAreaSubCatalogRequests {
     )
     @SuppressWarnings("unchecked")
     public ExtensionResponse confirmReenterFetchSent(@Field.Desc(name = "inputMap",
-            type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number }", required = true) Map<String, Object> map) {
+            type = "{ Reenter: Boolean, stateId: Text, Page Number: Number, Page Size: Number }") Map<String, Object> map) {
         Boolean reenter = (Boolean) map.get(REENTER);
         String stateId = (String) map.get(OutlookResources.STATE_ID);
         Map<String, Object> state = internalStateManager.get(stateId);

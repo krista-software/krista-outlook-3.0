@@ -63,6 +63,21 @@ public final class OutlookAttributes {
         }
     }
 
+    public static JsonObject createJsonAttributes(String email, String clientId, String clientSecret, String tenantId, Boolean allowMailAlert, String authType, String baseUrl) {
+        JsonObject json = new JsonObject();
+        json.addProperty("authType", authType);
+        json.addProperty("email", email);
+        json.addProperty("allowMailAlert", allowMailAlert);
+        json.addProperty("baseUrl", baseUrl);
+
+        if (Constants.PRIVATE.equals(authType)) {
+            json.addProperty("clientId", clientId);
+            json.addProperty("clientSecret", clientSecret);
+            json.addProperty("tenantId", tenantId);
+        }
+        return json;
+    }
+
     private void loadPublicConfig() {
         Properties properties = new Properties();
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties")) {

@@ -5,6 +5,7 @@ import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.SaveConfigurationImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProvider;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
@@ -58,18 +59,20 @@ public final class OutlookApiResource {
     private final String invokerId;
     private final Invoker invoker;
     private final TestConnectionServiceImpl testConnectionService;
+    private final SaveConfigurationImpl saveConfigurationImpl;
 
     @Inject
     public OutlookApiResource(OutlookAttributeStore outlookAttributeStore, RefreshTokenStore refreshTokenStore,
                               GraphServiceClientProviderFactory providerFactory, EventHandler eventHandler,
                               Invoker invoker, AuthorizationContext context, AuthorizationListener authorizationListener,
-                              TestConnectionServiceImpl testConnectionService) {
+                              TestConnectionServiceImpl testConnectionService, SaveConfigurationImpl saveConfigurationImpl) {
         this.outlookAttributeStore = outlookAttributeStore;
         this.refreshTokenStore = refreshTokenStore;
         this.providerFactory = providerFactory;
         this.eventHandler = eventHandler;
         this.context = context;
         this.authorizationListener = authorizationListener;
+        this.saveConfigurationImpl = saveConfigurationImpl;
         this.notificationProcessQueue = new NotificationProcessQueue(providerFactory, invoker);
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
@@ -105,6 +108,11 @@ public final class OutlookApiResource {
         }
 
         String key = parts[0];
+        String clientKey = null;
+
+        if (parts.length >= 4 || (parts.length == 3 && key.startsWith(WS_CONTACT))) {
+            clientKey = parts[1];
+        }
         String authContextId = AuthHelper.getAuthContextId(state);
 
         LOGGER.debug("Parsed key: [{}] from state. AuthContextId resolved: [{}]", key, authContextId);
@@ -124,6 +132,9 @@ public final class OutlookApiResource {
             LOGGER.info("Access token retrieved successfully.");
 
             refreshTokenStore.put(key, accessToken.getRefreshToken());
+            if (clientKey != null) {
+                refreshTokenStore.put(clientKey, accessToken.getRefreshToken());
+            }
             LOGGER.debug("Refresh token stored for key: {}", key);
 
             if (!key.startsWith(Constants.WS_CONTACT) && !hasUserAccess(clientProvider)) {
@@ -231,8 +242,8 @@ public final class OutlookApiResource {
      * isDuplicateMessageID to break the loop.
      * Microsoft sends the notification twice when there is no acknowledgement from krista that it received the mail.
      *
-     * @param notification
-     * @return
+     * @param notification the JSON payload from Microsoft Graph API containing mail event details
+     * @return a 200 OK response after processing or ignoring the notification
      */
     @POST
     @Path("/mailNotification")
@@ -286,22 +297,7 @@ public final class OutlookApiResource {
     @Produces("text/plain")
     public String saveCredentials(JsonObject authPayload) {
         decryptClientSecretIfPrivate(authPayload);
-        OutlookAttributes attributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        String authContextId = providerFactory.createAttributes(attributes);
-        try {
-            providerFactory.create(authContextId).getGraphServiceClientForAdmin()
-                    .users(attributes.getEmail())
-                    .mailFolders().buildRequest().get();
-            boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
-            return isSaved
-                    ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
-                    : Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
-        } catch (Exception cause) {
-            LOGGER.error(FAILED_TO_SAVE_ATTRIBUTES + ": {} ", cause.getMessage(), cause);
-            return Constants.GSON.toJson(new AuthenticationResponse(false, FAILED_TO_SAVE_ATTRIBUTES, null));
-        } finally {
-            outlookAttributeStore.remove(authContextId);
-        }
+        return saveConfigurationImpl.saveCredentials(authPayload);
     }
 
 
@@ -311,7 +307,7 @@ public final class OutlookApiResource {
     public String testConnection(JsonObject authPayload) {
         decryptClientSecretIfPrivate(authPayload);
         OutlookAttributes outlookAttributes = OutlookAttributes.create(authPayload, baseRoutingUrl);
-        return testConnectionService.testConnection(outlookAttributes);
+        return testConnectionService.testConnection(outlookAttributes, false);
     }
 
     private void decryptClientSecretIfPrivate(JsonObject authPayload) {

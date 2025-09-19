@@ -2,7 +2,6 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl.util;
 
 import com.google.gson.*;
 
-import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -79,6 +78,7 @@ public class Constants {
     public static final String ORG_AUTHORITY = "https://login.microsoftonline.com/organizations/";
     public static final String AUTHORITY = "https://login.microsoftonline.com/";
     public static final String USER_ID = "userId";
+    public static final String CLIENT_USER_ID = "clientUserId";
     public static final String AUTH_CONTEXT_ID = "authContextId";
     public static final String UNSUPPORTED_AUTH = "Unsupported authentication type provided. Please select either Public or Private.";
     public static final String REFRESH_TOKEN_EXPIRED = "Refresh Token is no longer valid. Please reauthorize yourself";
@@ -191,6 +191,17 @@ public class Constants {
     public static final String KEYWORD_ACCESS_DENIED = "access_denied";
     public static final String KEYWORD_PASSWORD_CHANGED = "changed or reset their password";
     public static final String GENERIC_INVALID_GRANT_CODE = "invalid_grant";
+
+    //save configuration constants
+    public static final String IS_CONFIGURATION_SUCCESSFUL = "Is Configuration Successful";
+    public static final String EXTENSION_RESPONSE_META  = "Extension Response Meta";
+
+    public static final String BASE_URL_FORMAT = "https://login.microsoftonline.com/%s/oauth2/v2.0/token";
+    public static final String REQUEST_BODY_SCOPE_AND_GRANT_TYPE =
+            "&scope=https://graph.microsoft.com/.default&grant_type=client_credentials";
+
+    public static final String ERROR_INVALID_CLIENT_ID = "AADSTS700016";
+    public static final String ERROR_INVALID_TENANT_ID = "AADSTS900023";
 
     public static final List<AuthErrorRule> AUTH_ERROR_RULES = List.of(
             new AuthErrorRule(List.of(PASSWORD_CHANGED_CODE, KEYWORD_PASSWORD_CHANGED), PASSWORD_CHANGED_ERROR, true),

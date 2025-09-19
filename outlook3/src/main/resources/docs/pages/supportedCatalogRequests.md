@@ -683,6 +683,46 @@ The Outlook Extension supports the following catalog requests.
 - **Note**: Returns `true` if the message ID has already triggered an alert and exists in the triggered mail IDs set, 
 otherwise returns `false`. This can be used to prevent duplicate processing of emails in workflows that use the "Mail Received Alert" request.
 
+### Save Outlook Public Configuration
+
+- **Description**: Configure Outlook authentication with Public access. Requires only Email and optional Mail Alert setting.
+
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**           |
+|--------------------|--------------------|---------------|-----------------------|
+| Email              | Email              | Yes           | user@company.com      |
+| Allow Mail Alert   | Boolean            | No            | true                  |
+
+- **Output Parameters**:
+
+| **Parameter Name**           | **Parameter Type**                    | **Example** |
+|------------------------------|---------------------------------------|-------------|
+| Is Configuration Successful  | Boolean                               | true        |
+| Extension Response Meta      | Entity(Extension Response Meta)       | -           |
+
+### Save Outlook Private Configuration
+
+- **Description**: Configure Outlook authentication with Private access. Requires Email, Client ID, Client Secret, and Tenant ID.
+
+- **Input Parameters**:
+
+| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                          |
+|--------------------|--------------------|---------------|--------------------------------------|
+| Email              | Email              | Yes           | user@company.com                     |
+| Client ID          | Text               | Yes           | 12345678-1234-1234-1234-123456789012 |
+| Client Secret      | Text               | Yes           | abc123def456ghi789                   |
+| Tenant ID          | Text               | Yes           | 87654321-4321-4321-4321-210987654321 |
+| Allow Mail Alert   | Boolean            | No            | true                                 |
+
+- **Output Parameters**:
+
+| **Parameter Name**           | **Parameter Type**                    | **Example** |
+|------------------------------|---------------------------------------|-------------|
+| Is Configuration Successful  | Boolean                               | true        |
+| Extension Response Meta      | Entity(Extension Response Meta)       | -           |
+
+
 ### Health Check
 
 - **Description**: This 'Health Check' request verifies the health status of the appliance by calling the health check API. It returns a boolean response indicating overall health status along with detailed system resource information including memory usage, CPU utilization, and other vital metrics.

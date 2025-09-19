@@ -26,7 +26,7 @@ public class Notification {
         private final String text;
 
         /**
-         * @param text
+         * @param text the string value associated with this notification type
          */
         NotificationType(final String text) {
             this.text = text;
