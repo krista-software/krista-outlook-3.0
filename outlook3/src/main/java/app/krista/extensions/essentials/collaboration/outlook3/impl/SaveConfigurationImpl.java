@@ -78,17 +78,18 @@ public class SaveConfigurationImpl {
             OutlookCredentialValidator validator = new OutlookCredentialValidator();
             validator.validateToken(attributes.getClientId(), attributes.getClientSecret(), attributes.getTenantId());
         }
+
         String testConnectionResult = testConnectionServiceImpl.testConnection(attributes);
-
         AuthenticationResponse testResponse = Constants.GSON.fromJson(testConnectionResult, AuthenticationResponse.class);
-
         if (!testResponse.isSuccess()) {
             String authContextId = providerFactory.createAttributes(attributes);
             List<NamedValuedField> details = getNamedValuedFields(authorizationContext.getAuthorizedAccount().getAccountId(), attributes, authContextId);
             throw new MustAuthorizeException(Constants.AUTHORIZATION_PROMPT, details);
         }
+
         String saveResult = saveCredentials(authPayload);
-        if (saveResult.contains("true")) {
+        AuthenticationResponse authenticationResponse = GSON.fromJson(saveResult, AuthenticationResponse.class);
+        if (authenticationResponse.isSuccess()) {
             ExtensionResponseMeta extensionResponseMeta = new ExtensionResponseMeta();
             extensionResponseMeta.message = "Outlook Attributes Saved Successfully";
             extensionResponseMeta.technicalDetailedErrorReport = "";
