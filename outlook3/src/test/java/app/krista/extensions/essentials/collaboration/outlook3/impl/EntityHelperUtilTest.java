@@ -1,6 +1,7 @@
 package app.krista.extensions.essentials.collaboration.outlook3.impl;
 
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.FilenameUtil;
 import app.krista.model.base.EntityValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -121,4 +122,13 @@ public class EntityHelperUtilTest {
         String result = EntityHelperUtil.removeTrailingZeros(number);
         Assert.assertEquals("12345", result);
     }
+
+    @Test
+    public void testFilenameUtil_Sample() {
+        String input = "Clyde’s Animal Clinic - Client Service Agreement - Evette 2024 - signed.pdf";
+        String output = FilenameUtil.toSafeFilename(input);
+        Assert.assertTrue(output.endsWith(".pdf"));
+        Assert.assertFalse(output.contains("’"));
+    }
+
 }
