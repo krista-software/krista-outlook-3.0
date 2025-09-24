@@ -13,8 +13,8 @@ import java.util.UUID;
  */
 public final class FilenameUtil {
 
-    private static final int MAX_BASENAME_LEN = 100; // keep headroom for extension
-    private static final String SAFE_CHARS_REGEX = "[^A-Za-z0-9._ -]"; // anything not in whitelist
+    private static final int MAX_BASENAME_LEN = 100;
+    private static final String SAFE_CHARS_REGEX = "[^A-Za-z0-9._ -]";
 
     private FilenameUtil() {}
 
