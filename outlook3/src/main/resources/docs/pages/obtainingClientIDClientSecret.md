@@ -31,18 +31,42 @@ To use the Outlook Extension, you need to obtain the **Client ID**, **Tenant ID*
    Under **Essentials**, you will find the **Client ID** and **Tenant ID**.  
    ![Client Id and Tenant Id](../_media/clientIDtenantID.png)
 
-7. Navigate to **Certificates & secrets**, and click on **New client secret**.  
+7. Click **API Permissions**. Under **Configured permissions**, click **Add a permission**.
+  ![Add a Permission](../_media/addAPermission.png)
+
+
+8. On the **Request API permissions** page, select **Microsoft Graph**.
+  ![Microsoft Graph](../_media/microsoftGraph.png)
+
+
+9. Select **Delegated Permissions**.
+  ![Delegated Permissions](../_media/delegatedPermissions.png)
+
+
+10. Start typing permission name and select the following permissions after you see.
+    * openid
+    * offline_access
+    * profile
+    * User.read
+    * Mail.Send
+    * Mail.ReadWrite
+    * Mail.Send.Shared
+    * Mail.ReadWrite.Shared
+
+  ![Select Permission](../_media/selectPermissions.png)
+
+11. Navigate to **Certificates & secrets**, and click on **New client secret**.  
    ![Certificates & Secrets](../_media/certificates&Secrets.png)
 
-8. In the **Add a client secret** panel:
+12. In the **Add a client secret** panel:
   - Enter a **Description**.
   - Set the **expiration period** in the **Expires** field.
   - Click **Add**.  
     ![Add Client Secret](../_media/addClientSecret.png)
 
-9. After adding, the **Client Secret** will appear under the **Value** column.  
+13. After adding, the **Client Secret** will appear under the **Value** column.  
    ![Client Secret](../_media/clientSecret.png)
 
-10. Save the **Client ID**, **Tenant ID**, and **Client Secret** securely for future reference.
+14. Save the **Client ID**, **Tenant ID**, and **Client Secret** securely for future reference.
 
-11. You will need to provide these values in the extension to proceed with operations like **catalog requests** and **invoker requests**.
+15. You will need to provide these values in the extension to proceed with operations like **catalog requests** and **invoker requests**.
