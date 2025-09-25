@@ -3,6 +3,7 @@ package app.krista.extensions.essentials.collaboration.outlook3.impl.connectors;
 import app.krista.ksdk.files.FileHandle;
 import app.krista.ksdk.files.FileRepository;
 import org.jvnet.hk2.annotations.Service;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.util.FilenameUtil;
 
 import javax.inject.Inject;
 import java.io.*;
@@ -49,7 +50,7 @@ public class KristaMediaClient {
     public File toJavaFile(app.krista.model.base.File file) throws IOException {
         try (FileHandle fileHandle = fileRepository.getFile(file)) {
             InputStream content = fileHandle.getContent();
-            final File input = new File(file.getFileName());
+            final File input = new File(FilenameUtil.toSafeFilename(file.getFileName()));
             return convertInputStreamToFile(content, input);
         }
     }
@@ -185,12 +186,7 @@ public class KristaMediaClient {
      * @return The sanitized file name.
      */
     private String sanitizeFileName(String fileName) {
-        if (fileName == null) return "unnamed_file";
-
-        // Replace problematic characters with underscores
-        return fileName.replaceAll("[\\r\\n\\t]", "_")
-                .replaceAll("[<>:\"/\\\\|?*]", "_")
-                .trim();
+        return FilenameUtil.toSafeFilename(fileName);
     }
 
     /**

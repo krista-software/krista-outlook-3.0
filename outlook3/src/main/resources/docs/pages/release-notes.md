@@ -1,15 +1,18 @@
 # Release Notes – Krista Outlook Extension
 
-## Version 3.0.12
+## Version 3.0.13
 
 - **Developers**: VaraPrasad Kolli, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
-- **Global Catalog Version**: GC-2025.09.2
+- **Global Catalog Version**: GC-2025.09.4
 - **Appliance Release Version**: 3.5.1
 
 ---
 
 ## Resolved Bugs
+
+- [**KE-2358**](https://antbrains.atlassian.net/browse/KE-2358):  
+  Outlook extension Paging occasionally fails on when iterating over pages - Fetch Mails By Label request
 
 - [**KE-2465**](https://antbrains.atlassian.net/browse/KE-2465):  
   Real Auction - Rich Text auto-response emails sent via Outlook extension improperly formatted
