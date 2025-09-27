@@ -1,250 +1,362 @@
-# Connecting with Krista Outlook Extension
+# 🔗 Connecting with Krista Outlook Extension
 
-![Connection Overview](../_media/homePage.png)
+## 📋 Overview
 
-This guide walks you through connecting your Outlook account to Krista for email automation. The process is straightforward and secure, taking just a few minutes to complete.
+Connecting your Microsoft Outlook account to Krista enables powerful email automation capabilities. This guide walks you through the complete connection process, from initial setup to testing your first automation workflow.
 
-## Before You Begin
+## 🚀 Quick Start Guide
 
-### What You'll Need
+### 📋 Prerequisites
 
-- **Active Outlook Account**: Microsoft 365, Outlook.com, or Exchange Online
-- **Krista Platform Access**: Valid Krista account with appropriate permissions
-- **Internet Connection**: Stable connection for authentication process
-- **Modern Web Browser**: Chrome, Firefox, Safari, or Edge (latest versions)
+Before you begin, ensure you have:
 
-### Choose Your Authentication Method
+- Active Microsoft Outlook account (Microsoft 365, Outlook.com, or Exchange Online)
+- Valid Krista platform account with appropriate permissions
+- Modern web browser (Chrome, Firefox, Safari, or Edge)
+- Stable internet connection
+- Basic understanding of your organization's IT policies
 
-![Ask A System Checked](../_media/askASystemChecked.png)
+### ⚡ 5-Minute Setup
 
-**Public Authentication** - Quick 5-minute setup for individuals and small teams
+Follow these steps to connect your Outlook account quickly:
 
-![Ask A System Unchecked](../_media/askASystemUnchecked.png)
+1. **Access Krista Platform**
+   - Log into your Krista account
+   - Navigate to Extensions or Integrations section
+   - Look for "Outlook Extension" or "Email Automation"
 
-**Private Authentication** - Enterprise setup requiring IT involvement
+2. **Choose Authentication Method**
+   - Select "Public Authentication" for quick setup
+   - Choose "Private Authentication" for enterprise environments
+   - Review the comparison table if unsure
 
-**Not sure which to choose?** See our [Authentication Guide](authentication.md) for detailed comparison.
+3. **Enter Email Address**
+   - Provide your Outlook email address
+   - Ensure it's hosted on Microsoft platforms
+   - Double-check for typos or formatting errors
 
-## Step-by-Step Connection Process
+4. **Complete Microsoft Authorization**
+   - You'll be redirected to Microsoft's login page
+   - Enter your credentials and complete any MFA
+   - Review and accept the permission requests
 
-### Step 1: Access Krista Extension Settings
+5. **Verify Connection**
+   - Return to Krista platform
+   - Confirm connection status shows as "Active"
+   - Test basic functionality
 
-![Krista Extension Access](../_media/homePage.png)
+## 🔐 Authentication Options
 
-1. **Log into Krista Platform**
-   - Open your web browser
+### 🌐 Public Authentication
+
+**Best for**: Individual users, small teams, quick pilots
+
+**Features**:
+- 5-minute setup process
+- No IT involvement required
+- Shared API limits
+- Standard security features
+- Self-service configuration
+
+**When to Choose**:
+- You're an individual user or small team
+- You need immediate access
+- Your organization allows third-party apps
+- You have basic automation needs
+
+### 🏢 Private Authentication
+
+**Best for**: Large organizations, enterprise environments
+
+**Features**:
+- Custom organizational branding
+- Dedicated API limits
+- Enhanced security controls
+- Centralized IT management
+- Advanced compliance features
+
+**When to Choose**:
+- You're part of a large organization
+- You need higher API limits
+- Custom branding is important
+- Enhanced security is required
+- IT wants centralized control
+
+## 🔧 Detailed Setup Process
+
+### 📊 Step 1: Platform Access
+
+1. **Login to Krista**
    - Navigate to your Krista instance URL
-   - Sign in with your Krista credentials
+   - Enter your username and password
+   - Complete any multi-factor authentication
 
-2. **Navigate to Outlook Extension**
-   - Go to **Extensions** in the main menu
-   - Click **Outlook Extension**
-   - Select **"Add New Connection"** or **"Configure"**
+2. **Navigate to Extensions**
+   - Look for "Extensions," "Integrations," or "Connectors"
+   - Find "Outlook Extension" or "Email Automation"
+   - Click to access the configuration area
 
-### Step 2: Choose Authentication Method
+3. **Check Permissions**
+   - Ensure you have rights to add new connections
+   - Contact your Krista administrator if access is denied
+   - Verify your account has the necessary licenses
 
-**For Public Authentication:**
+### 🔑 Step 2: Authentication Setup
 
-![Public Auth Setup](../_media/public_auth.png)
+#### For Public Authentication:
 
-- Select **"Public Authentication"**
-- **Enter YOUR Outlook email address** (the email account you want to automate)
-  
-  **Examples of correct email addresses:**
-  ```
-  ✅ john.doe@company.com (your work email)
-  ✅ mary.smith@outlook.com (your personal Outlook email)
-  ✅ sarah@university.edu (your school email)
-  ```
-  
-  **Important:** Do NOT enter Krista email addresses like support@krista.ai - enter the email account YOU want to automate.
+1. **Select Public Option**
+   - Choose "Public Authentication" from available options
+   - Review the features and limitations
+   - Confirm this meets your requirements
 
-- Click **"Connect to Outlook"**
+2. **Enter Email Details**
+   - Provide your complete Outlook email address
+   - Verify the email is correctly formatted
+   - Ensure it's hosted on Microsoft platforms
 
-**For Private Authentication:**
+3. **Initiate Connection**
+   - Click "Connect" or "Authorize"
+   - You'll be redirected to Microsoft's authorization page
+   - Keep the original tab open
 
-![Private Auth Setup](../_media/privateAuth.png)
+#### For Private Authentication:
 
-- Select **"Private Authentication"**
-- You'll need credentials from your IT administrator
-- See [Obtaining Credentials Guide](obtainingClientIDClientSecret.md) for details
+1. **Prepare Azure Credentials**
+   - Obtain Client ID from your Azure App Registration
+   - Get Client Secret or certificate details
+   - Confirm Tenant ID for your organization
+   - Verify redirect URIs are configured
 
-### Step 3: Microsoft Authorization (Public Authentication)
+2. **Enter Application Details**
+   - Input Client ID in the designated field
+   - Provide Client Secret securely
+   - Enter Tenant ID for your organization
+   - Verify all details are accurate
 
-When you click "Connect to Outlook" with Public Authentication, here's exactly what happens:
+3. **Test Configuration**
+   - Use the "Test Connection" feature if available
+   - Verify credentials are accepted
+   - Confirm permissions are properly configured
 
-![Using Email](../_media/usingEmail.png)
+### 🛡️ Step 3: Microsoft Authorization
 
-1. **Redirect to Microsoft**
-   - You'll be taken to login.microsoftonline.com
-   - The URL will show it's for "Krista Email Automation"
-   - This is normal and expected
+1. **Microsoft Login Page**
+   - Enter your Outlook email address
+   - Provide your password securely
+   - Complete any two-factor authentication
 
-2. **Microsoft Login**
-   - Enter the SAME email address you entered in Krista
-   - Enter your actual Outlook password
-   - Complete any two-factor authentication if enabled
+2. **Permission Review**
+   - Carefully read the permission requests
+   - Understand what access is being granted
+   - Note the application name (Krista or your organization)
 
-3. **Permission Review Screen**
+3. **Grant Consent**
+   - Click "Accept" or "Allow" to grant permissions
+   - Wait for the authorization to complete
+   - You'll be redirected back to Krista
 
-   Microsoft will show a screen like this:
-   ```
-   Krista Email Automation wants to:
-   ✓ Read your mail
-   ✓ Send mail on your behalf  
-   ✓ Access your profile information
-   ✓ Maintain access to data you have given it access to
-   ```
+### ✅ Step 4: Verification and Testing
 
-4. **Understanding the Permissions**
+1. **Connection Status**
+   - Verify the connection shows as "Active" or "Connected"
+   - Check that your email address is displayed correctly
+   - Note any warning messages or issues
 
-![Select Permissions](../_media/selectPermissions.png)
+2. **Basic Functionality Test**
+   - Try reading a recent email
+   - Test sending a simple email
+   - Verify folder access works
+   - Check attachment handling
 
-   - **Read your mail**: Allows Krista to fetch emails from your account for automation
-   - **Send mail on your behalf**: Enables Krista to send automated emails from your account
-   - **Access your profile**: Gets basic info like your name and email for verification
-   - **Maintain access**: Keeps the connection active without requiring frequent re-login
+3. **Automation Setup**
+   - Create a simple test automation
+   - Configure basic email rules
+   - Test the automation with sample data
+   - Monitor for any errors or issues
 
-![Delegated Permissions](../_media/delegatedPermissions.png)
+## 🔍 Troubleshooting Connection Issues
 
-5. **Grant Permission**
-   - Review each permission carefully
-   - Click **"Accept"** if you agree to let Krista automate your email
-   - Click **"Cancel"** if you want to stop the process
+### 🚫 Common Problems
 
-### Step 4: Private Authentication Setup (Enterprise)
+#### Authentication Failures
 
-For organizations using Private Authentication, the setup involves Azure Active Directory:
+**Symptoms**:
+- Cannot complete login process
+- "Invalid credentials" errors
+- Redirect loops or timeouts
 
-![Azure Active Directory](../_media/azureActiveDirectory.png)
+**Solutions**:
+1. Verify email address is correct and properly formatted
+2. Ensure password is current and account is not locked
+3. Try different browser or incognito mode
+4. Check for browser extensions blocking the process
+5. Verify network connectivity to Microsoft endpoints
 
-#### Azure App Registration Process
+#### Permission Denied
 
-1. **Create New Registration**
+**Symptoms**:
+- "Access denied" during authorization
+- "Insufficient privileges" errors
+- Cannot grant consent
 
-![New Registration](../_media/newRegistration.png)
-
-2. **Configure App Registration**
-
-![App Registration](../_media/appRegistration.png)
-
-3. **Register Application**
-
-![Register](../_media/register.png)
-
-4. **Get Application Details**
-
-![Client ID Tenant ID](../_media/clientIDtenantID.png)
-
-5. **Configure Certificates & Secrets**
-
-![Certificates & Secrets](../_media/certificates&Secrets.png)
-
-![Add Client Secret](../_media/addClientSecret.png)
-
-![Client Secret](../_media/clientSecret.png)
-
-6. **Set Up Microsoft Graph Permissions**
-
-![Microsoft Graph](../_media/microsoftGraph.png)
-
-![Add A Permission](../_media/addAPermission.png)
-
-7. **Configure Redirect URIs**
-
-![Authorized Redirect URI Reference](../_media/authorizedRedirectURIReference.png)
-
-### Step 5: Complete Configuration
-
-![Routing ID](../_media/routingId.png)
-
-1. **Test Connection**: Click "Test Connection" to verify setup
-2. **Save Configuration**: Click "Save Changes" when test succeeds
-3. **Verify Status**: Ensure connection shows as "Active"
-
-## Verification and Testing
-
-### Connection Health Check
-
-- **Token Status**: Ensure authentication tokens are valid
-- **Permission Scope**: Verify all required permissions are granted
-- **API Connectivity**: Test connection to Microsoft Graph API
-- **Error Logs**: Check for any authentication or permission errors
-
-## Troubleshooting Common Issues
-
-### Connection Fails During Setup
-
-**Possible Causes:**
-- Incorrect email address format
-- Network connectivity issues
-- Browser blocking pop-ups or redirects
-- Organization security policies
-
-**Solutions:**
-1. Double-check email address spelling
-2. Try different browser or incognito mode
-3. Disable browser extensions temporarily
-4. Contact IT department about security policies
-
-### "Access Denied" Error
-
-**Common Causes:**
-- Organization blocks third-party applications
-- Account lacks necessary permissions
-- Conditional access policies
-
-**Solutions:**
-1. Check with IT about third-party app policies
-2. Verify account has valid Microsoft 365 license
+**Solutions**:
+1. Check if organization blocks third-party applications
+2. Verify account has necessary Microsoft 365 licenses
 3. Try connecting from organization network
-4. Consider Private Authentication for enterprise environments
+4. Contact IT about conditional access policies
+5. Consider Private Authentication for enterprise environments
 
-### Authentication Timeout
+#### Connection Timeouts
 
-**Causes:**
-- Slow network connection
-- Microsoft services experiencing delays
-- Browser session timeout
+**Symptoms**:
+- Setup process hangs or freezes
+- Long delays during authorization
+- Browser timeout errors
 
-**Solutions:**
-1. Refresh page and try again
-2. Check Microsoft service status
+**Solutions**:
+1. Check internet connection stability
+2. Try from different network if possible
 3. Clear browser cache and cookies
-4. Try from different network if possible
+4. Disable VPN temporarily
+5. Contact support if issues persist
 
-## Security Best Practices
+### 🔧 Advanced Troubleshooting
 
-### During Setup
+#### Network Connectivity
 
-- ✅ Always verify you're on legitimate Microsoft login pages
-- ✅ Check URL shows login.microsoftonline.com
-- ✅ Never enter credentials on suspicious pages
-- ✅ Review permissions carefully before accepting
-- ✅ Use strong, unique passwords for your accounts
+Ensure access to these Microsoft endpoints:
+- login.microsoftonline.com
+- graph.microsoft.com
+- outlook.office.com
+- login.windows.net
 
-### After Connection
+#### Browser Requirements
 
-- ✅ Regularly review connected applications in Microsoft account settings
-- ✅ Monitor email automation activity
-- ✅ Report any suspicious activity immediately
-- ✅ Keep your authentication credentials secure
-- ✅ Update passwords regularly
+- JavaScript must be enabled
+- Cookies must be allowed
+- Pop-ups should be permitted for Microsoft domains
+- Modern browser version (updated within last 6 months)
 
-## Next Steps
+#### Firewall and Proxy
 
-### Start Automating
+- Whitelist Microsoft authentication domains
+- Allow HTTPS traffic on port 443
+- Configure proxy settings if required
+- Check for SSL inspection interference
 
-Once connected, you can:
-- **Create Email Workflows**: Set up automated responses and processing
-- **Configure Triggers**: Define when automation should activate
-- **Set Up Monitoring**: Track email automation performance
-- **Explore Features**: Discover advanced automation capabilities
+## 📊 Post-Connection Configuration
 
-### Learn More
+### ⚙️ Basic Settings
 
-- **[Supported Operations](supportedCatalogRequests.md)**: Explore all available email automation features
-- **[Authentication Guide](authentication.md)**: Understand security and authentication options
-- **[Troubleshooting](authentication.md#troubleshooting)**: Get help with common issues
+1. **Email Monitoring**
+   - Choose which folders to monitor
+   - Set up real-time vs. polling frequency
+   - Configure email filtering rules
+   - Define processing priorities
 
-Your Outlook account is now securely connected to Krista and ready for intelligent email automation!
+2. **Automation Rules**
+   - Create basic email routing rules
+   - Set up auto-response templates
+   - Configure attachment handling
+   - Define escalation procedures
+
+3. **Notification Preferences**
+   - Choose notification channels
+   - Set alert thresholds
+   - Configure error reporting
+   - Define maintenance windows
+
+### 🔒 Security Configuration
+
+1. **Access Controls**
+   - Review granted permissions
+   - Set up user access levels
+   - Configure approval workflows
+   - Define audit requirements
+
+2. **Data Handling**
+   - Configure data retention policies
+   - Set up encryption requirements
+   - Define backup procedures
+   - Establish compliance controls
+
+## 📈 Monitoring and Maintenance
+
+### 📊 Health Monitoring
+
+1. **Connection Status**
+   - Regularly check connection health
+   - Monitor authentication token expiration
+   - Track API usage and limits
+   - Review error logs and alerts
+
+2. **Performance Metrics**
+   - Monitor email processing speed
+   - Track automation success rates
+   - Measure response times
+   - Analyze usage patterns
+
+### 🔄 Maintenance Tasks
+
+1. **Regular Updates**
+   - Keep authentication tokens current
+   - Update automation rules as needed
+   - Review and optimize performance
+   - Test disaster recovery procedures
+
+2. **Security Reviews**
+   - Audit user access regularly
+   - Review permission grants
+   - Update security configurations
+   - Conduct compliance assessments
+
+## 🆘 Getting Support
+
+### 📞 Support Channels
+
+1. **Self-Service Resources**
+   - Built-in connection testing tools
+   - Comprehensive documentation
+   - Video tutorials and guides
+   - Community forums and discussions
+
+2. **Direct Support**
+   - Email support for technical issues
+   - Phone support for urgent problems
+   - Chat support during business hours
+   - Escalation procedures for critical issues
+
+### 📋 When Contacting Support
+
+Provide the following information:
+- Your Krista instance URL
+- Email address being connected
+- Authentication method used
+- Error messages or screenshots
+- Steps taken before the issue occurred
+- Browser and operating system details
+
+## 🚀 Next Steps
+
+After successfully connecting your Outlook account:
+
+1. **Explore Automation Features**
+   - Review available automation templates
+   - Create your first email workflow
+   - Test with sample data
+   - Gradually expand automation scope
+
+2. **Optimize Performance**
+   - Monitor usage patterns
+   - Adjust settings based on needs
+   - Implement best practices
+   - Plan for scaling requirements
+
+3. **Advanced Configuration**
+   - Explore advanced features
+   - Integrate with other systems
+   - Set up custom workflows
+   - Implement governance controls
+
+Ready to transform your email workflows? Follow this guide to connect your Outlook account and start automating today!

@@ -1,172 +1,259 @@
-# Authentication Guide for Krista Outlook Extension
+# 🔐 Authentication
 
-![Authentication Overview](../_media/homePage.png)
+## 🎯 Overview
 
-This guide provides an overview of authentication methods available with the Krista Outlook Extension and helps you choose the right approach for your organization.
+The Krista Outlook Extension offers two secure authentication methods to connect your Microsoft Outlook account. Both methods use industry-standard OAuth 2.0 protocol to ensure your credentials remain secure while enabling powerful email automation.
 
-## Understanding Authentication
+## 🔒 Authentication Methods Comparison
 
-Authentication is the process of verifying your identity and granting Krista permission to access your Outlook account. Think of it as giving Krista a secure "key" to interact with your emails on your behalf.
+### 🌐 Public Authentication
+**Perfect for individuals and small teams**
 
-## Authentication Methods Overview
+| Feature | Details |
+|---------|---------|
+| Setup Time | 5 minutes |
+| Best For | Individual users, small teams (1-50 users) |
+| IT Involvement | None required |
+| Branding | Shows "Krista Email Automation" |
+| API Limits | Shared limits with other Krista users |
+| Security | OAuth 2.0 with Microsoft's standard security |
 
-The Krista Outlook Extension supports two authentication approaches, each designed for different organizational needs:
+### 🏢 Private Authentication
+**Enterprise-grade solution for organizations**
 
-### Public Authentication (Standard Method)
+| Feature | Details |
+|---------|---------|
+| Setup Time | 30-60 minutes (requires IT setup) |
+| Best For | Organizations, enterprise teams (50+ users) |
+| IT Involvement | Azure AD administrator required |
+| Branding | Shows your organization's name |
+| API Limits | Dedicated limits for your organization |
+| Security | OAuth 2.0 + organizational security policies |
 
-![Public Auth Overview](../_media/public_auth.png)
-
-- **Quick Setup**: 5-minute configuration
-- **Best For**: Individual users and small teams (under 50 users)
-- **Management**: Handled entirely by Krista
-- **Branding**: Shows "Krista Email Automation" in consent screens
-
-[📖 **Detailed Public Authentication Guide**](public-authentication.md)
-
-### Private Authentication (Enterprise Method)
-
-![Private Auth Overview](../_media/privateAuth.png)
-
-- **Custom Setup**: 15-30 minute configuration with IT involvement
-- **Best For**: Large organizations (50+ users) with enterprise requirements
-- **Management**: Full organizational control
-- **Branding**: Shows your organization's name in consent screens
-
-[📖 **Detailed Private Authentication Guide**](private-authentication.md)
-
-## Quick Comparison
-
-| Feature | Public Authentication | Private Authentication |
-|---------|----------------------|----------------------|
-| **Setup Time** | 5 minutes | 15-30 minutes |
-| **IT Involvement** | None required | Required |
-| **API Rate Limits** | Standard (shared) | Enhanced (dedicated) |
-| **Branding** | Krista's branding | Your organization's branding |
-| **User Management** | Individual setup | Centralized control |
-| **Compliance** | Standard OAuth 2.0 | Enterprise-grade with audit trails |
-
-## Choosing the Right Method
+## 🌐 Public Authentication
 
 ![Ask A System Checked](../_media/askASystemChecked.png)
 
-### Use Public Authentication if:
-- You're setting up for yourself or a small team
-- You need to get started quickly
-- Your organization doesn't have strict app approval processes
-- You process moderate volumes of email (under 1000 emails/day)
-- You don't require custom branding or enhanced monitoring
+### How It Works
+
+Public Authentication uses Krista's pre-registered Microsoft application to provide quick, secure access to your Outlook account.
+
+```
+OAuth 2.0 Flow:
+Your Email → Krista App → Microsoft Login → Permission Grant → Automation Ready
+```
+
+### Perfect For
+
+- Individual Users: Personal email automation
+- Small Teams: Up to 50 users
+- Quick Start: Need to begin immediately
+- Simple Requirements: Basic email automation needs
+- No IT Restrictions: Organization allows third-party apps
+
+### Benefits
+
+- Instant Setup: Connect in under 5 minutes
+- No IT Required: Self-service configuration
+- Cost Effective: No additional infrastructure needed
+- Secure: Full OAuth 2.0 protection
+- User Friendly: Simple, intuitive process
+
+### Rate Limits
+
+| Operation | Limit | Reset Period |
+|-----------|-------|--------------|
+| Email Reading | 1,000 emails/hour | Rolling hour |
+| Email Sending | 100 emails/hour | Rolling hour |
+| Subscriptions | 5 active/account | Per account |
+| Bulk Operations | 20 requests/minute | Rolling minute |
+
+### Get Started
+[Public Authentication Setup Guide](public-authentication.md)
+
+## 🏢 Private Authentication
 
 ![Ask A System Unchecked](../_media/askASystemUnchecked.png)
 
-### Use Private Authentication if:
-- You're in a large enterprise environment (50+ users)
-- Your IT department requires custom app registrations
-- You need higher API limits for heavy email processing
-- You want your organization's branding in consent screens
-- You have specific compliance or audit requirements
-- You need centralized user management and monitoring
+### How It Works
 
-## Security Features (Both Methods)
+Private Authentication uses your organization's own Azure App Registration, providing complete control over the authentication process.
 
-### OAuth 2.0 Protocol
+```
+Enterprise OAuth Flow:
+Your Email → Your Azure App → Org Login → Admin Consent → Enterprise Ready
+```
 
-Both authentication methods use OAuth 2.0, the industry standard for secure authorization:
-- **No password sharing**: Krista never sees your actual password
-- **Limited permissions**: Only grants access to specific email functions
-- **Revocable access**: You can remove permissions at any time
-- **Encrypted communication**: All data transfer is encrypted
+### Perfect For
 
-### Permission Scopes
+- Large Organizations: 50+ users
+- High Volume: Processing 1000+ emails daily
+- Custom Branding: Organization name in consent screens
+- Strict Security: Enterprise compliance requirements
+- IT Policies: Organization requires custom app registrations
 
-![Select Permissions](../_media/selectPermissions.png)
+### Benefits
 
-Both methods request only necessary permissions:
+- Custom Branding: Your organization's name appears in all consent screens
+- Centralized Control: IT manages all aspects of the integration
+- User Management: Control which users can access the application
+- Audit Trails: Comprehensive logging of all authentication events
+- Higher Limits: Dedicated API quota for your organization
+- Enhanced Security: Integration with organizational security policies
 
-![Delegated Permissions](../_media/delegatedPermissions.png)
+### Enhanced Rate Limits
 
-| Permission | Purpose | Required |
-|------------|---------|----------|
-| `Mail.Read` | Read emails from your mailbox | Yes |
-| `Mail.Send` | Send emails on your behalf | Yes |
-| `User.Read` | Verify your identity | Yes |
-| `Mail.ReadWrite` | Modify email properties (labels, etc.) | Optional |
+| Operation | Limit | Reset Period |
+|-----------|-------|--------------|
+| Email Reading | 10,000 emails/hour | Rolling hour |
+| Email Sending | 1,000 emails/hour | Rolling hour |
+| Subscriptions | 50 active/account | Per account |
+| Bulk Operations | 100 requests/minute | Rolling minute |
 
-![Add A Permission](../_media/addAPermission.png)
+### Get Started
+[Private Authentication Setup Guide](private-authentication.md)
+[Obtaining Azure Credentials Guide](obtainingClientIDClientSecret.md)
 
-## Azure App Registration Process
+## 🔒 Security Features
 
-For organizations choosing Private Authentication, the setup involves Azure Active Directory:
+### OAuth 2.0 Protection
 
-![Azure Active Directory](../_media/azureActiveDirectory.png)
+Both authentication methods provide enterprise-grade security:
 
-### Step 1: Create New Registration
+- No Password Sharing: Krista never sees your actual password
+- Limited Scope: Only grants access to specific email functions
+- Revocable Access: Remove permissions anytime through Microsoft settings
+- Encrypted Communication: All data transfer uses HTTPS/TLS encryption
+- Token Expiration: Access tokens expire and refresh automatically
 
-![New Registration](../_media/newRegistration.png)
+### Data Protection Standards
 
-### Step 2: Configure App Registration
+- Minimal Data Storage: Only necessary tokens and metadata stored
+- No Email Storage: Email content processed in real-time, not stored
+- Secure Token Storage: All tokens encrypted at rest
+- Audit Logging: All access attempts logged for security monitoring
+- Compliance Ready: SOC 2, GDPR, HIPAA compatible
 
-![App Registration](../_media/appRegistration.png)
+## 🤔 Which Method Should You Choose?
 
-### Step 3: Register Application
+### Choose Public Authentication If:
 
-![Register](../_media/register.png)
+- You're an individual user or small team (under 50 users)
+- You need to start immediately without IT involvement
+- Your organization allows third-party applications
+- You have basic email automation requirements
+- You process fewer than 1,000 emails per day
 
-### Step 4: Get Client ID and Tenant ID
+### Choose Private Authentication If:
 
-![Client ID Tenant ID](../_media/clientIDtenantID.png)
+- You're a large organization (50+ users)
+- You process high volumes of email (1,000+ daily)
+- You need custom branding in consent screens
+- Your organization has strict security policies
+- You want dedicated API limits and enhanced performance
+- You need centralized IT control and management
 
-### Step 5: Configure Certificates & Secrets
+## 🔄 Migration Between Methods
 
-![Certificates & Secrets](../_media/certificates&Secrets.png)
+### Public to Private Migration
 
-### Step 6: Add Client Secret
+If you start with Public Authentication and later need Private Authentication:
 
-![Add Client Secret](../_media/addClientSecret.png)
+1. Plan Migration: Document current users and workflows
+2. Set Up Azure: Create Azure App Registration following our guide
+3. Pilot Test: Test with small group of users first
+4. Communicate: Inform users about the change
+5. Migrate Users: Have users re-authenticate with Private method
+6. Verify: Ensure all users successfully migrated
 
-![Client Secret](../_media/clientSecret.png)
+## 🛠️ Troubleshooting Common Issues
 
-### Step 7: Configure Microsoft Graph Permissions
+### Access Denied Errors
 
-![Microsoft Graph](../_media/microsoftGraph.png)
+**Symptoms**: Cannot connect to Outlook, access denied message
 
-### Step 8: Set Authorized Redirect URI
+**Common Causes**:
+- Organization blocks third-party applications
+- Account lacks necessary permissions
+- Conditional access policies blocking connection
 
-![Authorized Redirect URI Reference](../_media/authorizedRedirectURIReference.png)
+**Solutions**:
+1. Check with IT department about third-party app policies
+2. Try connecting from organization network
+3. Verify account has valid Microsoft 365 license
+4. Consider switching to Private Authentication for enterprise environments
 
-## Getting Started
+### Connection Timeout Issues
 
-### For Individual Users or Small Teams
+**Symptoms**: Setup process hangs or times out
 
-1. **Start Here**: [Public Authentication Guide](public-authentication.md)
-2. **Quick Setup**: Follow the step-by-step process
-3. **Begin Automating**: Start with simple email workflows
+**Common Causes**:
+- Network connectivity issues
+- Firewall blocking Microsoft authentication endpoints
+- Browser issues or extensions interfering
 
-### For Enterprise Organizations
+**Solutions**:
+1. Check internet connection stability
+2. Try different browser or incognito/private mode
+3. Disable browser extensions temporarily
+4. Ensure these domains are accessible:
+   - login.microsoftonline.com
+   - graph.microsoft.com
+   - outlook.office.com
 
-1. **Plan Your Approach**: Review [Private Authentication Guide](private-authentication.md)
-2. **Involve IT Team**: Share the guide with your IT administrators
-3. **Follow Enterprise Setup**: Complete Azure App Registration process
-4. **Deploy to Users**: Roll out to your organization systematically
+### Invalid Email Errors
 
-## Configuration Reference
+**Symptoms**: Email address not accepted during setup
 
-### Routing ID Setup
+**Common Causes**:
+- Email not hosted on Microsoft platforms
+- Typo in email address
+- Account doesn't exist or is disabled
 
-![Routing ID](../_media/routingId.png)
+**Solutions**:
+1. Verify email address spelling
+2. Ensure email is hosted on Microsoft 365, Outlook.com, or Exchange Online
+3. Test logging into outlook.office.com with the same email
+4. Contact email administrator if account issues persist
 
-## Migration Between Methods
+### Token Expired Errors
 
-### From Public to Private
+**Symptoms**: Previously working connection stops working
 
-Organizations often start with Public Authentication and later migrate to Private Authentication as they grow. The [Private Authentication Guide](private-authentication.md) includes detailed migration instructions.
+**Common Causes**:
+- Refresh token expired (rare, usually 90 days)
+- Password changed on Microsoft account
+- Account disabled or permissions revoked
 
-## Support and Resources
+**Solutions**:
+1. Re-authenticate through Krista settings
+2. Verify Microsoft account is still active
+3. Check if password was recently changed
+4. Review connected apps in Microsoft account settings
 
-### Documentation
+## 📞 Getting Help
 
-- **[Public Authentication Guide](public-authentication.md)**: Complete setup and troubleshooting
-- **[Private Authentication Guide](private-authentication.md)**: Enterprise configuration and management
-- **[Connection Guide](connectingWithOutlookExtension.md)**: General connection process
-- **[Credentials Guide](obtainingClientIDClientSecret.md)**: Azure App Registration details
+### Self-Service Resources
 
-Your authentication choice sets the foundation for secure, efficient email automation with Krista. Choose the method that best fits your organization's size, security requirements, and technical capabilities.
+1. Test Your Connection: Use Krista's built-in connection test
+2. Microsoft Account Settings: Review connected apps at account.microsoft.com
+3. Browser Developer Tools: Check for JavaScript errors during setup
+4. Network Diagnostics: Verify connectivity to Microsoft endpoints
+
+### Support Channels
+
+- Krista Support: For integration and configuration questions
+- Microsoft Support: For account and authentication issues
+- IT Department: For organizational policy questions
+- Community Forums: For user experiences and tips
+
+## 🚀 Next Steps
+
+Once you've chosen your authentication method:
+
+1. Follow Setup Guide: Complete the detailed setup process
+2. Configure Automation: Set up your first email workflows
+3. Monitor Performance: Track automation effectiveness
+4. Optimize Settings: Fine-tune based on usage patterns
+
+Ready to secure your email automation? Choose your authentication method and get started today! 🚀
