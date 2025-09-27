@@ -1,790 +1,527 @@
-# Supported Requests
-
-This document provides comprehensive information about error handling in the Outlook3 extension, including common error scenarios, their causes, and recommended solutions.
-
-## Catalog Requests
-
-The Outlook Extension supports the following catalog requests.
-
-> **Note :**
-> - Files with extensions such as "html", "php5", "pht", "phtml", "shtml", "asa", "cer", "asax", "swf", "xap", "jsp", "
-    exe", and "js" are attached as a zip file in the email. Likewise, attachments are received as zip files in the
-    email.
-> - If a file name contains control characters (\r, \n, \t) or filesystem problematic characters (<, >, :, ", /, \, |, ?, *), they will be replaced with underscores (_).
-
-> **Error Handling Note :**
-> - If a user makes a mistake when entering data, the system will give them a chance to fix it.
-    An error message is displayed. The user can re-enter the information for that specific field. If they enter valid
-    data the second time, everything will work as expected. However, if they enter incorrect data again, the system will
-    encounter a problem and display a more specific error message.
-
-### Fetch All Labels
-
-- **Description**: Returns list of labels.
-- **Input Parameters**: NA
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Labels             | List&lt;Label>     | Inbox, Sent |
-
-### Mark Message
-
-- **Description**: Accepts message ID,label & Category as input and mark mail as read/unread and returns response
-  message.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value |
-| Label              | Pick One           | Yes           | Read             |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Response           | Text               | Success     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-- **Error Handling Response**
-
-| **Error Scenario**     | **Condition**                    | **User Message**                                                                                 |
-|------------------------|----------------------------------|--------------------------------------------------------------------------------------------------|
-| Invalid Message ID     | Email is null                    | "We couldn't find an email with the Message ID: %s. Please check and enter a valid Message ID."  |
-| Invalid Label          | Label is not "Read" or "Unread"  | "Unable to mark message (un)read invalid label [label] for messageID: [messageID]"               |
-| Graph Service Exception| Any GraphServiceException        | "Mark message request failed. Please try again later."                                           |
-| System Error           | Any other Exception              | "Error occurred while mark message."                                                             |
-| General Failure        | Multiple conditions              | "We couldn't process the message because it seems the message ID is incorrect or missing."       |
-
-### Add Category To Message
-
-- **Description**: Accepts message ID and Category as input and add given category to message and returns response
-  message.
-
-> **Note :**
-> - In the event that **Create Category** is selected, the category will be accessible globally for all messages.
-    Conversely, if this option is not selected, the category will only be available for the specific message provided.
-
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value |
-| Category           | Text               | Yes           | Krista           |
-| Create Category    | Yes/No             | No            | Yes              |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Category Added     | Yes/No             | Yes         |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Remove Category From Message
-
-- **Description**: Accepts message ID and Category as input and remove given category from the message and returns
-  response
-  message.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value |
-| Category           | Text               | Yes           | Krista           |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Category Removed   | Yes/No             | Yes         |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Category        | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Fetch Mail By Message Id
-
-- **Description**: Accepts message Id as input and returns mail. In case of invalid input, this will return empty data.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| Message ID         | Text               | Yes           | Message_Id_Value |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Mail               | Mail               |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-- **Error Handling Response**
-
-| **Error Scenario**      | **Condition**                                   | **User Message**                                                                                                         |
-|-------------------------|-------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Invalid Message ID      | Message ID validation fails                     | "The provided Message ID: [messageId] does not exist."                                                                   |
-| Message Not Found       | getEmail throws IllegalStateException           | Empty response (mailDetails will be null)                                                                                |
-| Authorization Error     | MustAuthorizeException                          | Handled by AuthorizationExceptionHandler (various messages)                                                              |
-| System Error            | Any other Exception                             | "Error occurred while fetch mail by message ID."                                                                         |
-| General Failure         | Multiple conditions                             | "We couldn't fetch the email because the message ID appears to be incorrect. Please check the message ID and try again." |
-
-### Move Message
-
-- **Description**: Accepts message ID, and folder name as input and move one message from source folder to another
-  folder and returns response message.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value |
-| Folder Name        | Text               | Yes           | Inbox            |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Response           | Text               | Success     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Folder Name     | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-- **Error Handling Response**
-
-| **Error Scenario**      | **Condition**                                         | **User Message**                                                                                                                   |
-|-------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| Invalid Message ID      | Email is null                                         | "We couldn't find an email with the Message ID: [messageId]. Please check and enter a valid Message ID."                           |
-| Invalid Folder Name     | Folder is null                                        | "The provided Folder Name: [folderName] does not exist."                                                                           |
-| Failed to Move          | moveToFolder throws IllegalStateException             | "Failed to move message!"                                                                                                          |
-| Authorization Error     | MustAuthorizeException                                | Handled by AuthorizationExceptionHandler (various messages)                                                                        |
-| System Error            | Any other Exception                                   | "Error occurred while moving message to folder."                                                                                   |
-| General Failure         | Multiple conditions                                   | "We couldn't move the message because either the message ID is incorrect or the folder doesn't exist. Please check and try again." |
-
-### Fetch Mails By Label
-
-- **Description**: Accepts label, page number, and page size as input and returns list of mail. Page number, and page
-  size are optional input.
-- **Input Parameters**: Currently, the page size is supported between 1 and 15. The default page number is 1, and the default page size is 15. To fetch a subfolder, provide the folder path in the label, using the format: parent folder followed by '/' followed by child folder.
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**       |
-|--------------------|--------------------|---------------|-------------------|
-| Label              | Text               | Yes           | Inbox, Inbox/Demo |
-| Page Number        | Number             | No            | 1                 |
-| Page Size          | Number             | No            | 1                 |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Mails              | List&lt;Mails>     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Label           | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Mail Received Alert
-
-- **Description**: This request returns an email when the user receives a new email.
-- **Input Parameters**: NA
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Mail Details       | Mail               |
-
-> **Note :** If you are not receiving mail Alerts Please Upgrade Outlook Extension and Validate Attributes from Setup
-> with "Allow Alert Mail" Checked.
-
-### Reply To All
-
-- **Description**: In this request, the user can respond to everyone on the thread. Other recipients will see a message
-  user 'Reply All' to, whether they're in the 'To' or 'Cc' fields.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
-|--------------------|--------------------|---------------|---------------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value          |
-| Message            | RichText           | Yes           | Hi sir, This is a message |
-| Attachments        | File               | No            | file.xlsx                 |
-| BodyType           | PickOne            | No            | Text OR HTML              |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Is Successful      | Boolean            | true        |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Reply To All With CC and BCC
-
-- **Description**: In this request, you can respond to everyone on a thread. Other recipients would see a message. Use '
-  Reply All' for all, whether they are in the 'To' or 'Cc' fields. Optional parameters 'To', 'Bcc' and 'Reply To' are
-  provided that overwrites the old email addresses, if configured.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**                            |
-|--------------------|--------------------|------------------------------------|----------------------------------------|
-| Message ID         | Text               | Yes                                | Message_ID_Value                       |
-| Message            | RichText           | Yes                                | Hi sir, This is a message              |
-| To                 | Text               | Yes, Overwrites the To list if set | [to@xyz.com, to1@xyz.com, to2@xyz.com] |
-| Cc                 | Text               | No, Overwrites the To list if set  | [cc@xyz.com, cc1@xyz.com]              |
-| Bcc                | Text               | No, Overwrites the To list if set  | [bcc@xyz.com, bcc1@xyz.com]            |
-| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com                        |
-| Attachments        | File               | No                                 | file.xlsx                              |
-| BodyType           | PickOne            | No                                 | Text OR HTML                           |
-
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
-  then it will be skipped.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Is Successful      | Boolean            | true        |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Cc              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Fetch Sent
-
-- **Description**: Accepts page number, and page size as input and returns list of mails from sent folder.
-- **Input Parameters**: Currently supports page size between 0 and 15. Default value of page number is 1 and of page size is 15.
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example** |
-|--------------------|--------------------|---------------|-------------|
-| Page Number        | Number             | No            | 1           |
-| Page Size          | Number             | No            | 1           |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Sent Mails         | List&lt;Mails>     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Forward Mail
-
-- **Description**: This request allows a sender to forward the received email to other recipients.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
-|--------------------|--------------------|---------------|---------------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value          |
-| To                 | Text               | Yes           | to@xyz.com. to1@xyz.com   |
-| Message            | RichText           | Yes           | Hi sir, This is a message |
-| BodyType           | PickOne            | No            | Text OR HTML              |
-
-- **Note**: The parameter To is comma seperated emails and if any invalid email address given will be skipped.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Is Forwarded       | Boolean            | true        |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-- **Error Handling Response**
-
-| **Error Scenario**       | **Condition**                                                         | **User Message**                                                                                                                              |
-|--------------------------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Invalid Message ID       | Email is null                                                         | "The provided Message ID: [messageId] does not exist."                                                                                        |
-| Invalid Email Address    | GraphServiceException with message containing `ONE_INVALID_MAIL`      | "The provided Email Address: [email] does not exist."                                                                                         |
-| General Forward Failure  | Any other GraphServiceException                                       | "We couldn't forward the email because the message ID or recipient email address seems to be incorrect. Please double-check and try again."   |
-| System Error             | Any other Exception                                                   | "Error occurred while forward mail."                                                                                                          |
-
-### Send Mail
-
-- **Description**: Accepts subject, message, attachments, to, bcc, cc, reply to as input and returns response message.
-  Attachments, bcc, cc, and reply to are optional inputs.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
-|--------------------|--------------------|---------------|---------------------------|
-| Subject            | Text               | Yes           | This is subject           |
-| Message            | Rich Text          | Yes           | Hi sir, This is a message |
-| Attachments        | File               | No            | file.xlsx                 |
-| To                 | Text               | Yes           | to@xyz.com, to1@xyz.com   |
-| Bcc                | Text               | No            | bcc@xyz.com, bcc1@xyz.com |
-| Cc                 | Text               | No            | cc@xyz.com, cc1@xyz.com   |
-| ReplyTo            | Email              | No            | replyto@xyz.com           |
-| BodyType           | PickOne            | No            | Text OR HTML              |
-
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
-  then it will be skipped.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**                            |
-|--------------------|--------------------|----------------------------------------|
-| Message            | Text               | Mail Sent Successfully To: abc@xyz.com |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Cc              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-- **Error Handling Response**
-
-| **Error Scenario**       | **Condition**                                                      | **User Message**                                                             |
-|--------------------------|---------------------------------------------------------------------|------------------------------------------------------------------------------|
-| Invalid Email Address    | GraphServiceException with message containing `ONE_INVALID_MAIL`   | "Invalid mail address. Please check the email addresses and try again."     |
-| General Send Mail Failure| Any other GraphServiceException                                    | "Send mail request failed. Please try again later."                          |
-| System Error             | Any other Exception                                                | "Error occurred while send mail."                                            |
-
-
-### Send Mail With Table
-
-- **Description**: Accepts subject, message, attachments, to, bcc, cc, List of Entities, reply to as input and returns
-  response message.
-  Attachments, bcc, cc, reply to and Remove Table Column are optional inputs.
-- **Input Parameters**:
-
-| **Parameter Name**             | **Parameter Type** | **Mandatory** | **Example**                                   |
-|--------------------------------|--------------------|---------------|-----------------------------------------------|
-| Subject                        | Text               | Yes           | This is subject                               |
-| Message                        | Rich Text          | Yes           | Hi sir, This is a message                     |
-| Attachments                    | File               | No            | file.xlsx                                     |
-| To                             | Text               | Yes           | to@xyz.com, to1@xyz.com                       |
-| Bcc                            | Text               | No            | bcc@xyz.com                                   |
-| Cc                             | Text               | No            | cc@xyz.com                                    |
-| ReplyTo                        | Email              | No            | replyto@xyz.com                               |
-| Entity List                    | List&lt;Entity>    | Yes           | {Name: name1, Age: 12},{Name: name2, Age: 23} |
-| Remove Entity Field From Table | List&lt;String>    | No            | ["primaryKey","Phone"]                        |
-
-> **Note :** The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
-> then it will be skipped.
->
->Input key for Date Field Should contain keyword like "date". For Example -> approvedOnDate or approved_on_date or
-> $APPROVED_ON_DATE
-> Similarly, Input key for Time Field Should contain keyword like "time". For Example -> startTime or start_time or
-> $START_TIME
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**                            |
-|--------------------|--------------------|----------------------------------------|
-| Message            | Text               | Mail Sent Successfully To: abc@xyz.com |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Cc              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Fetch Inbox Asynch
-
-- **Description**: Fetches inbox mails asynchronously and returns task ID. The task ID will get used in getResult
-  request to get mails. Maximum limit is 500 mails.
-- **Input Parameters**: NA
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**                          |
-|--------------------|--------------------|--------------------------------------|
-| Task ID            | Text               | ffd01b50-cfd7-424b-91d5-e31afe121909 |
-
-### Get Result
-
-- **Description**: Accept task ID as input and return mails. Get this task ID from fetchInboxAsynch request.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                          |
-|--------------------|--------------------|---------------|--------------------------------------|
-| Task ID            | Text               | Yes           | ffd01b50-cfd7-424b-91d5-e31afe121909 |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Mails              | List&lt;Mails>     |
-
-### Fetch Mail Details By Query
-
-- **Description**: Accepts search query as input and returns list of mails. Returns at most 15 mails.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
-|--------------------|--------------------|---------------|---------------------------|
-| Query              | Text               | Yes           | Inbox:Your daily briefing |
-
-- **Note**: You can enclose the search query within double quotes ("") for an exact match.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Mails              | List&lt;Mails>     |
-
-### Fetch Inbox
-
-- **Description**: Accepts page number, and page size as input and returns list of mail. Page number, and page size are optional parameters.
-- **Input Parameters**: Currently supports page size between 0 and 15. Default value of page number is 1 and of page size is 15.
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example** |
-|--------------------|--------------------|---------------|-------------|
-| Page Number        | Number             | No            | 1           |
-| Page Size          | Number             | No            | 1           |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Inbox Mails        | List&lt;Mails>     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-- **Error Handling Response**
-
-| **Error Scenario**        | **Condition**                                        | **User Message**                                                                                                        |
-|---------------------------|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| Invalid Page Number       | Page number is 0 or negative                         | "The provided Page number: [pageNumber] should be greater than 0"                                                       |
-| Invalid Page Size         | Page size is 0, negative, or greater than 15         | "The provided Page size: [pageSize] should be greater than 0 and less than or equal to 15."                             |
-| Authorization Error       | MustAuthorizeException                               | Handled by AuthorizationExceptionHandler (various messages)                                                             |
-| System Error              | Any other Exception                                  | "Error occurred while fetch inbox."                                                                                     |
-| General Failure           | Multiple conditions                                  | "We couldn't fetch your inbox because the page number or page size is invalid. Please enter a number between 1 and 15." |
-
-### Fetch Inbox With Preferences
-
-- **Description**: This request is used to fetch Inbox emails with the selected preferences.
-- **Input Parameters**: Currently supports page size between 0 and 15. Default value of page number is 1, page size is 15 and that of Mail Body is Html.
-- **Note**: "Mail Body" is a standard key and should not be altered.
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**             |
-|--------------------|--------------------|---------------|-------------------------|
-| Page Number        | Number             | No            | 1                       |
-| Page Size          | Number             | No            | 1                       |
-| Preference         | Multi Field        | No            | Mail Body: Text or Html |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| Mails              | List&lt;Mails>     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Page Number     | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Page Size       | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Fetch Latest Mail
-
-- **Description**: Returns the latest email received
-- **Input Parameters**: NA
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** |
-|--------------------|--------------------|
-| New Email          | Mails              |
-
-### Reply To Mail
-
-- **Description**: Accepts message ID, message, and attachments as input and returns response message. Attachment is
-  optional input.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**               |
-|--------------------|--------------------|---------------|---------------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value          |
-| Message            | Rich Text          | Yes           | Hi sir, This is a message |
-| Attachments        | File               | No            | file.xlsx                 |
-| BodyType           | PickOne            | No            | Text OR HTML              |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**            |
-|--------------------|--------------------|------------------------|
-| Message            | Text               | Mail Sent Successfully |
-
-- If given message does not contain replyTo mail then message will get sent to sender.
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Reply To Mail With CC and BCC
-
-- **Description**: In this request, you can respond to sender on a thread. Accepts Message ID, and Message as mandatory
-  parameters and returns response message. Optional parameters 'To', 'Bcc', and 'Reply To' are provided that overwrites
-  the old email addresses, if configured.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory**                      | **Example**               |
-|--------------------|--------------------|------------------------------------|---------------------------|
-| Message ID         | Text               | Yes                                | Message_ID_Value          |
-| Message            | Rich Text          | Yes                                | Hi sir, This is a message |
-| To                 | Text               | Yes, Overwrites the To list if set | to@xyz.com, to1@xyz.com   |
-| Cc                 | Text               | No, Overwrites the To list if set  | cc@xyz.com, cc1@xyz.com   |
-| Bcc                | Text               | No, Overwrites the To list if set  | bcc@xyz.com, bcc1@xyz.com |
-| Reply To           | Text               | No, Overwrites the To list if set  | replyTo@xyz.com           |
-| Attachments        | File               | No                                 | file.xlsx                 |
-| BodyType           | PickOne            | No                                 | Text OR HTML              |
-
-- **Note**: The parameters To, Cc, Bcc and Reply To are comma separated emails. If any invalid email address is given
-  then it will be skipped.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**            |
-|--------------------|--------------------|------------------------|
-| Message            | Text               | Mail Sent Successfully |
-
-- If given message does not contain replyTo mail then message will get sent to sender.
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| To              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Cc              | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Bcc             | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Reply To        | Status As Success | The remediation action will be received, and the data will be re-entered. |
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### List Categories
-
-- **Description**: In this request, you can Get a list of the supported Outlook categories.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**                          |
-|--------------------|--------------------|--------------------------------------|
-| Category Names     | List&lt;Text>      | [Red category, Orange category, ...] |
-
-### Get Notification Delta
-
-- **Description**: This request is used to retrieve delta notifications that were missed by the alert event.
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example**                 |
-|--------------------|--------------------|-----------------------------|
-| Messages Ids       | List&lt;Text>      | [Random id, Random id, ...] |
-
-- **Note**: This request retrieves all notifications, and it is the user's responsibility to track the processed ones to identify any that were missed. 
-- After each successful execution, Microsoft returns a checkpoint link that can be used to fetch only the new notifications from that point onward.
-- When integrating both "Mail Received Alert" and this request in the same workflow, it is recommended to add a delay of at least 15 seconds after the request get called for optimal performance.
-
-### Send Alert Using Notification Delta
-
-- **Description**: This request is used to send an alert to the Mail Received Alert request and accepts the Message ID as input.
-
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Message Id         | Text               | Random id   |
-
-- **Note**: This request takes input of message id to send the alert to "Mail Received Alert" request which will help to execute system trigger conversation using alert request.
-
-### Update Message Category And Status
-
-- **Description**: Accepts message ID, label, and category as input. Updates the read/unread status and adds/removes category for the specified message.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| Message ID         | Text               | Yes           | Message_ID_Value |
-| Label              | PickOne            | No            | Read/Unread      |
-| Category           | Text               | No            | Krista           |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Response           | Text               | Success     |
-
-- **Validation Fields**
-
-| Input Parameter | Valid Data        | Invalid Data                                                              |
-|-----------------|-------------------|---------------------------------------------------------------------------|
-| Message ID      | Status As Success | The remediation action will be received, and the data will be re-entered. |
-
-### Check If Triggered Mail Ids Exist
-
-- **Description**: Checks whether a specific message ID exists in the set of mail IDs that have already triggered alerts. This is useful for preventing duplicate processing of the same email in workflows.
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**      |
-|--------------------|--------------------|---------------|------------------|
-| MessageId          | Text               | Yes           | Message_ID_Value |
-
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| IsExist            | Boolean            | true/false  |
-
-- **Note**: Returns `true` if the message ID has already triggered an alert and exists in the triggered mail IDs set, 
-otherwise returns `false`. This can be used to prevent duplicate processing of emails in workflows that use the "Mail Received Alert" request.
-
-### Save Outlook Public Configuration
-
-- **Description**: Configure Outlook authentication with Public access. Requires only Email and optional Mail Alert setting.
-
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**           |
-|--------------------|--------------------|---------------|-----------------------|
-| Email              | Email              | Yes           | user@company.com      |
-| Allow Mail Alert   | Boolean            | No            | true                  |
-
-- **Output Parameters**:
-
-| **Parameter Name**           | **Parameter Type**                    | **Example** |
-|------------------------------|---------------------------------------|-------------|
-| Is Configuration Successful  | Boolean                               | true        |
-| Extension Response Meta      | Entity(Extension Response Meta)       | -           |
-
-### Save Outlook Private Configuration
-
-- **Description**: Configure Outlook authentication with Private access. Requires Email, Client ID, Client Secret, and Tenant ID.
-
-- **Input Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Mandatory** | **Example**                          |
-|--------------------|--------------------|---------------|--------------------------------------|
-| Email              | Email              | Yes           | user@company.com                     |
-| Client ID          | Text               | Yes           | 12345678-1234-1234-1234-123456789012 |
-| Client Secret      | Text               | Yes           | abc123def456ghi789                   |
-| Tenant ID          | Text               | Yes           | 87654321-4321-4321-4321-210987654321 |
-| Allow Mail Alert   | Boolean            | No            | true                                 |
-
-- **Output Parameters**:
-
-| **Parameter Name**           | **Parameter Type**                    | **Example** |
-|------------------------------|---------------------------------------|-------------|
-| Is Configuration Successful  | Boolean                               | true        |
-| Extension Response Meta      | Entity(Extension Response Meta)       | -           |
-
-
-### Health Check
-
-- **Description**: This 'Health Check' request verifies the health status of the appliance by calling the health check API. It returns a boolean response indicating overall health status along with detailed system resource information including memory usage, CPU utilization, and other vital metrics.
-- **Input Parameters**: NA
-- **Output Parameters**:
-
-| **Parameter Name**      | **Parameter Type**              | **Example**                                                                                                                                                                                                                                                                                                                                                |
-|-------------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Extension Response Meta | Entity(Extension Response Meta) | {"message": "Health check completed successfully", "responseType": "SUCCESS", "timeTakenInSeconds": 0.35}                                                                                                                                                                                                                                                  |
-| Health Status           | Entity(Health Status)           | {"extensionName": "Outlook", "systemStatus": "HEALTHY", "currentMemoryUsageMB": 256.0, "availableMemoryMB": 768.0, "totalMemoryMB": 1024.0, "cPUUsagePercentage": 15.5, "activeThreads": 24.0, "uptimeHours": 72.5, "authType": "PRIVATE", "email": "user@example.com", "hasRefreshToken": true, "tokenValid": true, "lastHealthCheckTime": 1623456789000} |
-| Is Healthy              | Boolean                         | true                                                                                                                                                                                                                                                                                                                                                       |
-
-- **Note**: The Health Status entity includes information about system resources (memory, CPU), authentication status, and overall health classification (HEALTHY, DEGRADED, UNHEALTHY). When health issues are detected, an email notification is automatically sent with diagnostic details.
-
-### Test Connection
-
-- **Description**: This test connection request validates the connection using stored or provided configuration parameters. It performs comprehensive connectivity tests including OAuth token acquisition, mailbox connectivity, and scope validation to ensure the integration is working properly.
-- **Input Parameters**: NA
-- **Output Parameters**:
-
-| **Parameter Name**       | **Parameter Type**              | **Example**                                                                                                                                                                                                                                                                                       |
-|--------------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Is Connection Successful | Boolean                         | true                                                                                                                                                                                                                                                                                              |
-| Test Connection Summary  | MultiField                      | {"Summary": "Connection successful", "Email": "user@example.com", "Allow Mail Alert": true, "Tenant ID": "12345678-1234-1234-1234-123456789012", "Client ID": "87654321-4321-4321-4321-210987654321", "Auth Type": "PRIVATE", "Mailbox Accessible": true, "Allow Mail Alert Is Successful": true} |
-| Extension Response Meta  | Entity(Extension Response Meta) | {"message": "Connection test completed successfully", "responseType": "SUCCESS", "timeTakenInSeconds": 0.85}                                                                                                                                                                                      |
-
-- **Note**: The Test Connection Summary includes information about the connection status, email account, authentication type, and mailbox accessibility. If mail alerts are enabled, the test will also attempt to create or update the necessary mail subscription. This request is essential for verifying that your Outlook configuration is correctly set up and functioning.
-
-## Authentication Error Handling
-
-The **Outlook3** extension handles Microsoft authentication errors with user-friendly messages for each catalog request:
-
-| **Error Type**                   | **Error Condition**                                                                                    | **User Message**                                                                               |
-|----------------------------------|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| Refresh Token Expiration         | Message contains `REFRESH_TOKEN_EXPIRED`                                                               | "Your session has expired. Please contact your administrator."                                 |
-| Password Changed or Reset        | Message contains `PASSWORD_CHANGED_ERROR`                                                              | "Your Microsoft password was changed. Please contact your administrator."                      |
-| User Deleted in Domain           | Message contains `USER_DELETED_ERROR`                                                                  | "Your Microsoft account no longer exists. Please contact your administrator."                  |
-| User Disabled                    | Message contains `USER_DISABLED_ERROR`                                                                 | "Your Microsoft account has been blocked or locked. Please contact your administrator."        |
-| Permission Revoked               | Message contains `PERMISSIONS_REVOKED_ERROR`                                                           | "Your access to Microsoft has been removed. Please contact your administrator."                |
-| Application Not Found            | Message contains `APP_NOT_FOUND_ERROR`                                                                 | "We couldn't find the application in your Microsoft setup. Please contact your administrator." |
-| Tenant Not Found                 | Message contains `TENANT_NOT_FOUND_CODE` or `KEYWORD_TENANT_NOT_FOUND`                                 | "We couldn't find your Microsoft organization. Please contact your administrator."             |
-| Network or Service Unavailable   | Message contains `SERVICE_UNAVAILABLE_CODE`, `KEYWORD_SERVICE_UNAVAILABLE`, or `KEYWORD_NETWORK_ERROR` | "Microsoft is temporarily unavailable. Please contact your administrator."                     |
-| Invalid Client Secret            | Message contains `INVALID_CLIENT_SECRET_CODE` or `KEYWORD_INVALID_CLIENT_SECRET`                       | "Something's wrong with the application's connection. Please contact your administrator."      |
-| Default Case                     | None of the above conditions match                                                                     | "Authentication error: [original error message]"                                               |
-
-
-## Entity Requests
-
-The Outlook Extension supports the following entity requests.
-
-### Search Labels
-
-- **Description**: Returns list of labels.
-- **Input Parameters**: NA
-- **Output Parameters**:
-
-| **Parameter Name** | **Parameter Type** | **Example** |
-|--------------------|--------------------|-------------|
-| Labels             | List&lt;Label>     | Inbox, Sent |
-
-### Get Label
-
-- **Description**: Selects label from searched result.
-- **Input Parameters**: NA
-- **Output Parameters**: NA
+# Supported Email Operations - Krista Outlook Extension
+
+This guide provides a comprehensive overview of all email operations you can automate with the Krista Outlook Extension. Each operation is explained in simple terms with practical examples.
+
+## Overview of Available Operations
+
+The Outlook Extension provides 12 powerful operations to automate your email workflows:
+
+| Operation | Purpose | Complexity | Common Use Cases |
+|-----------|---------|------------|------------------|
+| [Test Connection](#test-connection) | Verify Outlook connectivity | Beginner | Health checks, troubleshooting |
+| [Fetch Mails by Label](#fetch-mails-by-label) | Get emails from specific folders | Beginner | Processing inbox, organizing emails |
+| [Fetch Latest Mail](#fetch-latest-mail) | Get the most recent email | Beginner | Monitoring new messages |
+| [Send Mail](#send-mail) | Send new emails | Intermediate | Notifications, alerts, reports |
+| [Reply to Mail](#reply-to-mail) | Respond to existing emails | Intermediate | Customer service, auto-responses |
+| [Forward Mail](#forward-mail) | Forward emails to others | Intermediate | Routing, escalation workflows |
+| [Get Mail by ID](#get-mail-by-id) | Retrieve specific email | Intermediate | Detailed processing, follow-ups |
+| [Get User Profile](#get-user-profile) | Get account information | Beginner | User verification, personalization |
+| [Create Subscription](#create-subscription) | Set up email alerts | Advanced | Real-time monitoring |
+| [Delete Subscription](#delete-subscription) | Remove email alerts | Advanced | Cleanup, maintenance |
+| [Renew Subscription](#renew-subscription) | Extend alert duration | Advanced | Ongoing monitoring |
+| [Get Subscription](#get-subscription) | Check alert status | Advanced | Monitoring management |
+
+---
+
+## Test Connection
+
+**Purpose**: Verify that your Outlook account is properly connected and accessible.
+
+**When to use**: 
+- After initial setup
+- Troubleshooting connection issues
+- Regular health checks
+- Before important email campaigns
+
+**What it does**:
+- Checks authentication status
+- Verifies email access permissions
+- Tests API connectivity
+- Confirms account details
+
+**Example Response**:
+```
+✅ Connection Status: Active
+✅ Authentication: Valid
+✅ Email Access: Granted
+✅ Send Permissions: Enabled
+📧 Connected Account: john.doe@company.com
+🕒 Last Tested: 2024-01-15 10:30 AM
+```
+
+**Business Value**: Ensures reliable email automation and prevents workflow failures.
+
+---
+
+## Fetch Mails by Label
+
+**Purpose**: Retrieve emails from specific Outlook folders or with certain labels.
+
+**When to use**:
+- Processing emails in your Inbox
+- Handling emails in custom folders
+- Organizing email workflows by category
+- Bulk processing of similar emails
+
+**Key Features**:
+- **Folder Selection**: Choose any Outlook folder (Inbox, Sent, Custom folders)
+- **Pagination**: Handle large volumes efficiently (up to 1000 emails per request)
+- **Filtering**: Get emails from specific time periods
+- **Sorting**: Order by date, sender, subject, or importance
+
+**Configuration Options**:
+- **Folder Name**: Which folder to search (e.g., "Inbox", "Important", "Customer Inquiries")
+- **Page Size**: How many emails to fetch at once (1-1000)
+- **Page Number**: Which batch of emails to retrieve
+- **Date Range**: Limit to specific time periods
+
+**Example Use Cases**:
+
+*Customer Service Automation*:
+- Fetch emails from "Customer Support" folder
+- Process inquiries automatically
+- Route to appropriate team members
+
+*Invoice Processing*:
+- Fetch emails from "Invoices" folder
+- Extract invoice data automatically
+- Update accounting systems
+
+*Marketing Campaign Monitoring*:
+- Fetch emails from "Campaign Responses" folder
+- Track engagement and replies
+- Update customer databases
+
+**Sample Email Data Returned**:
+```
+📧 Email 1:
+   From: customer@example.com
+   Subject: "Question about my order"
+   Date: 2024-01-15 09:15 AM
+   Folder: Customer Support
+   Has Attachments: No
+   
+📧 Email 2:
+   From: vendor@supplier.com
+   Subject: "Invoice #12345"
+   Date: 2024-01-15 08:30 AM
+   Folder: Invoices
+   Has Attachments: Yes (PDF)
+```
+
+---
+
+## Fetch Latest Mail
+
+**Purpose**: Retrieve the most recent email from your mailbox.
+
+**When to use**:
+- Monitoring for urgent messages
+- Real-time email processing
+- Checking for immediate responses
+- Triggering workflows based on new emails
+
+**What it provides**:
+- Complete email content
+- Sender information
+- Timestamp details
+- Attachment information
+- Email metadata
+
+**Example Scenarios**:
+
+*Executive Assistant Automation*:
+- Check for urgent emails every 5 minutes
+- Alert executive of high-priority messages
+- Auto-schedule meetings from email requests
+
+*Order Processing*:
+- Monitor for new order confirmations
+- Immediately process payment notifications
+- Update inventory systems in real-time
+
+*Customer Emergency Response*:
+- Watch for emails with "URGENT" in subject
+- Automatically escalate to on-call team
+- Send immediate acknowledgment to customer
+
+---
+
+## Send Mail
+
+**Purpose**: Send new emails automatically as part of your workflows.
+
+**When to use**:
+- Sending notifications and alerts
+- Automated customer communications
+- Report distribution
+- Follow-up messages
+
+**Email Composition Features**:
+- **Rich Text Formatting**: Bold, italic, colors, fonts
+- **HTML Content**: Full HTML email support
+- **Attachments**: Include files, documents, images
+- **Multiple Recipients**: Send to multiple people at once
+- **CC and BCC**: Include additional recipients
+- **Custom Headers**: Add tracking or routing information
+
+**Configuration Options**:
+- **To**: Primary recipients (required)
+- **CC**: Carbon copy recipients (optional)
+- **BCC**: Blind carbon copy recipients (optional)
+- **Subject**: Email subject line
+- **Body**: Email content (text or HTML)
+- **Attachments**: Files to include
+- **Priority**: High, normal, or low importance
+- **Delivery Receipt**: Request read confirmations
+
+**Example Use Cases**:
+
+*Automated Reporting*:
+```
+To: management@company.com
+Subject: Daily Sales Report - January 15, 2024
+Body: Please find attached today's sales summary...
+Attachments: sales_report_20240115.pdf
+Priority: Normal
+```
+
+*Customer Notifications*:
+```
+To: customer@example.com
+Subject: Your Order #12345 Has Shipped
+Body: Great news! Your order is on its way...
+Priority: High
+Delivery Receipt: Requested
+```
+
+*Team Alerts*:
+```
+To: support-team@company.com
+CC: manager@company.com
+Subject: URGENT: System Alert Detected
+Body: Immediate attention required for...
+Priority: High
+```
+
+---
+
+## Reply to Mail
+
+**Purpose**: Automatically respond to existing emails while maintaining conversation context.
+
+**When to use**:
+- Customer service auto-responses
+- Acknowledgment messages
+- Information requests
+- Escalation notifications
+
+**Key Features**:
+- **Thread Preservation**: Maintains email conversation history
+- **Original Content**: Option to include original message
+- **Smart Formatting**: Proper reply formatting with ">" quotes
+- **Recipient Handling**: Automatically includes original sender
+- **Attachment Support**: Add files to your reply
+
+**Configuration Options**:
+- **Include Original Message**: Yes/No
+- **Reply Type**: Reply to sender only or Reply All
+- **Message Body**: Your response content
+- **Additional Recipients**: Add CC/BCC if needed
+- **Attachments**: Include supporting documents
+
+**Example Scenarios**:
+
+*Customer Service Automation*:
+```
+Original Email: "When will my order arrive?"
+Auto-Reply: "Thank you for your inquiry. Your order #12345 
+is scheduled to arrive on January 18th. You'll receive 
+tracking information shortly."
+```
+
+*Meeting Requests*:
+```
+Original Email: "Can we schedule a meeting next week?"
+Auto-Reply: "I'd be happy to meet. I have availability 
+Tuesday at 2 PM or Thursday at 10 AM. Please let me know 
+which works better for you."
+```
+
+*Information Requests*:
+```
+Original Email: "Please send me the latest product catalog"
+Auto-Reply: "Thank you for your interest. Please find our 
+latest product catalog attached. If you have any questions, 
+feel free to reach out."
+Attachment: product_catalog_2024.pdf
+```
+
+---
+
+## Forward Mail
+
+**Purpose**: Automatically forward emails to other recipients while preserving the original message.
+
+**When to use**:
+- Routing emails to appropriate team members
+- Escalating issues to management
+- Sharing information across departments
+- Creating email distribution workflows
+
+**Key Features**:
+- **Original Message Preservation**: Complete original email included
+- **Custom Introduction**: Add your own message before the forwarded content
+- **Multiple Recipients**: Forward to several people at once
+- **Attachment Handling**: All original attachments are included
+- **Thread Maintenance**: Preserves conversation history
+
+**Configuration Options**:
+- **Forward To**: Recipient email addresses (required)
+- **CC Recipients**: Additional people to include
+- **Introduction Message**: Your message before the forwarded email
+- **Include Attachments**: Yes/No option
+- **Priority Level**: Set importance of forwarded message
+
+**Example Use Cases**:
+
+*Customer Escalation*:
+```
+Forward To: manager@company.com
+Introduction: "This customer complaint requires immediate 
+attention. Please review and respond within 2 hours."
+Original Email: [Customer complaint about defective product]
+```
+
+*Department Routing*:
+```
+Forward To: technical-support@company.com
+CC: customer-service@company.com
+Introduction: "Technical question from customer - please 
+provide detailed response."
+Original Email: [Complex technical inquiry]
+```
+
+*Information Sharing*:
+```
+Forward To: sales-team@company.com
+Introduction: "FYI - New competitor pricing information 
+from industry contact."
+Original Email: [Market intelligence from partner]
+```
+
+---
+
+## Get Mail by ID
+
+**Purpose**: Retrieve a specific email using its unique identifier.
+
+**When to use**:
+- Following up on specific emails
+- Detailed processing of individual messages
+- Retrieving emails referenced in other systems
+- Audit trails and compliance
+
+**What you get**:
+- Complete email content and metadata
+- Full recipient and sender information
+- All attachments and their details
+- Email properties (read status, importance, etc.)
+- Conversation thread information
+
+**Example Scenarios**:
+
+*Compliance Auditing*:
+- Retrieve specific emails for legal review
+- Generate detailed reports on email content
+- Verify email delivery and receipt
+
+*Customer Service Follow-up*:
+- Access previous customer communications
+- Review conversation history before responding
+- Ensure consistent service quality
+
+*Project Management*:
+- Track email-based project communications
+- Retrieve specific approvals or decisions
+- Maintain project documentation
+
+---
+
+## Get User Profile
+
+**Purpose**: Retrieve information about the connected Outlook account.
+
+**When to use**:
+- Verifying account details
+- Personalizing automated messages
+- User identification in workflows
+- Account validation
+
+**Information Retrieved**:
+- Display name and email address
+- Job title and department
+- Office location and phone numbers
+- Manager and direct reports
+- Account status and permissions
+
+**Example Use Cases**:
+
+*Personalized Communications*:
+```
+"Hello [User's First Name], this is an automated message 
+from the [Department] team..."
+```
+
+*Signature Generation*:
+```
+Best regards,
+[Full Name]
+[Job Title]
+[Department]
+[Phone Number]
+```
+
+*Access Control*:
+- Verify user permissions before processing requests
+- Route emails based on user's department
+- Apply different rules for different user types
+
+---
+
+## Subscription Management (Advanced)
+
+The Outlook Extension provides sophisticated real-time email monitoring through subscriptions. These operations are typically used by advanced users or system administrators.
+
+### Create Subscription
+
+**Purpose**: Set up real-time notifications when new emails arrive.
+
+**How it works**:
+1. You specify what emails to monitor (folder, sender, subject keywords)
+2. Microsoft sends instant notifications to Krista when matching emails arrive
+3. Krista can immediately trigger workflows without polling for new emails
+
+**Benefits**:
+- **Instant Response**: Process emails within seconds of arrival
+- **Efficient**: No need to constantly check for new emails
+- **Scalable**: Handle high volumes without performance impact
+- **Reliable**: Microsoft guarantees delivery of notifications
+
+**Configuration**:
+- **Folder to Monitor**: Which folder to watch (Inbox, specific folders)
+- **Notification URL**: Where Microsoft sends alerts (automatically configured)
+- **Expiration**: How long the subscription lasts (maximum 3 days)
+- **Filter Criteria**: Optional filters for specific types of emails
+
+### Delete Subscription
+
+**Purpose**: Stop real-time email monitoring.
+
+**When to use**:
+- Ending a monitoring campaign
+- Changing monitoring criteria
+- Troubleshooting subscription issues
+- System maintenance
+
+### Renew Subscription
+
+**Purpose**: Extend the duration of existing email monitoring.
+
+**Why needed**: Microsoft subscriptions expire after maximum 3 days for security
+**Best practice**: Automatically renew before expiration to maintain continuous monitoring
+
+### Get Subscription
+
+**Purpose**: Check the status and details of existing email monitoring.
+
+**Information provided**:
+- Subscription status (active, expired, error)
+- Remaining time before expiration
+- Monitoring criteria and filters
+- Notification statistics
+
+---
+
+## Practical Workflow Examples
+
+### Customer Service Automation
+```
+1. Create Subscription → Monitor "Customer Support" folder
+2. When new email arrives → Fetch Latest Mail
+3. Analyze email content → Determine urgency and category
+4. If urgent → Forward Mail to on-call manager
+5. Send Mail → Acknowledgment to customer
+6. Reply to Mail → Provide initial response or next steps
+```
+
+### Invoice Processing Workflow
+```
+1. Fetch Mails by Label → Get emails from "Invoices" folder
+2. For each email → Get Mail by ID for detailed processing
+3. Extract invoice data from attachments
+4. Update accounting system
+5. Send Mail → Confirmation to vendor
+6. Forward Mail → Copy to accounting team
+```
+
+### Executive Assistant Workflow
+```
+1. Create Subscription → Monitor executive's inbox
+2. When VIP email arrives → Fetch Latest Mail
+3. Check sender against VIP list
+4. If VIP → Send Mail immediate alert to executive
+5. Reply to Mail → Professional acknowledgment
+6. Forward Mail → Copy to assistant for follow-up
+```
+
+## Error Handling and Troubleshooting
+
+### Common Issues and Solutions
+
+**"Email Not Found" Error**
+- Check if email still exists in the specified folder
+- Verify folder name spelling and case sensitivity
+- Ensure you have permission to access the folder
+
+**"Rate Limit Exceeded" Error**
+- Reduce frequency of email operations
+- Implement delays between bulk operations
+- Consider upgrading to Private Authentication for higher limits
+
+**"Subscription Expired" Error**
+- Subscriptions automatically expire after 3 days
+- Implement automatic renewal in your workflows
+- Monitor subscription status regularly
+
+**"Permission Denied" Error**
+- Verify authentication is still valid
+- Check if account permissions have changed
+- Re-authenticate if necessary
+
+### Best Practices
+
+**Performance Optimization**:
+- Use subscriptions instead of frequent polling
+- Implement pagination for large email volumes
+- Cache frequently accessed data
+
+**Security Considerations**:
+- Regularly review and rotate authentication credentials
+- Monitor for unusual email access patterns
+- Implement proper error logging and alerting
+
+**Reliability Measures**:
+- Build retry logic for temporary failures
+- Implement backup notification methods
+- Monitor subscription health and renewal
+
+## Getting Started with Your First Workflow
+
+1. **Start Simple**: Begin with Test Connection and Fetch Latest Mail
+2. **Test Thoroughly**: Use small email volumes during development
+3. **Monitor Performance**: Watch for rate limits and errors
+4. **Scale Gradually**: Increase complexity and volume over time
+5. **Document Everything**: Keep records of your workflow configurations
+
+Your Outlook Extension is now ready to power sophisticated email automation workflows that save time, improve accuracy, and enhance customer service!

@@ -6,9 +6,11 @@
 
 * [Connecting with Krista Outlook Extension](pages/connectingWithOutlookExtension.md)
 
-* [Obtaining Credentials For Private Authentication](pages/obtainingClientIDClientSecret.md)
-
 * [Authentication](pages/authentication.md)
+  * [Public Authentication](pages/public-authentication.md)
+  * [Private Authentication](pages/private-authentication.md)
+
+* [Obtaining Credentials For Private Authentication](pages/obtainingClientIDClientSecret.md)
 
 * [Supported Requests](pages/supportedCatalogRequests.md)
 
