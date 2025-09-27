@@ -1,14 +1,19 @@
 # Private Authentication Guide
 
+![Private Authentication Overview](../_media/privateAuth.png)
+
 This comprehensive guide helps IT administrators set up Private Authentication for the Krista Outlook Extension using your organization's own Azure App Registration.
 
 ## What is Private Authentication?
 
 Private Authentication uses your organization's own Microsoft Azure App Registration with OAuth 2.0 Authorization Code Grant flow. This gives you complete control over the authentication process, higher API limits, and enhanced security monitoring.
 
+![Azure Active Directory](../_media/azureActiveDirectory.png)
+
 ## OAuth 2.0 Technical Specifications
 
 ### Grant Type and Flow
+
 Private Authentication uses the **Authorization Code Grant** flow, the most secure OAuth 2.0 flow for web applications:
 
 ```
@@ -37,57 +42,20 @@ Microsoft Graph API: https://graph.microsoft.com/
 }
 ```
 
-## Email Address Requirements
+## Azure App Registration Setup
 
-### Organizational Email Only
-Private Authentication requires email addresses that belong to your organization's Azure Active Directory tenant:
+### Step 1: Create New App Registration
 
-```
-✅ Correct for Private Authentication:
-john.doe@company.com (if company.com is your organization's domain)
-mary.smith@university.edu (if university.edu is your organization's domain)
-sarah.jones@hospital.org (if hospital.org is your organization's domain)
-
-❌ Incorrect for Private Authentication:
-john.doe@gmail.com (external email, not in your organization)
-mary@outlook.com (personal email, not organizational)
-contractor@external-company.com (not in your Azure AD tenant)
-guest.user@partner.com (guest users may need special configuration)
-```
-
-### User Account Requirements
-- **Azure AD Account**: Must exist in your organization's Azure Active Directory
-- **Licensed Account**: Must have appropriate Microsoft 365/Exchange Online licenses
-- **Active Status**: Account must be enabled and not blocked
-- **Proper Roles**: Must have necessary role assignments for email access
-
-## Prerequisites
-
-### Required Access and Permissions
-- **Azure Active Directory Admin**: Global Administrator or Application Administrator role
-- **Microsoft 365 Admin**: Ability to grant organization-wide consent
-- **Technical Knowledge**: Understanding of Azure Portal and OAuth 2.0 concepts
-- **Time Required**: 30-45 minutes for initial setup
-
-### Information You'll Need
-- Your organization's primary domain (e.g., company.com)
-- Krista platform URL (e.g., https://your-krista-instance.com)
-- List of users who will use the Outlook Extension
-- Your organization's security and compliance requirements
-- Azure Active Directory tenant ID
-
-## Step-by-Step Setup Process
-
-### Step 1: Create Azure App Registration
+![New Registration](../_media/newRegistration.png)
 
 1. **Access Azure Portal**
-   - Go to [portal.azure.com](https://portal.azure.com)
-   - Sign in with your administrator account
+   - Navigate to portal.azure.com
+   - Sign in with your Azure administrator account
+   - Go to **Azure Active Directory**
 
-2. **Navigate to App Registrations**
-   - Click "Azure Active Directory" in the left menu
-   - Click "App registrations"
-   - Click "New registration"
+2. **Start App Registration**
+
+![App Registration](../_media/appRegistration.png)
 
 3. **Configure Basic Settings**
    ```
@@ -96,10 +64,17 @@ guest.user@partner.com (guest users may need special configuration)
    Redirect URI: Web - https://your-krista-instance.com/outlook/v3/oauth/callback
    ```
 
+![Register](../_media/register.png)
+
 ### Step 2: Configure API Permissions
 
 1. **Navigate to API Permissions**
 2. **Add Microsoft Graph Permissions**:
+
+![Microsoft Graph](../_media/microsoftGraph.png)
+
+![Add A Permission](../_media/addAPermission.png)
+
    ```
    Delegated Permissions:
    - Mail.Read (Read user mail)
@@ -109,21 +84,49 @@ guest.user@partner.com (guest users may need special configuration)
    - offline_access (Maintain access to data you have given it access to)
    ```
 
+![Select Permissions](../_media/selectPermissions.png)
+
+![Delegated Permissions](../_media/delegatedPermissions.png)
+
 3. **Grant Admin Consent**
-   - Click "Grant admin consent for [Your Organization]"
+   - Click **"Grant admin consent for [Your Organization]"**
    - Confirm the consent grant
+   - Verify all permissions show "Granted" status
 
-### Step 3: Generate Client Secret
+### Step 3: Create Client Secret
 
-1. **Navigate to Certificates & Secrets**
+![Certificates & Secrets](../_media/certificates&Secrets.png)
+
+1. **Navigate to Certificates & secrets**
 2. **Create New Client Secret**:
+
+![Add Client Secret](../_media/addClientSecret.png)
+
    ```
    Description: Krista Outlook Extension Secret
-   Expires: 24 months (recommended)
+   Expires: 12 months (recommended)
    ```
-3. **Copy Secret Value**: Save this immediately - you cannot retrieve it later
 
-### Step 4: Configure Authentication Settings
+3. **Copy Secret Value**
+
+![Client Secret](../_media/clientSecret.png)
+
+   - **Important**: Copy the secret value immediately
+   - Store it securely - you won't be able to see it again
+   - This will be your `Client Secret` in Krista configuration
+
+### Step 4: Get Application Details
+
+![Client ID Tenant ID](../_media/clientIDtenantID.png)
+
+1. **Navigate to Overview**
+2. **Copy Required Values**:
+   ```
+   Application (client) ID: [Copy this value]
+   Directory (tenant) ID: [Copy this value]
+   ```
+
+### Step 5: Configure Authentication Settings
 
 1. **Navigate to Authentication**
 2. **Configure Advanced Settings**:
@@ -134,28 +137,26 @@ guest.user@partner.com (guest users may need special configuration)
    ```
 
 3. **Add Additional Redirect URIs** (if needed):
+
+![Authorized Redirect URI Reference](../_media/authorizedRedirectURIReference.png)
+
    ```
    https://your-krista-instance.com/outlook/v3/oauth/callback
    https://your-krista-instance.com/rest/outlook/v3/oauth/callback
    ```
 
-### Step 5: Gather Required Information
-
-Collect these values for Krista configuration:
-```
-Client ID: [Application (client) ID from Overview page]
-Client Secret: [Secret value from step 3]
-Tenant ID: [Directory (tenant) ID from Overview page]
-```
-
-## Configuring Krista
+## Krista Configuration
 
 ### Step 1: Access Krista Extension Settings
+
+![Home Page](../_media/homePage.png)
+
 1. Log into your Krista platform
 2. Navigate to **Extensions** → **Outlook Extension**
 3. Click **"Add New Connection"** or **"Configure"**
 
-### Step 2: Enter Private Authentication Details
+### Step 2: Configure Private Authentication
+
 1. Select **"Private Authentication"** radio button
 2. Fill in the required fields:
    ```
@@ -166,6 +167,8 @@ Tenant ID: [Directory (tenant) ID from Overview page]
    Allow Mail Alert: [Optional checkbox]
    ```
 
+![Routing ID](../_media/routingId.png)
+
 ### Step 3: Test and Save Configuration
 1. Click **"Test Connection"**
 2. Complete the authentication flow
@@ -174,37 +177,30 @@ Tenant ID: [Directory (tenant) ID from Overview page]
 ## User Authentication Process
 
 ### For End Users
-1. **Access Krista**: User navigates to Outlook Extension settings
-2. **Enter Email**: User enters their organizational email address
-3. **Initiate Connection**: User clicks "Connect to Outlook"
-4. **Organization Login**: User is redirected to YOUR organization's login page
-5. **Authentication**: User logs in with organizational credentials
-6. **Consent Review**: User sees YOUR organization's app requesting permissions
-7. **Grant Access**: User approves permissions
-8. **Completion**: User is redirected back to Krista with successful connection
 
-### What Users See
-```
-Login Page: login.microsoftonline.com/yourorganization.com
-App Name: Krista Outlook Extension - [Your Organization]
-Permissions: [Your organization's app] wants to:
-- Read your mail
-- Send mail on your behalf
-- Access your profile information
-```
+![Using Email](../_media/usingEmail.png)
 
-## Rate Limits and Benefits
+When users authenticate with Private Authentication:
 
-### Enhanced API Limits
-Private Authentication provides significantly higher limits:
+1. **Initiation**: User clicks "Connect to Outlook" in Krista
+2. **Organization Login**: Redirected to your organization's login page
+3. **Custom Branding**: Sees your organization's name in consent screens
+4. **Enhanced Security**: Benefits from your organization's security policies
+5. **Conditional Access**: Respects your organization's access rules
 
-| Operation | Public Auth Limit | Private Auth Limit |
-|-----------|------------------|-------------------|
-| Graph API Requests | 1,000/hour shared | 10,000/10 minutes per app |
-| Email Reading | 1,000/hour shared | 10,000/hour per app |
-| Email Sending | 100/hour shared | 1,000/hour per app |
-| Concurrent Subscriptions | 5 shared | 1,000 per app |
-| Bulk Operations | 20/minute shared | 100/minute per app |
+## Benefits of Private Authentication
+
+### Enhanced Control
+- **Custom Branding**: Your organization's name appears in all consent screens
+- **Centralized Management**: IT controls all aspects of the integration
+- **User Assignment**: Control which users can access the application
+- **Audit Trails**: Comprehensive logging of all authentication events
+
+### Higher Limits
+- **Dedicated API Quota**: Your own Microsoft Graph API limits
+- **Increased Throughput**: Higher rate limits for email processing
+- **Better Performance**: No sharing of resources with other organizations
+- **Scalability**: Supports large-scale enterprise deployments
 
 ### Additional Benefits
 - **Dedicated Resources**: Your own API quota, not shared
@@ -216,15 +212,21 @@ Private Authentication provides significantly higher limits:
 ## Common Issues and Solutions
 
 ### 1. Email Domain Mismatch
-**Issue**: "AADSTS50020: User account from identity provider does not exist in tenant"
-**Cause**: User email domain doesn't match organization's Azure AD tenant
-**Solution**:
-- Verify user email domain matches your organization
-- Check if user exists in Azure Active Directory
-- Ensure user account is properly licensed
-- For guest users, configure external collaboration settings
 
-### 2. Insufficient Permissions
+**Issue**: Users can't authenticate with emails from different domains
+**Cause**: App registration configured for single tenant
+**Solution**:
+```
+Required Actions:
+1. Verify app registration is set to correct account types
+2. For multi-domain organizations, consider multi-tenant configuration
+3. Ensure user's email domain is part of your Azure AD tenant
+```
+
+### 2. Permission Consent Errors
+
+![Ask A System Unchecked](../_media/askASystemUnchecked.png)
+
 **Issue**: "AADSTS65001: The user or administrator has not consented to use the application"
 **Cause**: App registration lacks required permissions or admin consent not granted
 **Solution**:
@@ -240,25 +242,8 @@ Required Actions:
    - offline_access (Delegated)
 ```
 
-### 3. Invalid Client Configuration
-**Issue**: "AADSTS700016: Application with identifier 'xxx' was not found"
-**Cause**: Incorrect Client ID or app registration issues
-**Solution**:
-- Verify Client ID exactly matches Azure Portal (no extra spaces/characters)
-- Ensure app registration exists in correct tenant
-- Check app registration status is "Enabled"
-- Verify app registration hasn't been deleted
+### 3. Redirect URI Mismatch
 
-### 4. Client Secret Issues
-**Issue**: "AADSTS7000215: Invalid client secret is provided"
-**Cause**: Client secret expired, incorrect, or not properly configured
-**Solution**:
-- Generate new client secret in Azure Portal
-- Ensure secret hasn't expired (check expiration date)
-- Copy secret value immediately after creation
-- Update Krista configuration with new secret
-
-### 5. Redirect URI Mismatch
 **Issue**: "AADSTS50011: The reply URL specified in the request does not match the reply URLs configured for the application"
 **Cause**: Redirect URI in Azure doesn't exactly match Krista's callback URL
 **Solution**:
@@ -274,23 +259,59 @@ Common Mistakes:
 ❌ Missing port number if non-standard
 ```
 
-### 6. Tenant Configuration Issues
-**Issue**: "AADSTS90002: Tenant 'xxx' not found"
-**Cause**: Incorrect Tenant ID or tenant configuration problems
+### 4. Client Secret Expiration
+
+**Issue**: Authentication suddenly stops working
+**Cause**: Client secret has expired
 **Solution**:
-- Verify Tenant ID exactly matches Azure Portal
-- Ensure tenant is active and properly configured
-- Check if tenant has been migrated or renamed
-- Verify you're using Directory (tenant) ID, not domain name
+```
+Prevention and Resolution:
+1. Set calendar reminders before secret expiration
+2. Create new client secret before old one expires
+3. Update Krista configuration with new secret
+4. Test connection after updating
+5. Consider using certificates instead of secrets for longer validity
+```
+
+### 5. Tenant ID Configuration
+
+**Issue**: "AADSTS90002: Tenant not found"
+**Cause**: Incorrect tenant ID in Krista configuration
+**Solution**:
+```
+Verification Steps:
+1. Copy tenant ID exactly from Azure App Registration Overview
+2. Ensure no extra spaces or characters
+3. Verify tenant ID format (GUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+4. Test with Microsoft Graph Explorer using same tenant ID
+```
+
+### 6. Client ID Issues
+
+**Issue**: "AADSTS700016: Application with identifier was not found"
+**Cause**: Incorrect client ID or app not properly registered
+**Solution**:
+```
+Troubleshooting Steps:
+1. Verify client ID from Azure App Registration Overview
+2. Ensure app registration is in correct Azure AD tenant
+3. Check if app registration was accidentally deleted
+4. Verify client ID format and ensure no typos
+```
 
 ### 7. Conditional Access Blocking
-**Issue**: "AADSTS53003: Access has been blocked by Conditional Access policies"
+
+**Issue**: Users can't complete authentication due to conditional access policies
 **Cause**: Organization's conditional access policies blocking the application
 **Solution**:
-- Review conditional access policies in Azure AD
-- Add Krista app to trusted applications if appropriate
-- Configure device compliance requirements
-- Work with security team to adjust policies
+```
+Policy Review:
+1. Review conditional access policies in Azure AD
+2. Add Krista application to trusted applications if appropriate
+3. Configure device compliance requirements
+4. Consider location-based access rules
+5. Test with different user accounts and devices
+```
 
 ### 8. User Assignment Issues
 **Issue**: "AADSTS50105: The signed in user is not assigned to a role for the application"
@@ -323,6 +344,7 @@ Common Mistakes:
 ## Security Best Practices
 
 ### App Registration Security
+
 - ✅ Use certificate-based authentication instead of client secrets when possible
 - ✅ Set appropriate client secret expiration (12-24 months maximum)
 - ✅ Implement proper secret rotation procedures
@@ -346,6 +368,7 @@ Common Mistakes:
 ## Monitoring and Troubleshooting
 
 ### Azure AD Monitoring
+
 1. **Sign-in Logs**: Monitor authentication attempts and failures
 2. **Audit Logs**: Track permission changes and app modifications
 3. **Application Logs**: Review app-specific events and errors
@@ -359,10 +382,11 @@ Common Mistakes:
 - Error rates and types
 
 ### Troubleshooting Tools
+
 - **Azure AD Sign-in Logs**: Detailed authentication flow analysis
 - **Microsoft Graph Explorer**: Test API calls and permissions
 - **Azure AD App Registration Test**: Validate OAuth flows
-- **Fiddler/Browser Dev Tools**: Network traffic analysis
+- **Browser Dev Tools**: Network traffic analysis
 
 ## Migration from Public to Private
 

@@ -1,10 +1,14 @@
 # Public Authentication Guide
 
+![Public Authentication Overview](../_media/public_auth.png)
+
 This guide provides detailed information about setting up and using Public Authentication with the Krista Outlook Extension.
 
 ## What is Public Authentication?
 
 Public Authentication uses Microsoft's standard OAuth 2.0 process with Krista's pre-registered application. This is the simplest method for most users and leverages Krista's existing Microsoft partnership for seamless integration.
+
+![Using Email](../_media/usingEmail.png)
 
 ## How Public Authentication Works
 
@@ -20,6 +24,9 @@ Token Endpoint: https://login.microsoftonline.com/common/oauth2/v2.0/token
 ```
 
 ### Step-by-Step Process
+
+![Ask A System Checked](../_media/askASystemChecked.png)
+
 1. **User Input**: You enter your actual Outlook email address in Krista
 2. **Initiation**: You click "Connect to Outlook" in Krista
 3. **Redirect**: Microsoft redirects you to their secure login page
@@ -57,17 +64,24 @@ admin@krista.com (any Krista email address)
 ## Setup Process
 
 ### Step 1: Access Krista Extension
+
+![Home Page](../_media/homePage.png)
+
 1. Log into your Krista platform
 2. Navigate to **Extensions** → **Outlook Extension**
 3. Click **"Add New Connection"** or **"Configure"**
 
 ### Step 2: Choose Public Authentication
+
 1. Select **"Public Authentication"** radio button
 2. Enter your Outlook email address in the Email field
 3. Optionally check "Allow Mail Alert" if you want notifications
 4. Click **"Test Connection"**
 
 ### Step 3: Microsoft Authorization
+
+When you click "Connect to Outlook" with Public Authentication, here's exactly what happens:
+
 1. **Redirect to Microsoft**
    - You'll be taken to login.microsoftonline.com
    - URL shows it's for "Krista Email Automation"
@@ -79,6 +93,7 @@ admin@krista.com (any Krista email address)
    - Complete two-factor authentication if enabled
 
 3. **Permission Review**
+
    Microsoft shows a consent screen:
    ```
    Krista Email Automation wants to:
@@ -101,12 +116,17 @@ admin@krista.com (any Krista email address)
 ## Understanding the Permissions
 
 ### Required Permissions
+
+![Select Permissions](../_media/selectPermissions.png)
+
 | Permission | Purpose | Why Needed |
 |------------|---------|------------|
 | `Mail.Read` | Read emails from your mailbox | Fetch emails for automation workflows |
 | `Mail.Send` | Send emails on your behalf | Send automated responses and notifications |
 | `User.Read` | Access your profile information | Verify identity and get basic account info |
 | `offline_access` | Maintain access when you're offline | Keep automation running without re-login |
+
+![Delegated Permissions](../_media/delegatedPermissions.png)
 
 ### What Krista Can and Cannot Do
 **✅ What Krista CAN do:**
@@ -126,6 +146,7 @@ admin@krista.com (any Krista email address)
 ## Rate Limits and Quotas
 
 ### Microsoft Graph API Limits
+
 With Public Authentication, you share API limits with other Krista users:
 
 | Operation | Limit | Reset Period |
@@ -159,6 +180,7 @@ With Public Authentication, you share API limits with other Krista users:
 ## Security Features
 
 ### OAuth 2.0 Security
+
 - **No Password Sharing**: Krista never sees your actual password
 - **Limited Scope**: Only grants access to specific email functions
 - **Revocable Access**: Remove permissions anytime through Microsoft settings
@@ -174,6 +196,7 @@ With Public Authentication, you share API limits with other Krista users:
 ## Troubleshooting Common Issues
 
 ### "Access Denied" Error
+
 **Symptoms**: Cannot connect to Outlook, access denied message
 **Causes**:
 - Organization blocks third-party applications
@@ -187,6 +210,7 @@ With Public Authentication, you share API limits with other Krista users:
 4. Consider switching to Private Authentication if organizational policies are strict
 
 ### "Invalid Email" Error
+
 **Symptoms**: Email address not accepted during setup
 **Causes**:
 - Email address not hosted on Microsoft platforms
@@ -200,6 +224,7 @@ With Public Authentication, you share API limits with other Krista users:
 4. Contact your email administrator if account issues persist
 
 ### "Connection Timeout" Error
+
 **Symptoms**: Setup process hangs or times out
 **Causes**:
 - Network connectivity issues
@@ -244,6 +269,7 @@ With Public Authentication, you share API limits with other Krista users:
 ## When to Choose Public Authentication
 
 ### Ideal For:
+
 - **Individual Users**: Personal email automation
 - **Small Teams**: Under 50 users
 - **Quick Setup**: Need to start immediately
