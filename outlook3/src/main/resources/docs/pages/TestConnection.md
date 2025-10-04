@@ -8,7 +8,7 @@ Validates the connection to Microsoft Outlook using stored or provided configura
 
 - **Area**: Messaging
 - **Type**: QUERY_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 
@@ -49,20 +49,20 @@ This catalog request requires no input parameters. It uses the stored configurat
 ### Success Conditions
 All of the following conditions must be met for a successful connection test:
 
-✅ **Configuration Valid**: All required configuration parameters are present and correctly formatted
-✅ **Authentication Successful**: OAuth token successfully acquired or refreshed
-✅ **API Connectivity**: Microsoft Graph API endpoints are accessible
-✅ **Mailbox Access**: User's mailbox is accessible with required permissions
-✅ **Scope Validation**: All required OAuth scopes are granted and functional
+**Configuration Valid**: All required configuration parameters are present and correctly formatted
+**Authentication Successful**: OAuth token successfully acquired or refreshed
+**API Connectivity**: Microsoft Graph API endpoints are accessible
+**Mailbox Access**: User's mailbox is accessible with required permissions
+**Scope Validation**: All required OAuth scopes are granted and functional
 
 ### Failure Conditions
 The test fails if any of the following conditions occur:
 
-❌ **Configuration Missing**: Required configuration parameters are missing or invalid
-❌ **Authentication Failed**: Unable to acquire or refresh OAuth token
-❌ **API Unreachable**: Microsoft Graph API endpoints are not accessible
-❌ **Permission Denied**: Insufficient permissions to access mailbox or perform operations
-❌ **Scope Issues**: Required OAuth scopes are not granted or functional
+**Configuration Missing**: Required configuration parameters are missing or invalid
+**Authentication Failed**: Unable to acquire or refresh OAuth token
+**API Unreachable**: Microsoft Graph API endpoints are not accessible
+**Permission Denied**: Insufficient permissions to access mailbox or perform operations
+**Scope Issues**: Required OAuth scopes are not granted or functional
 
 ## Error Handling
 

@@ -8,7 +8,7 @@ Marks an email message as read or unread using the message ID. This catalog requ
 
 - **Area**: Messaging
 - **Type**: CHANGE_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 

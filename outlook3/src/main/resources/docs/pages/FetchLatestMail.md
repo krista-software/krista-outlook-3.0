@@ -8,7 +8,7 @@ Retrieves the most recent email received within the last two minutes. This catal
 
 - **Area**: Messaging
 - **Type**: QUERY_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 

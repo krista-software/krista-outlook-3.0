@@ -8,7 +8,7 @@ Retrieves emails from the user's sent items folder with optional pagination supp
 
 - **Area**: Messaging
 - **Type**: QUERY_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 

@@ -8,7 +8,7 @@ Sends new email messages with comprehensive recipient management, attachment sup
 
 - **Area**: Messaging
 - **Type**: CHANGE_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 

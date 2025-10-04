@@ -8,7 +8,7 @@ Searches for emails using advanced query syntax and returns detailed email infor
 
 - **Area**: Messaging
 - **Type**: QUERY_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 

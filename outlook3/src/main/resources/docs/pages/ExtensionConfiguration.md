@@ -71,10 +71,10 @@ Public Authentication provides a simplified setup process perfect for testing an
 
 ### Public Authentication Benefits
 
-✅ **Quick Setup**: No Azure AD application required
-✅ **Simplified Management**: Minimal ongoing maintenance
-✅ **Perfect for Testing**: Ideal for development and testing environments
-✅ **Standard Security**: Uses Microsoft's public OAuth endpoints
+**Quick Setup**: No Azure AD application required
+**Simplified Management**: Minimal ongoing maintenance
+**Perfect for Testing**: Ideal for development and testing environments
+**Standard Security**: Uses Microsoft's public OAuth endpoints
 
 ## Private Authentication Setup
 
@@ -161,11 +161,11 @@ Before configuring the extension, ensure you have completed the Azure AD applica
 
 ### Private Authentication Benefits
 
-✅ **Enterprise Security**: Full OAuth 2.0 with your Azure AD tenant
-✅ **Complete Control**: Manage permissions and access through Azure AD
-✅ **Audit Trails**: Full logging through Azure AD audit logs
-✅ **Compliance Ready**: Meets enterprise security requirements
-✅ **Scalable**: Supports multiple users and applications
+**Enterprise Security**: Full OAuth 2.0 with your Azure AD tenant
+**Complete Control**: Manage permissions and access through Azure AD
+**Audit Trails**: Full logging through Azure AD audit logs
+**Compliance Ready**: Meets enterprise security requirements
+**Scalable**: Supports multiple users and applications
 
 ## Security Considerations
 

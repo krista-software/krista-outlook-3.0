@@ -8,7 +8,7 @@ Replies to all recipients of the original email message with the ability to add 
 
 - **Area**: Messaging
 - **Type**: CHANGE_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 

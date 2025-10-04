@@ -8,7 +8,7 @@ Performs comprehensive health validation of the Outlook3 Extension including con
 
 - **Area**: Messaging
 - **Type**: QUERY_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 
@@ -62,19 +62,19 @@ The health status entity contains the following diagnostic information:
 
 ## Health Status Levels
 
-### Healthy ✅
+### Healthy
 - All components functioning normally
 - No issues detected
 - System ready for production use
 - All tests passed successfully
 
-### Warning ⚠️
+### Warning
 - Minor issues detected that don't prevent operation
 - Some non-critical components may have issues
 - System functional but may need attention
 - Recommended actions available
 
-### Critical ❌
+### Critical
 - Major issues preventing normal operation
 - Authentication or connectivity failures
 - System not ready for production use

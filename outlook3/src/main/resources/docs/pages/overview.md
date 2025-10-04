@@ -1,4 +1,4 @@
-# 📋 Overview
+# Overview
 
 ## 🚀 What is the Krista Outlook Extension?
 
@@ -6,7 +6,7 @@ The Krista Outlook Extension is a powerful integration that connects your Micros
 
 ## ✨ Key Features
 
-### 📧 Email Automation
+### Email Automation
 - Intelligent Email Processing: Automatically categorize, route, and respond to incoming emails
 - Automated Responses: Send personalized replies based on email content and context
 - Smart Organization: Automatically sort emails into folders based on rules and AI analysis
@@ -18,13 +18,13 @@ The Krista Outlook Extension is a powerful integration that connects your Micros
 - Role-Based Permissions: Control access based on user roles and responsibilities
 - Audit Logging: Complete tracking of all email automation activities
 
-### ⚡ High Performance
+### High Performance
 - Real-Time Processing: Instant email processing and response capabilities
 - Scalable Architecture: Handles high-volume email processing efficiently
 - Reliable Sync: Consistent synchronization with Outlook servers
 - Low Latency: Fast response times for time-sensitive communications
 
-## 🎯 Use Cases
+## Use Cases
 
 ### 💼 Customer Service Automation
 - Support Ticket Creation: Automatically create tickets from customer emails
@@ -38,7 +38,7 @@ The Krista Outlook Extension is a powerful integration that connects your Micros
 - Follow-up Automation: Schedule and send follow-up communications
 - Pipeline Management: Update CRM systems based on email interactions
 
-### 🏢 Internal Operations
+### Internal Operations
 - Request Processing: Handle internal requests and approvals via email
 - Report Distribution: Automatically send reports to relevant stakeholders
 - Alert Management: Process and route system alerts and notifications
@@ -50,7 +50,7 @@ The Krista Outlook Extension is a powerful integration that connects your Micros
 - Document Storage: Save attachments to appropriate storage locations
 - Financial Reporting: Update financial systems with processed data
 
-## 🔧 Technical Capabilities
+## Technical Capabilities
 
 ### 📡 API Integration
 - Microsoft Graph API: Full integration with Microsoft's email services
@@ -72,7 +72,7 @@ The Krista Outlook Extension is a powerful integration that connects your Micros
 
 ## 🏗️ Architecture Overview
 
-### 🔄 Data Flow
+### Data Flow
 ```
 Outlook Email → Microsoft Graph API → Krista Platform → AI Processing → Automated Actions
 ```
@@ -83,7 +83,7 @@ Outlook Email → Microsoft Graph API → Krista Platform → AI Processing → 
 - Token Management: Secure storage and automatic refresh of access tokens
 - Permission Scoping: Minimal required permissions for enhanced security
 
-### ⚡ Performance Characteristics
+### Performance Characteristics
 - Throughput: Process up to 10,000 emails per hour
 - Latency: Sub-second response times for most operations
 - Availability: 99.9% uptime with automatic failover
@@ -91,13 +91,13 @@ Outlook Email → Microsoft Graph API → Krista Platform → AI Processing → 
 
 ## 🚀 Getting Started
 
-### 🎯 Quick Setup (5 Minutes)
+### Quick Setup (5 Minutes)
 1. Connect Your Account - Link your Outlook account
 2. Choose Authentication - Select Public or Private authentication
 3. Configure Automation - Set up your first email workflow
 4. Test and Deploy - Verify everything works correctly
 
-### 📚 Detailed Guides
+### Detailed Guides
 - Authentication Methods - Understand security options
 - Private Authentication Setup - Enterprise configuration
 - Supported Operations - Complete feature reference
@@ -105,7 +105,7 @@ Outlook Email → Microsoft Graph API → Krista Platform → AI Processing → 
 
 ## 💡 Benefits
 
-### 🏢 For Organizations
+### For Organizations
 - Time Savings: Reduce manual email processing by up to 80%
 - Improved Accuracy: Eliminate human errors in email routing and responses
 - Cost Reduction: Lower operational costs through automation
@@ -119,7 +119,7 @@ Outlook Email → Microsoft Graph API → Krista Platform → AI Processing → 
 - Proactive Notifications: Get alerts for important emails requiring attention
 - Faster Processing: Instant handling of routine email tasks
 
-### 🔧 For IT Teams
+### For IT Teams
 - Centralized Management: Single platform for email automation governance
 - Comprehensive Monitoring: Detailed logs and analytics for all email activities
 - Security Compliance: Meet enterprise security and compliance requirements
@@ -134,7 +134,7 @@ Outlook Email → Microsoft Graph API → Krista Platform → AI Processing → 
 - Smart Summarization: Generate concise summaries of long email threads
 - Predictive Routing: Route emails based on predicted urgency and importance
 
-### 📊 Analytics and Reporting
+### Analytics and Reporting
 - Performance Metrics: Track email processing speed and accuracy
 - User Activity: Monitor how different users interact with email automation
 - Workflow Efficiency: Measure the effectiveness of different automation rules

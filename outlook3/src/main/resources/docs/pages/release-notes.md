@@ -1,4 +1,4 @@
-# 📝 Release Notes
+# Release Notes
 
 ## 🚀 Version 3.2.0 - Current Release
 
@@ -8,7 +8,7 @@
 - Better error handling and logging
 - Advanced filtering options for email retrieval
 
-### 🔧 Improvements
+### Improvements
 - Performance optimizations for large email volumes
 - Updated user interface components
 - Enhanced security measures
@@ -30,7 +30,7 @@
 - Improved email organization features
 - Advanced workflow automation options
 
-### 🔧 Improvements
+### Improvements
 - Better rate limiting management
 - Enhanced error messages and debugging
 - Improved API response times
@@ -52,7 +52,7 @@
 - Enhanced security architecture
 - Modern user interface
 
-### 🔧 Improvements
+### Improvements
 - Significant performance improvements
 - Better scalability and reliability
 - Enhanced API documentation
@@ -88,7 +88,7 @@
 
 ---
 
-## 📋 Version History Summary
+## Version History Summary
 
 | Version | Release Date | Key Features |
 |---------|--------------|--------------|
@@ -98,4 +98,4 @@
 | **2.5.x** | 2024 Q2-Q3 | Legacy version (deprecated) |
 | **2.0.x** | 2024 Q1 | Legacy version (deprecated) |
 
-Stay updated with the latest features and improvements by subscribing to our release notifications! 🔔
+Stay updated with the latest features and improvements by subscribing to our release notifications! 

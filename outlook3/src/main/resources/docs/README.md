@@ -6,36 +6,36 @@ The Krista Outlook3 Extension is an advanced email collaboration platform that p
 
 ## Key Features
 
-✅ **Dual Authentication Modes**
+**Dual Authentication Modes**
 - Public Authentication for simplified setup and testing
 - Private Authentication with full OAuth 2.0 and Azure AD integration
 - Flexible authentication switching based on security requirements
 
-✅ **Advanced Email Management**
+**Advanced Email Management**
 - Send emails with dynamic HTML tables from entity data
 - Reply, reply-all, and forward with advanced recipient management
 - Comprehensive attachment handling and file processing
 - Rich text and HTML email composition
 
-✅ **Sophisticated Query Operations**
+**Sophisticated Query Operations**
 - Inbox retrieval with advanced preference filtering
 - Sent items management and tracking
 - Advanced email search with complex query syntax
 - Real-time latest email monitoring
 
-✅ **Message Organization & Management**
+**Message Organization & Management**
 - Category assignment and management
 - Message status tracking (read/unread)
 - Email labeling and organization
 - Message movement between folders
 
-✅ **Asynchronous & Event Processing**
+**Asynchronous & Event Processing**
 - Background email processing for large datasets
 - Real-time email alerts and notifications
 - Event-driven email workflows
 - Triggered email ID tracking and validation
 
-✅ **Enterprise Configuration**
+**Enterprise Configuration**
 - Comprehensive health checking and diagnostics
 - Test connection validation
 - Configuration management for both authentication modes
@@ -74,12 +74,12 @@ Once configured, you can immediately leverage 18+ specialized catalog requests f
 
 ## Documentation Structure
 
-### 📚 Getting Started
+### Getting Started
 - [Extension Configuration](pages/ExtensionConfiguration.md) - Complete setup guide for both authentication modes
 - [Authentication](pages/Authentication.md) - Public and private authentication flows
 - [Creating Outlook App](pages/CreatingOutlookApp.md) - Azure AD application setup for private auth
 
-### 📧 Email Management
+### Email Management
 - [Send Mail](pages/SendMail.md) - Send emails with attachments and recipients
 - [Send Mail With Table](pages/SendMailWithTable.md) - Send emails with dynamic HTML tables
 - [Reply To Mail](pages/ReplyToMail.md) - Reply to specific emails
@@ -87,26 +87,26 @@ Once configured, you can immediately leverage 18+ specialized catalog requests f
 - [Reply To All](pages/ReplyToAll.md) - Reply to all recipients
 - [Reply To All With CC and BCC](pages/ReplyToAllWithCCAndBCC.md) - Reply-all with recipient management
 
-### 🔍 Query Operations
+### Query Operations
 - [Fetch Inbox](pages/FetchInbox.md) - Retrieve inbox emails with pagination
 - [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md) - Advanced inbox filtering
 - [Fetch Sent](pages/FetchSent.md) - Get sent emails with pagination
 - [Fetch Mail Details By Query](pages/FetchMailDetailsByQuery.md) - Search emails with advanced queries
 - [Fetch Latest Mail](pages/FetchLatestMail.md) - Get most recent email within time window
 
-### 📋 Message Management
+### Message Management
 - [Mark Message](pages/MarkMessage.md) - Mark emails as read/unread with labels
 - [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md) - Advanced message categorization
 - [Add Category To Message](pages/AddCategoryToMessage.md) - Assign categories to emails
 - [Move Message](pages/MoveMessage.md) - Move emails between folders
 
-### ⚡ Async & Event Operations
+### Async & Event Operations
 - [Fetch Inbox Async](pages/FetchInboxAsync.md) - Asynchronous inbox retrieval for large datasets
 - [Get Result](pages/GetResult.md) - Retrieve results from async operations
 - [Send Alert Using Notification Delta](pages/SendAlertUsingNotificationDelta.md) - Real-time email notifications
 - [Check If Triggered Mail Ids Exist](pages/CheckIfTriggeredMailIdsExist.md) - Validate triggered email IDs
 
-### ⚙️ Setup & Configuration
+### Setup & Configuration
 - [Save Outlook Public Configuration](pages/SaveOutlookPublicConfiguration.md) - Configure public authentication
 - [Save Outlook Private Configuration](pages/SaveOutlookPrivateConfiguration.md) - Configure private authentication
 - [Health Check](pages/HealthCheck.md) - System health validation

@@ -8,7 +8,7 @@ Replies to a specific email message using the message ID, maintaining the conver
 
 - **Area**: Messaging
 - **Type**: CHANGE_SYSTEM
-- **Retry Support**: ✅ Yes - Failed requests can be retried automatically
+- **Retry Support**: Yes - Failed requests can be retried automatically
 
 ## Input Parameters
 
