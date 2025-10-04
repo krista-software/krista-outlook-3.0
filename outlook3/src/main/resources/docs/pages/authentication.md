@@ -60,15 +60,15 @@ client_id={microsoft_public_client_id}
 ```
 
 ### Public Authentication Benefits
-✅ **Quick Setup**: No Azure AD application required
-✅ **Simplified Management**: Microsoft handles client credentials
-✅ **Standard Security**: OAuth 2.0 with PKCE protection
-✅ **Perfect for Testing**: Ideal for development environments
+**Quick Setup**: No Azure AD application required
+**Simplified Management**: Microsoft handles client credentials
+**Standard Security**: OAuth 2.0 with PKCE protection
+**Perfect for Testing**: Ideal for development environments
 
 ### Public Authentication Limitations
-⚠️ **Limited Control**: Cannot customize permissions or policies
-⚠️ **Shared Infrastructure**: Uses Microsoft's public endpoints
-⚠️ **Basic Auditing**: Limited audit trail capabilities
+**Limited Control**: Cannot customize permissions or policies
+**Shared Infrastructure**: Uses Microsoft's public endpoints
+**Basic Auditing**: Limited audit trail capabilities
 
 ## Private Authentication
 
@@ -117,12 +117,12 @@ client_id={your_client_id}
 ```
 
 ### Private Authentication Benefits
-✅ **Enterprise Security**: Full control through your Azure AD tenant
-✅ **Advanced Policies**: Conditional access and compliance policies
-✅ **Complete Auditing**: Full audit trails through Azure AD logs
-✅ **Custom Permissions**: Fine-grained permission control
-✅ **Multi-Factor Authentication**: Enhanced security with MFA
-✅ **Compliance Ready**: Meets enterprise security requirements
+**Enterprise Security**: Full control through your Azure AD tenant
+**Advanced Policies**: Conditional access and compliance policies
+**Complete Auditing**: Full audit trails through Azure AD logs
+**Custom Permissions**: Fine-grained permission control
+**Multi-Factor Authentication**: Enhanced security with MFA
+**Compliance Ready**: Meets enterprise security requirements
 
 ## OAuth 2.0 Scopes
 
