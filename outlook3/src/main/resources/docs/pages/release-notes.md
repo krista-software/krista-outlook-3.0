@@ -2,6 +2,10 @@
 
 ##  Version 3.2.0 - Current Release
 
+- **Developer**: Vrushali Gaikwad 
+- **Krista Service APIs (Java)**: 1.0.115
+- **Global Catalog Version**: GC-2025.10.1
+
 ###  New Features
 - Enhanced email processing capabilities
 - Improved authentication flow
