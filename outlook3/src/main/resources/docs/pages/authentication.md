@@ -1,259 +1,333 @@
-# 🔐 Authentication
+# Authentication
 
-## 🎯 Overview
+## Overview
 
-The Krista Outlook Extension offers two secure authentication methods to connect your Microsoft Outlook account. Both methods use industry-standard OAuth 2.0 protocol to ensure your credentials remain secure while enabling powerful email automation.
+The Outlook3 Extension implements OAuth 2.0 authentication with Microsoft Entra ID Directory, supporting both Public and Private authentication modes. This comprehensive guide covers authentication flows, security considerations, token management, and troubleshooting for both deployment scenarios.
 
-## 🔒 Authentication Methods Comparison
+## Authentication Architecture
 
-### 🌐 Public Authentication
-**Perfect for individuals and small teams**
+### OAuth 2.0 Implementation
+The extension uses the **Authorization Code Grant** flow with PKCE (Proof Key for Code Exchange) for enhanced security:
 
-| Feature | Details |
-|---------|---------|
-| Setup Time | 5 minutes |
-| Best For | Individual users, small teams (1-50 users) |
-| IT Involvement | None required |
-| Branding | Shows "Krista Email Automation" |
-| API Limits | Shared limits with other Krista users |
-| Security | OAuth 2.0 with Microsoft's standard security |
+1. **Authorization Request**: User is redirected to Microsoft's authorization server
+2. **User Consent**: User authenticates and grants permissions
+3. **Authorization Code**: Microsoft returns authorization code to callback URL
+4. **Token Exchange**: Extension exchanges code for access and refresh tokens
+5. **API Access**: Extension uses access token for Microsoft Graph API calls
 
-### 🏢 Private Authentication
-**Enterprise-grade solution for organizations**
+### Supported Grant Types
+- **Authorization Code Grant with PKCE**: Primary flow for both authentication modes
+- **Refresh Token Grant**: Automatic token renewal for continuous access
 
-| Feature | Details |
-|---------|---------|
-| Setup Time | 30-60 minutes (requires IT setup) |
-| Best For | Organizations, enterprise teams (50+ users) |
-| IT Involvement | Azure AD administrator required |
-| Branding | Shows your organization's name |
-| API Limits | Dedicated limits for your organization |
-| Security | OAuth 2.0 + organizational security policies |
+## Public Authentication
 
-## 🌐 Public Authentication
+Public Authentication provides simplified setup using Microsoft's public OAuth endpoints, perfect for development and testing environments.
 
-![Ask A System Checked](../_media/askASystemChecked.png)
+### Authentication Flow
 
-### How It Works
-
-Public Authentication uses Krista's pre-registered Microsoft application to provide quick, secure access to your Outlook account.
-
+#### Step 1: Authorization Request
 ```
-OAuth 2.0 Flow:
-Your Email → Krista App → Microsoft Login → Permission Grant → Automation Ready
+https://login.microsoftonline.com/common/oauth2/v2.0/authorize?
+  client_id={microsoft_public_client_id}
+  &response_type=code
+  &redirect_uri={extension_callback_url}
+  &scope=https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send offline_access
+  &state={security_state}
+  &code_challenge={pkce_challenge}
+  &code_challenge_method=S256
 ```
 
-### Perfect For
+#### Step 2: User Authentication
+- User is redirected to Microsoft login page
+- User enters credentials and authenticates
+- Microsoft validates user identity and permissions
 
-- Individual Users: Personal email automation
-- Small Teams: Up to 50 users
-- Quick Start: Need to begin immediately
-- Simple Requirements: Basic email automation needs
-- No IT Restrictions: Organization allows third-party apps
+#### Step 3: Consent and Authorization
+- User reviews and grants requested permissions
+- Microsoft generates authorization code
+- User is redirected back to extension with authorization code
 
-### Benefits
-
-- Instant Setup: Connect in under 5 minutes
-- No IT Required: Self-service configuration
-- Cost Effective: No additional infrastructure needed
-- Secure: Full OAuth 2.0 protection
-- User Friendly: Simple, intuitive process
-
-### Rate Limits
-
-| Operation | Limit | Reset Period |
-|-----------|-------|--------------|
-| Email Reading | 1,000 emails/hour | Rolling hour |
-| Email Sending | 100 emails/hour | Rolling hour |
-| Subscriptions | 5 active/account | Per account |
-| Bulk Operations | 20 requests/minute | Rolling minute |
-
-### Get Started
-[Public Authentication Setup Guide](public-authentication.md)
-
-## 🏢 Private Authentication
-
-![Ask A System Unchecked](../_media/askASystemUnchecked.png)
-
-### How It Works
-
-Private Authentication uses your organization's own Azure App Registration, providing complete control over the authentication process.
-
+#### Step 4: Token Exchange
 ```
-Enterprise OAuth Flow:
-Your Email → Your Azure App → Org Login → Admin Consent → Enterprise Ready
+POST https://login.microsoftonline.com/common/oauth2/v2.0/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id={microsoft_public_client_id}
+&grant_type=authorization_code
+&code={authorization_code}
+&redirect_uri={extension_callback_url}
+&code_verifier={pkce_verifier}
 ```
 
-### Perfect For
+### Public Authentication Benefits
+**Quick Setup**: No Microsoft Entra ID application required
+**Simplified Management**: Microsoft handles client credentials
+**Standard Security**: OAuth 2.0 with PKCE protection
+**Perfect for Testing**: Ideal for development environments
 
-- Large Organizations: 50+ users
-- High Volume: Processing 1000+ emails daily
-- Custom Branding: Organization name in consent screens
-- Strict Security: Enterprise compliance requirements
-- IT Policies: Organization requires custom app registrations
+### Public Authentication Limitations
+**Limited Control**: Cannot customize permissions or policies
+**Shared Infrastructure**: Uses Microsoft's public endpoints
+**Basic Auditing**: Limited audit trail capabilities
 
-### Benefits
+## Private Authentication
 
-- Custom Branding: Your organization's name appears in all consent screens
-- Centralized Control: IT manages all aspects of the integration
-- User Management: Control which users can access the application
-- Audit Trails: Comprehensive logging of all authentication events
-- Higher Limits: Dedicated API quota for your organization
-- Enhanced Security: Integration with organizational security policies
+Private Authentication uses your own Microsoft Entra ID application for enterprise-grade security and full administrative control.
 
-### Enhanced Rate Limits
+### Prerequisites
+- Microsoft Entra ID tenant with application registration permissions
+- Registered Microsoft Entra ID application (see [Creating Outlook App](CreatingOutlookApp.md))
+- Application credentials (Client ID, Client Secret, Tenant ID)
 
-| Operation | Limit | Reset Period |
-|-----------|-------|--------------|
-| Email Reading | 10,000 emails/hour | Rolling hour |
-| Email Sending | 1,000 emails/hour | Rolling hour |
-| Subscriptions | 50 active/account | Per account |
-| Bulk Operations | 100 requests/minute | Rolling minute |
+### Authentication Flow
 
-### Get Started
-[Private Authentication Setup Guide](private-authentication.md)
-[Obtaining Azure Credentials Guide](obtainingClientIDClientSecret.md)
+#### Step 1: Authorization Request
+```
+https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?
+  client_id={your_client_id}
+  &response_type=code
+  &redirect_uri={extension_callback_url}
+  &scope=https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send offline_access
+  &state={security_state}
+  &code_challenge={pkce_challenge}
+  &code_challenge_method=S256
+```
 
-## 🔒 Security Features
+#### Step 2: User Authentication
+- User authenticates against your Microsoft Entra ID tenant
+- Conditional access policies are applied
+- Multi-factor authentication enforced if configured
 
-### OAuth 2.0 Protection
+#### Step 3: Consent and Authorization
+- User grants permissions to your Microsoft Entra ID application
+- Admin consent may be required for certain permissions
+- Authorization code is generated and returned
 
-Both authentication methods provide enterprise-grade security:
+#### Step 4: Token Exchange
+```
+POST https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token
+Content-Type: application/x-www-form-urlencoded
 
-- No Password Sharing: Krista never sees your actual password
-- Limited Scope: Only grants access to specific email functions
-- Revocable Access: Remove permissions anytime through Microsoft settings
-- Encrypted Communication: All data transfer uses HTTPS/TLS encryption
-- Token Expiration: Access tokens expire and refresh automatically
+client_id={your_client_id}
+&client_secret={your_client_secret}
+&grant_type=authorization_code
+&code={authorization_code}
+&redirect_uri={extension_callback_url}
+&code_verifier={pkce_verifier}
+```
 
-### Data Protection Standards
+### Private Authentication Benefits
+**Enterprise Security**: Full control through your Microsoft Entra ID tenant
+**Advanced Policies**: Conditional access and compliance policies
+**Complete Auditing**: Full audit trails through Microsoft Entra ID logs
+**Custom Permissions**: Fine-grained permission control
+**Multi-Factor Authentication**: Enhanced security with MFA
+**Compliance Ready**: Meets enterprise security requirements
 
-- Minimal Data Storage: Only necessary tokens and metadata stored
-- No Email Storage: Email content processed in real-time, not stored
-- Secure Token Storage: All tokens encrypted at rest
-- Audit Logging: All access attempts logged for security monitoring
-- Compliance Ready: SOC 2, GDPR, HIPAA compatible
+## OAuth 2.0 Scopes
 
-## 🤔 Which Method Should You Choose?
+### Required Scopes
+The extension requires the following Microsoft Graph API scopes:
 
-### Choose Public Authentication If:
+| Scope | Permission Type | Description | Usage |
+|-------|----------------|-------------|--------|
+| `Mail.ReadWrite` | Delegated | Read and write access to user mailbox | All email operations |
+| `Mail.Send` | Delegated | Send emails on behalf of user | Email sending operations |
+| `offline_access` | Delegated | Maintain access when user is offline | Token refresh |
 
-- You're an individual user or small team (under 50 users)
-- You need to start immediately without IT involvement
-- Your organization allows third-party applications
-- You have basic email automation requirements
-- You process fewer than 1,000 emails per day
+### Scope Details
 
-### Choose Private Authentication If:
+#### Mail.ReadWrite
+- **Purpose**: Comprehensive mailbox access
+- **Capabilities**:
+  - Read emails from all folders
+  - Create, update, and delete emails
+  - Manage email properties and metadata
+  - Access attachments and email content
+- **Security**: Provides full mailbox access - use with caution
 
-- You're a large organization (50+ users)
-- You process high volumes of email (1,000+ daily)
-- You need custom branding in consent screens
-- Your organization has strict security policies
-- You want dedicated API limits and enhanced performance
-- You need centralized IT control and management
+#### Mail.Send
+- **Purpose**: Email sending capabilities
+- **Capabilities**:
+  - Send new emails
+  - Reply to existing emails
+  - Forward emails
+  - Send emails with attachments
+- **Security**: Allows sending emails on behalf of user
 
-## 🔄 Migration Between Methods
+#### offline_access
+- **Purpose**: Long-term access without user interaction
+- **Capabilities**:
+  - Refresh access tokens automatically
+  - Maintain access when user is not present
+  - Enable background processing
+- **Security**: Essential for automated workflows
 
-### Public to Private Migration
+### Admin Consent
+Some organizations require administrator consent for these scopes:
+- Contact your Microsoft Entra ID administrator if consent is required
+- Admin can pre-consent for all users in the organization
+- Individual user consent may be disabled by policy
 
-If you start with Public Authentication and later need Private Authentication:
+## Token Management
 
-1. Plan Migration: Document current users and workflows
-2. Set Up Azure: Create Azure App Registration following our guide
-3. Pilot Test: Test with small group of users first
-4. Communicate: Inform users about the change
-5. Migrate Users: Have users re-authenticate with Private method
-6. Verify: Ensure all users successfully migrated
+### Access Tokens
+- **Lifetime**: 1 hour (default)
+- **Usage**: Authenticate API requests to Microsoft Graph
+- **Storage**: Securely stored by extension
+- **Refresh**: Automatically refreshed using refresh token
 
-## 🛠️ Troubleshooting Common Issues
+### Refresh Tokens
+- **Lifetime**: 90 days (default, configurable)
+- **Usage**: Obtain new access tokens
+- **Storage**: Securely encrypted and stored
+- **Rotation**: New refresh token issued with each refresh
 
-### Access Denied Errors
+### Token Refresh Process
+```
+POST https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token
+Content-Type: application/x-www-form-urlencoded
 
-**Symptoms**: Cannot connect to Outlook, access denied message
+client_id={client_id}
+&client_secret={client_secret}  // Only for Private Auth
+&grant_type=refresh_token
+&refresh_token={refresh_token}
+&scope=https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send offline_access
+```
 
-**Common Causes**:
-- Organization blocks third-party applications
-- Account lacks necessary permissions
-- Conditional access policies blocking connection
+### Automatic Token Management
+The extension automatically handles:
+- Token expiration detection
+- Automatic token refresh before expiration
+- Retry logic for failed refresh attempts
+- Secure token storage and encryption
+- Token cleanup on disconnection
+
+## Security Best Practices
+
+### General Security
+1. **Use HTTPS**: Always use HTTPS for all communications
+2. **Secure Storage**: Tokens are encrypted at rest
+3. **Token Rotation**: Refresh tokens are rotated regularly
+4. **Minimal Scopes**: Only request necessary permissions
+5. **Regular Auditing**: Monitor authentication logs regularly
+
+### Public Authentication Security
+1. **Environment Isolation**: Use only for development/testing
+2. **Account Separation**: Use dedicated test accounts
+3. **Regular Cleanup**: Remove test configurations regularly
+4. **Monitor Usage**: Track authentication attempts
+
+### Private Authentication Security
+1. **Client Secret Management**:
+   - Store client secrets securely
+   - Rotate secrets regularly (every 6-12 months)
+   - Never expose secrets in logs or code
+   - Use Azure Key Vault for secret storage
+
+2. **Microsoft Entra ID Configuration**:
+   - Enable conditional access policies
+   - Require multi-factor authentication
+   - Configure session management policies
+   - Enable audit logging
+
+3. **Application Security**:
+   - Regularly review application permissions
+   - Monitor application usage through Microsoft Entra ID logs
+   - Implement proper error handling
+   - Use principle of least privilege
+
+### Compliance Considerations
+- **Data Residency**: Understand where tokens are stored
+- **Audit Requirements**: Ensure proper logging is enabled
+- **Retention Policies**: Configure appropriate token lifetimes
+- **Access Reviews**: Regularly review application access
+
+## Troubleshooting Authentication Issues
+
+### Common Authentication Errors
+
+#### Invalid Client Error
+**Error**: "AADSTS70002: Error validating credentials"
+**Causes**:
+- Incorrect Client ID or Client Secret
+- Client secret expired
+- Wrong tenant ID
 
 **Solutions**:
-1. Check with IT department about third-party app policies
-2. Try connecting from organization network
-3. Verify account has valid Microsoft 365 license
-4. Consider switching to Private Authentication for enterprise environments
+1. Verify all credentials are correct
+2. Check if client secret has expired
+3. Ensure tenant ID matches your Microsoft Entra ID tenant
+4. Regenerate client secret if necessary
 
-### Connection Timeout Issues
-
-**Symptoms**: Setup process hangs or times out
-
-**Common Causes**:
-- Network connectivity issues
-- Firewall blocking Microsoft authentication endpoints
-- Browser issues or extensions interfering
+#### Insufficient Permissions
+**Error**: "AADSTS65001: The user or administrator has not consented"
+**Causes**:
+- Required permissions not granted
+- Admin consent required but not provided
+- User lacks permission to consent
 
 **Solutions**:
-1. Check internet connection stability
-2. Try different browser or incognito/private mode
-3. Disable browser extensions temporarily
-4. Ensure these domains are accessible:
-   - login.microsoftonline.com
-   - graph.microsoft.com
-   - outlook.office.com
+1. Ensure all required scopes are configured
+2. Request admin consent if required
+3. Check Microsoft Entra ID application permissions
+4. Verify user has consent permissions
 
-### Invalid Email Errors
-
-**Symptoms**: Email address not accepted during setup
-
-**Common Causes**:
-- Email not hosted on Microsoft platforms
-- Typo in email address
-- Account doesn't exist or is disabled
+#### Redirect URI Mismatch
+**Error**: "AADSTS50011: The reply URL specified in the request does not match"
+**Causes**:
+- Redirect URI not configured in Microsoft Entra ID
+- Mismatch between configured and actual redirect URI
+- HTTP vs HTTPS mismatch
 
 **Solutions**:
-1. Verify email address spelling
-2. Ensure email is hosted on Microsoft 365, Outlook.com, or Exchange Online
-3. Test logging into outlook.office.com with the same email
-4. Contact email administrator if account issues persist
+1. Add correct redirect URI to Microsoft Entra ID application
+2. Ensure exact match including protocol and path
+3. Use HTTPS for production environments
+4. Verify extension base URL is correct
 
-### Token Expired Errors
-
-**Symptoms**: Previously working connection stops working
-
-**Common Causes**:
-- Refresh token expired (rare, usually 90 days)
-- Password changed on Microsoft account
-- Account disabled or permissions revoked
+#### Token Refresh Failed
+**Error**: "AADSTS70008: The provided authorization grant is expired"
+**Causes**:
+- Refresh token expired
+- User password changed
+- Account disabled or deleted
 
 **Solutions**:
-1. Re-authenticate through Krista settings
-2. Verify Microsoft account is still active
-3. Check if password was recently changed
-4. Review connected apps in Microsoft account settings
+1. Re-authenticate user to obtain new tokens
+2. Check user account status
+3. Verify account hasn't been disabled
+4. Update password if changed
 
-## 📞 Getting Help
+### Diagnostic Steps
 
-### Self-Service Resources
+#### Step 1: Verify Configuration
+1. Check all authentication parameters are correct
+2. Verify Microsoft Entra ID application configuration
+3. Confirm redirect URI matches exactly
+4. Test with [Test Connection](TestConnection.md) catalog request
 
-1. Test Your Connection: Use Krista's built-in connection test
-2. Microsoft Account Settings: Review connected apps at account.microsoft.com
-3. Browser Developer Tools: Check for JavaScript errors during setup
-4. Network Diagnostics: Verify connectivity to Microsoft endpoints
+#### Step 2: Check Permissions
+1. Verify required scopes are granted
+2. Check if admin consent is required
+3. Confirm user has necessary permissions
+4. Review Microsoft Entra ID application permissions
 
-### Support Channels
+#### Step 3: Monitor Logs
+1. Check extension logs for authentication errors
+2. Review Microsoft Entra ID sign-in logs
+3. Monitor Microsoft Graph API responses
+4. Look for token refresh failures
 
-- Krista Support: For integration and configuration questions
-- Microsoft Support: For account and authentication issues
-- IT Department: For organizational policy questions
-- Community Forums: For user experiences and tips
+#### Step 4: Test Authentication Flow
+1. Clear browser cache and cookies
+2. Try authentication in incognito/private mode
+3. Test from different network/device
+4. Verify with different user account
 
-## 🚀 Next Steps
+## See Also
 
-Once you've chosen your authentication method:
-
-1. Follow Setup Guide: Complete the detailed setup process
-2. Configure Automation: Set up your first email workflows
-3. Monitor Performance: Track automation effectiveness
-4. Optimize Settings: Fine-tune based on usage patterns
-
-Ready to secure your email automation? Choose your authentication method and get started today! 🚀
+- [Extension Configuration](ExtensionConfiguration.md) - Complete setup guide
+- [Creating Outlook App](CreatingOutlookApp.md) - Microsoft Entra ID application setup
+- [Test Connection](TestConnection.md) - Connection testing and validation
+- [Security Best Practices](https://docs.microsoft.com/en-us/azure/active-directory/develop/security-best-practices-for-app-registration) - Microsoft's security guidelines
