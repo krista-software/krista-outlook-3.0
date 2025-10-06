@@ -2,7 +2,7 @@
 
 ## Overview
 
-Configures the Outlook3 Extension for Public Authentication mode. This catalog request sets up simplified authentication using Microsoft's public OAuth endpoints, perfect for development, testing, and environments that don't require custom Azure AD applications.
+Configures the Outlook3 Extension for Public Authentication mode. This catalog request sets up simplified authentication using Microsoft's public OAuth endpoints, perfect for development, testing, and environments that don't require custom Microsoft Entra ID applications.
 
 ## Request Details
 
@@ -97,7 +97,7 @@ Configuration Status: "Public configuration saved successfully"
 
 1. **Authentication Mode**: Sets extension to use Public Authentication
 2. **Microsoft Endpoints**: Uses Microsoft's public OAuth endpoints
-3. **No Azure AD App**: Does not require custom Azure AD application
+3. **No Microsoft Entra ID App**: Does not require custom Microsoft Entra ID application
 4. **Account Validation**: Email account must be accessible for authentication
 5. **Configuration Override**: Replaces any existing private authentication configuration
 6. **Immediate Effect**: Configuration is applied immediately
@@ -143,7 +143,7 @@ Configuration Status: "Public configuration saved successfully"
 ```
 Scenario: Quick setup for development and testing
 Action: Configure public authentication with developer account
-Result: Rapid development environment setup without Azure AD complexity
+Result: Rapid development environment setup without Microsoft Entra ID complexity
 ```
 
 ### 2. Proof of Concept

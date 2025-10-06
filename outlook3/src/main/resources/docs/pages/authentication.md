@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Outlook3 Extension implements OAuth 2.0 authentication with Microsoft Azure Active Directory, supporting both Public and Private authentication modes. This comprehensive guide covers authentication flows, security considerations, token management, and troubleshooting for both deployment scenarios.
+The Outlook3 Extension implements OAuth 2.0 authentication with Microsoft Entra ID Directory, supporting both Public and Private authentication modes. This comprehensive guide covers authentication flows, security considerations, token management, and troubleshooting for both deployment scenarios.
 
 ## Authentication Architecture
 
@@ -60,7 +60,7 @@ client_id={microsoft_public_client_id}
 ```
 
 ### Public Authentication Benefits
-**Quick Setup**: No Azure AD application required
+**Quick Setup**: No Microsoft Entra ID application required
 **Simplified Management**: Microsoft handles client credentials
 **Standard Security**: OAuth 2.0 with PKCE protection
 **Perfect for Testing**: Ideal for development environments
@@ -72,11 +72,11 @@ client_id={microsoft_public_client_id}
 
 ## Private Authentication
 
-Private Authentication uses your own Azure AD application for enterprise-grade security and full administrative control.
+Private Authentication uses your own Microsoft Entra ID application for enterprise-grade security and full administrative control.
 
 ### Prerequisites
-- Azure AD tenant with application registration permissions
-- Registered Azure AD application (see [Creating Outlook App](CreatingOutlookApp.md))
+- Microsoft Entra ID tenant with application registration permissions
+- Registered Microsoft Entra ID application (see [Creating Outlook App](CreatingOutlookApp.md))
 - Application credentials (Client ID, Client Secret, Tenant ID)
 
 ### Authentication Flow
@@ -94,12 +94,12 @@ https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?
 ```
 
 #### Step 2: User Authentication
-- User authenticates against your Azure AD tenant
+- User authenticates against your Microsoft Entra ID tenant
 - Conditional access policies are applied
 - Multi-factor authentication enforced if configured
 
 #### Step 3: Consent and Authorization
-- User grants permissions to your Azure AD application
+- User grants permissions to your Microsoft Entra ID application
 - Admin consent may be required for certain permissions
 - Authorization code is generated and returned
 
@@ -117,9 +117,9 @@ client_id={your_client_id}
 ```
 
 ### Private Authentication Benefits
-**Enterprise Security**: Full control through your Azure AD tenant
+**Enterprise Security**: Full control through your Microsoft Entra ID tenant
 **Advanced Policies**: Conditional access and compliance policies
-**Complete Auditing**: Full audit trails through Azure AD logs
+**Complete Auditing**: Full audit trails through Microsoft Entra ID logs
 **Custom Permissions**: Fine-grained permission control
 **Multi-Factor Authentication**: Enhanced security with MFA
 **Compliance Ready**: Meets enterprise security requirements
@@ -165,7 +165,7 @@ The extension requires the following Microsoft Graph API scopes:
 
 ### Admin Consent
 Some organizations require administrator consent for these scopes:
-- Contact your Azure AD administrator if consent is required
+- Contact your Microsoft Entra ID administrator if consent is required
 - Admin can pre-consent for all users in the organization
 - Individual user consent may be disabled by policy
 
@@ -225,7 +225,7 @@ The extension automatically handles:
    - Never expose secrets in logs or code
    - Use Azure Key Vault for secret storage
 
-2. **Azure AD Configuration**:
+2. **Microsoft Entra ID Configuration**:
    - Enable conditional access policies
    - Require multi-factor authentication
    - Configure session management policies
@@ -233,7 +233,7 @@ The extension automatically handles:
 
 3. **Application Security**:
    - Regularly review application permissions
-   - Monitor application usage through Azure AD logs
+   - Monitor application usage through Microsoft Entra ID logs
    - Implement proper error handling
    - Use principle of least privilege
 
@@ -257,7 +257,7 @@ The extension automatically handles:
 **Solutions**:
 1. Verify all credentials are correct
 2. Check if client secret has expired
-3. Ensure tenant ID matches your Azure AD tenant
+3. Ensure tenant ID matches your Microsoft Entra ID tenant
 4. Regenerate client secret if necessary
 
 #### Insufficient Permissions
@@ -270,18 +270,18 @@ The extension automatically handles:
 **Solutions**:
 1. Ensure all required scopes are configured
 2. Request admin consent if required
-3. Check Azure AD application permissions
+3. Check Microsoft Entra ID application permissions
 4. Verify user has consent permissions
 
 #### Redirect URI Mismatch
 **Error**: "AADSTS50011: The reply URL specified in the request does not match"
 **Causes**:
-- Redirect URI not configured in Azure AD
+- Redirect URI not configured in Microsoft Entra ID
 - Mismatch between configured and actual redirect URI
 - HTTP vs HTTPS mismatch
 
 **Solutions**:
-1. Add correct redirect URI to Azure AD application
+1. Add correct redirect URI to Microsoft Entra ID application
 2. Ensure exact match including protocol and path
 3. Use HTTPS for production environments
 4. Verify extension base URL is correct
@@ -303,7 +303,7 @@ The extension automatically handles:
 
 #### Step 1: Verify Configuration
 1. Check all authentication parameters are correct
-2. Verify Azure AD application configuration
+2. Verify Microsoft Entra ID application configuration
 3. Confirm redirect URI matches exactly
 4. Test with [Test Connection](TestConnection.md) catalog request
 
@@ -311,11 +311,11 @@ The extension automatically handles:
 1. Verify required scopes are granted
 2. Check if admin consent is required
 3. Confirm user has necessary permissions
-4. Review Azure AD application permissions
+4. Review Microsoft Entra ID application permissions
 
 #### Step 3: Monitor Logs
 1. Check extension logs for authentication errors
-2. Review Azure AD sign-in logs
+2. Review Microsoft Entra ID sign-in logs
 3. Monitor Microsoft Graph API responses
 4. Look for token refresh failures
 
@@ -328,6 +328,6 @@ The extension automatically handles:
 ## See Also
 
 - [Extension Configuration](ExtensionConfiguration.md) - Complete setup guide
-- [Creating Outlook App](CreatingOutlookApp.md) - Azure AD application setup
+- [Creating Outlook App](CreatingOutlookApp.md) - Microsoft Entra ID application setup
 - [Test Connection](TestConnection.md) - Connection testing and validation
 - [Security Best Practices](https://docs.microsoft.com/en-us/azure/active-directory/develop/security-best-practices-for-app-registration) - Microsoft's security guidelines

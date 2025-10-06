@@ -156,7 +156,7 @@ The health status entity contains the following diagnostic information:
       "System: Extension not ready"
     ],
     "Recommendations": [
-      "Update client secret in Azure AD application",
+      "Update client secret in Microsoft Entra ID application",
       "Re-authenticate with valid credentials",
       "Check network connectivity to graph.microsoft.com",
       "Review extension configuration"
@@ -288,7 +288,7 @@ Result: Early identification of performance degradation
 2. Verify authentication token validity
 3. Confirm required permissions are granted
 4. Re-authenticate if necessary
-5. Review Azure AD application configuration
+5. Review Microsoft Entra ID application configuration
 
 ### API Connectivity Problems
 **Symptoms**: API connectivity shows disconnected or slow

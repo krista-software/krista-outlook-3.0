@@ -91,7 +91,7 @@ The test fails if any of the following conditions occur:
 - Admin consent not granted
 - User lacks mailbox access
 
-**Resolution**: Review and grant necessary permissions in Azure AD
+**Resolution**: Review and grant necessary permissions in Microsoft Entra ID
 
 ### Network Errors
 **Cause**: Connectivity issues
@@ -251,7 +251,7 @@ Result: Confirmation that changes didn't break connectivity
 2. Confirm Mail.Send permission is granted
 3. Check if admin consent is required and granted
 4. Ensure user account has mailbox access
-5. Review Azure AD application permissions
+5. Review Microsoft Entra ID application permissions
 
 ### Connection Test Failed - Network Issues
 **Symptoms**: Cannot reach Microsoft Graph API endpoints

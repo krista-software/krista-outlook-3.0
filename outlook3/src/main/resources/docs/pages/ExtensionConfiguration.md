@@ -2,14 +2,14 @@
 
 ## Overview
 
-The Outlook3 Extension supports two distinct authentication modes to accommodate different security requirements and deployment scenarios. This guide provides comprehensive setup instructions for both Public Authentication (simplified setup) and Private Authentication (full OAuth 2.0 with Azure AD).
+The Outlook3 Extension supports two distinct authentication modes to accommodate different security requirements and deployment scenarios. This guide provides comprehensive setup instructions for both Public Authentication (simplified setup) and Private Authentication (full OAuth 2.0 with Microsoft Entra ID).
 
 ## Authentication Modes Comparison
 
 | Feature | Public Authentication | Private Authentication |
 |---------|----------------------|------------------------|
 | **Setup Complexity** | Simple | Advanced |
-| **Azure AD App Required** | No | Yes |
+| **Microsoft Entra ID App Required** | No | Yes |
 | **Security Level** | Standard | Enterprise-grade |
 | **Use Case** | Testing, Development | Production, Enterprise |
 | **Configuration Time** | 5 minutes | 30-60 minutes |
@@ -42,7 +42,7 @@ Public Authentication provides a simplified setup process perfect for testing an
 #### Step 2: Select Public Authentication
 1. Choose **Public Authentication** mode
 2. This mode uses Microsoft's public OAuth endpoints
-3. No Azure AD application registration required
+3. No Microsoft Entra ID application registration required
 
 #### Step 3: Enter Configuration Parameters
 1. **Email**: Enter the administrator email address
@@ -71,36 +71,36 @@ Public Authentication provides a simplified setup process perfect for testing an
 
 ### Public Authentication Benefits
 
-**Quick Setup**: No Azure AD application required
+**Quick Setup**: No Microsoft Entra ID application required
 **Simplified Management**: Minimal ongoing maintenance
 **Perfect for Testing**: Ideal for development and testing environments
 **Standard Security**: Uses Microsoft's public OAuth endpoints
 
 ## Private Authentication Setup
 
-Private Authentication provides enterprise-grade security with full OAuth 2.0 implementation using your own Azure AD application.
+Private Authentication provides enterprise-grade security with full OAuth 2.0 implementation using your own Microsoft Entra ID application.
 
 ### Prerequisites
 
-- Azure AD tenant with application registration permissions
+- Microsoft Entra ID tenant with application registration permissions
 - Active Microsoft Outlook account
 - Krista platform access with extension configuration permissions
-- Completed Azure AD application setup (see [Creating Outlook App](CreatingOutlookApp.md))
+- Completed Microsoft Entra ID application setup (see [Creating Outlook App](CreatingOutlookApp.md))
 
 ### Configuration Parameters
 
 | Parameter | Type | Required | Description | Example |
 |-----------|------|----------|-------------|---------|
 | Email | Text | Yes | Administrator email address | "admin@company.com" |
-| Client ID | Text | Yes | Azure AD Application (client) ID | "12345678-1234-1234-1234-123456789012" |
-| Client Secret | Text | Yes | Azure AD application client secret value | "abcdef123456..." |
-| Tenant ID | Text | Yes | Azure AD Directory (tenant) ID | "87654321-4321-4321-4321-210987654321" |
+| Client ID | Text | Yes | Microsoft Entra ID Application (client) ID | "12345678-1234-1234-1234-123456789012" |
+| Client Secret | Text | Yes | Microsoft Entra ID application client secret value | "abcdef123456..." |
+| Tenant ID | Text | Yes | Microsoft Entra ID Directory (tenant) ID | "87654321-4321-4321-4321-210987654321" |
 | Allow Alert Mail | Boolean | No | Enable real-time email notifications | true |
 
 ### Step-by-Step Setup
 
-#### Step 1: Complete Azure AD Application Setup
-Before configuring the extension, ensure you have completed the Azure AD application setup:
+#### Step 1: Complete Microsoft Entra ID Application Setup
+Before configuring the extension, ensure you have completed the Microsoft Entra ID application setup:
 1. Follow the [Creating Outlook App](CreatingOutlookApp.md) guide
 2. Collect the required credentials:
    - Application (client) ID
@@ -114,16 +114,16 @@ Before configuring the extension, ensure you have completed the Azure AD applica
 
 #### Step 3: Select Private Authentication
 1. Choose **Private Authentication** mode
-2. This mode uses your Azure AD application for authentication
+2. This mode uses your Microsoft Entra ID application for authentication
 3. Provides full control over security and permissions
 
 #### Step 4: Enter Configuration Parameters
 1. **Email**: Enter the administrator email address
-   - Use the same account that registered the Azure AD application
+   - Use the same account that registered the Microsoft Entra ID application
    - This email will be used for service account authentication
 
-2. **Client ID**: Paste the Application (client) ID from Azure AD
-   - Navigate to Azure AD App Registration > Overview
+2. **Client ID**: Paste the Application (client) ID from Microsoft Entra ID
+   - Navigate to Microsoft Entra ID App Registration > Overview
    - Copy the **Application (client) ID** value
 
    ![Client ID and Tenant ID](../_media/ExtensionConfiguration_client_tenant_ids.png)
@@ -161,9 +161,9 @@ Before configuring the extension, ensure you have completed the Azure AD applica
 
 ### Private Authentication Benefits
 
-**Enterprise Security**: Full OAuth 2.0 with your Azure AD tenant
-**Complete Control**: Manage permissions and access through Azure AD
-**Audit Trails**: Full logging through Azure AD audit logs
+**Enterprise Security**: Full OAuth 2.0 with your Microsoft Entra ID tenant
+**Complete Control**: Manage permissions and access through Microsoft Entra ID
+**Audit Trails**: Full logging through Microsoft Entra ID audit logs
 **Compliance Ready**: Meets enterprise security requirements
 **Scalable**: Supports multiple users and applications
 
@@ -176,7 +176,7 @@ Before configuring the extension, ensure you have completed the Azure AD applica
 - Limited administrative control over authentication
 
 ### Private Authentication Security
-- Full control through your Azure AD tenant
+- Full control through your Microsoft Entra ID tenant
 - Enterprise-grade security policies
 - Conditional access and multi-factor authentication support
 - Complete audit trails and compliance reporting

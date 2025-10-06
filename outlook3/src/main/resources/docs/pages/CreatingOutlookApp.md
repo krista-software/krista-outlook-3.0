@@ -2,17 +2,17 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for creating an Azure Active Directory (Azure AD) application required for Private Authentication with the Outlook3 Extension. This process enables enterprise-grade security and full administrative control over the email integration.
+This guide provides step-by-step instructions for creating a Microsoft Entra ID application required for Private Authentication with the Outlook3 Extension. This process enables enterprise-grade security and full administrative control over the email integration.
 
 ## Prerequisites
 
 Before starting, ensure you have:
 
 ### Required Access
-- **Azure AD Administrator Role**: Global Administrator, Application Administrator, or Cloud Application Administrator
+- **Microsoft Entra ID Administrator Role**: Global Administrator, Application Administrator, or Cloud Application Administrator
 - **Azure Portal Access**: Access to https://portal.azure.com
 - **Microsoft 365 Subscription**: Active subscription with Exchange Online
-- **Tenant Permissions**: Ability to register applications in your Azure AD tenant
+- **Tenant Permissions**: Ability to register applications in your Microsoft Entra ID tenant
 
 ### Required Information
 - **Organization Details**: Tenant domain and directory information
@@ -31,21 +31,21 @@ Before starting, ensure you have:
 1. **Navigate to Azure Portal**
    - Open your web browser
    - Go to https://portal.azure.com
-   - Sign in with your Azure AD administrator account
+   - Sign in with your Microsoft Entra ID administrator account
 
 2. **Verify Tenant Context**
    - Check the directory name in the top-right corner
-   - Ensure you're in the correct Azure AD tenant
+   - Ensure you're in the correct Microsoft Entra ID tenant
    - Switch directories if necessary
 
-   ![Azure Active Directory Home](../_media/CreatingOutlookApp_azure_active_directory.png)
+   ![Microsoft Entra ID Home](../_media/CreatingOutlookApp_microsoft_entra_id.png)
 
 ### Step 2: Navigate to App Registrations
 
-1. **Access Azure Active Directory**
-   - In the Azure portal, search for "Azure Active Directory"
-   - Click on **Azure Active Directory** from the search results
-   - This opens the Azure AD overview page
+1. **Access Microsoft Entra ID**
+   - In the Azure portal, search for "Microsoft Entra ID"
+   - Click on **Microsoft Entra ID** from the search results
+   - This opens the Microsoft Entra ID overview page
 
 2. **Open App Registrations**
    - In the left navigation menu, click **App registrations**
@@ -141,8 +141,8 @@ Before starting, ensure you have:
 
    ![Extension Base URL Reference](../_media/CreatingOutlookApp_routing_id.png)
 
-3. **Add Redirect URI to Azure AD**
-   - Go to **Authentication** in the left sidebar of your Azure AD application
+3. **Add Redirect URI to Microsoft Entra ID**
+   - Go to **Authentication** in the left sidebar of your Microsoft Entra ID application
    - Click **Add a platform** > **Web**
    - Enter the complete redirect URI from step 2
    - Click **Configure** to save
@@ -150,9 +150,9 @@ Before starting, ensure you have:
    ![Redirect URI Configuration](../_media/CreatingOutlookApp_redirect_uri.png)
 
 4. **Verify Redirect URI Configuration**
-   - Confirm your redirect URI is correctly configured in Azure AD
+   - Confirm your redirect URI is correctly configured in Microsoft Entra ID
    - Format should be: `https://your-extension-url/rest/outlook/callback`
-   - Ensure exact match between Krista extension and Azure AD
+   - Ensure exact match between Krista extension and Microsoft Entra ID
 
 ## Verification
 
@@ -186,8 +186,8 @@ Before starting, ensure you have:
    - Use the [Test Connection](TestConnection.md) catalog request
    - Verify successful authentication and API access
 
-2. **Monitor Azure AD Logs**
-   - Check Azure AD sign-in logs for authentication attempts
+2. **Monitor Microsoft Entra ID Logs**
+   - Check Microsoft Entra ID sign-in logs for authentication attempts
    - Verify no error messages or failed attempts
    - Confirm proper token issuance
 
@@ -214,7 +214,7 @@ Before starting, ensure you have:
 
 ### Compliance and Auditing
 1. **Audit Logging**
-   - Enable Azure AD audit logging
+   - Enable Microsoft Entra ID audit logging
    - Monitor application sign-ins
    - Review permission grants regularly
    - Maintain access review processes
@@ -232,10 +232,10 @@ Before starting, ensure you have:
 #### Permission Errors
 **Issue**: "Insufficient privileges to complete the operation"
 **Solution**:
-1. Verify you have Azure AD administrator role
+1. Verify you have Microsoft Entra ID administrator role
 2. Check if tenant allows user consent
 3. Request admin consent for permissions
-4. Contact your Azure AD administrator
+4. Contact your Microsoft Entra ID administrator
 
 #### Redirect URI Mismatch
 **Issue**: Authentication fails with redirect URI error
@@ -257,8 +257,8 @@ Before starting, ensure you have:
 
 If you encounter issues:
 1. Review the [Authentication](Authentication.md) guide for detailed troubleshooting
-2. Check Azure AD documentation for application registration
-3. Contact your Azure AD administrator for tenant-specific issues
+2. Check Microsoft Entra ID documentation for application registration
+3. Contact your Microsoft Entra ID administrator for tenant-specific issues
 4. Use the [Test Connection](TestConnection.md) catalog request for diagnostics
 
 ## Next Steps
@@ -285,4 +285,4 @@ After successful application creation:
 - [Extension Configuration](ExtensionConfiguration.md) - Configure the extension with your application
 - [Authentication](Authentication.md) - Understand the authentication flow
 - [Test Connection](TestConnection.md) - Verify your setup is working
-- [Azure AD App Registration Documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app) - Microsoft's official guide
+- [Microsoft Entra ID App Registration Documentation](https://docs.microsoft.com/en-us/entra/identity-platform/quickstart-register-app) - Microsoft's official guide
