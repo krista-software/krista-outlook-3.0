@@ -1,8 +1,8 @@
 # Release Notes
 
-## 🚀 Version 3.2.0 - Current Release
+##  Version 3.2.0 - Current Release
 
-### ✨ New Features
+###  New Features
 - Enhanced email processing capabilities
 - Improved authentication flow
 - Better error handling and logging
@@ -14,7 +14,7 @@
 - Enhanced security measures
 - Better integration with Microsoft Graph API
 
-### 🐛 Bug Fixes
+###  Bug Fixes
 - Fixed authentication token refresh issues
 - Resolved email body encoding problems
 - Corrected timezone handling in email timestamps
@@ -22,9 +22,9 @@
 
 ---
 
-## 🚀 Version 3.1.0 - Previous Release
+##  Version 3.1.0 - Previous Release
 
-### ✨ New Features
+###  New Features
 - Private Authentication support for enterprise customers
 - Enhanced attachment handling capabilities
 - Improved email organization features
@@ -36,7 +36,7 @@
 - Improved API response times
 - Updated documentation and examples
 
-### 🐛 Bug Fixes
+###  Bug Fixes
 - Fixed OAuth token validation issues
 - Resolved email threading problems
 - Corrected notification delivery delays
@@ -44,9 +44,9 @@
 
 ---
 
-## 🚀 Version 3.0.0 - Major Release
+##  Version 3.0.0 - Major Release
 
-### ✨ New Features
+###  New Features
 - Complete platform redesign
 - OAuth 2.0 authentication implementation
 - Enhanced security architecture
@@ -58,7 +58,7 @@
 - Enhanced API documentation
 - Improved error handling
 
-### 🐛 Bug Fixes
+###  Bug Fixes
 - Resolved legacy authentication issues
 - Fixed email synchronization problems
 - Corrected API endpoint inconsistencies
@@ -66,21 +66,21 @@
 
 ---
 
-## 📞 Support and Feedback
+##  Support and Feedback
 
-### 🆘 Getting Help
+###  Getting Help
 - Documentation and guides available online
 - Community forum for user discussions
 - Email support for technical issues
 - Phone support for enterprise customers
 
-### 💡 Feature Requests
+###  Feature Requests
 - Submit requests through our product portal
 - Email suggestions to our product team
 - Discuss ideas in the community forum
 - Work with customer success for enterprise features
 
-### 🐛 Bug Reports
+###  Bug Reports
 - Submit detailed reports through our support portal
 - Email critical issues directly to support
 - Check our status page for known issues
