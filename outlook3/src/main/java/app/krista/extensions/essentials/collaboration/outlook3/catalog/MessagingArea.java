@@ -1029,8 +1029,7 @@ public class MessagingArea {
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData,
             @Field(name = "Task ID", type = "Text") String taskID) {
-        LOGGER.info("getResult: eventName: {}; eventData: {}; taskID: {}", eventName, eventData, taskID);
-
+        LOGGER.info("getResult: taskID: {}", taskID);
         long startTime = System.currentTimeMillis();
 
         if (eventName.equals(taskID)) {
@@ -1041,6 +1040,7 @@ public class MessagingArea {
             ));
             return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
         }
+
         LOGGER.error("Get Result :::: Invalid task ID ::: {}", taskID);
         throw new IllegalStateException(Constants.INVALID_TASK_ID);
     }
