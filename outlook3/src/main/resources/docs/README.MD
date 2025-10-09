@@ -137,5 +137,3 @@ Once configured, you can immediately leverage 18+ specialized catalog requests f
 ---
 
 > **💡 Tip**: Start with the [Extension Configuration](pages/ExtensionConfiguration.md) guide to set up your connection, then explore the catalog requests based on your specific email automation needs. Choose Public Authentication for quick testing or Private Authentication for production deployments.
-
-Close
