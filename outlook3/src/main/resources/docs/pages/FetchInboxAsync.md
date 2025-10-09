@@ -16,15 +16,15 @@ results later.
 
 | Parameter Name | Type   | Required | Description                                 | Example |
 |----------------|--------|----------|---------------------------------------------|---------|
-| Page Size      | Number | No       | Number of emails to retrieve (maximum 1000) | 500     |
+| Page Size      | Number | No       | Number of emails to retrieve (maximum 500)  | 500     |
 
 ### Parameter Details
 
 #### Page Size
 
 - **Default**: 100 (if not specified)
-- **Range**: 1 to 1000 emails
-- **Validation**: Must be between 1 and 1000
+- **Range**: 1 to 500 emails
+- **Validation**: Must be between 1 and 500
 - **Purpose**: Controls the number of emails retrieved in the async operation
 - **Performance**: Larger page sizes may take longer to process
 
@@ -38,10 +38,10 @@ results later.
 
 ## Validation Rules
 
-| Validation       | Error Message                  | Resolution                       |
-|------------------|--------------------------------|----------------------------------|
-| Page size < 1    | "Page size must be at least 1" | Use page size of 1 or greater    |
-| Page size > 1000 | "Page size cannot exceed 1000" | Reduce page size to 1000 or less |
+| Validation       | Error Message                  | Resolution                      |
+|------------------|--------------------------------|---------------------------------|
+| Page size < 1    | "Page size must be at least 1" | Use page size of 1 or greater   |
+| Page size > 500  | "Page size cannot exceed 500"  | Reduce page size to 500 or less |
 
 ## Usage Examples
 
@@ -68,7 +68,7 @@ Task ID: "async-inbox-fetch-20231201-143022-abc123"
 **Input**:
 
 ```
-Page Size: 1000
+Page Size: 500
 ```
 
 **Output**:
@@ -100,7 +100,7 @@ Task ID: "async-inbox-fetch-20231201-143100-ghi789"
 
 ## Limitations
 
-1. **Page Size Limit**: Maximum 1000 emails per async operation
+1. **Page Size Limit**: Maximum 500 emails per async operation
 2. **Task Lifetime**: Async tasks have limited lifetime (typically 24 hours)
 3. **Concurrent Tasks**: Limited number of concurrent async operations per user
 4. **Result Storage**: Results are temporarily stored and must be retrieved promptly
