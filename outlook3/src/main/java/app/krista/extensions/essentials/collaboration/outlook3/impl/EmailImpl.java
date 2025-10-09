@@ -421,10 +421,7 @@ public class EmailImpl implements Email {
             return null;
         }
         LOGGER.info("UserRequestBuilder obtained successfully, getting messages builder for messageId: {}", message.id);
-        MessageRequestBuilder messageRequestBuilder = userRequestBuilder.messages(message.id);
-
-        LOGGER.info("MessageRequestBuilder created successfully for messageId: {}", message.id);
-        return messageRequestBuilder;
+        return userRequestBuilder.messages(message.id);
     }
 
     private EmailAddress toEmailAddress(Recipient recipient) {
@@ -432,7 +429,6 @@ public class EmailImpl implements Email {
             LOGGER.debug(Constants.RECIPIENT_IS_EMPTY_OR_NULL);
             return null;
         }
-        LOGGER.info("toEmailAddress for recipient {}", recipient.emailAddress);
         return recipient.emailAddress != null ? new EmailAddress(recipient.emailAddress.name, recipient.emailAddress.address) : null;
     }
 

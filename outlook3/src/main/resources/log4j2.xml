@@ -9,8 +9,8 @@
         <Root level="error">
             <AppenderRef ref="console"/>
         </Root>
-        <Logger name="com.krista" level="trace"/>
-        <Logger name="app.krista.extensions.essentials.collaboration.outlook3" level="trace"/>
-        <Logger name="com.kristasoft.extensions" level="trace"/>
+        <Logger name="com.krista" level="info"/>
+        <Logger name="app.krista.extensions.essentials.collaboration.outlook3" level="info"/>
+        <Logger name="com.kristasoft.extensions" level="info"/>
     </Loggers>
 </Configuration>

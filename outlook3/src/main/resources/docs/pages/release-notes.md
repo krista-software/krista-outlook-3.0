@@ -1,8 +1,8 @@
 # Release Notes
 
-## Version 3.2.0 - Current Release
+## Version 3.0.15 - Current Release
 
-- **Developer**: Vrushali Gaikwad
+- **Developer**: Vrushali Gaikwad, Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
 - **Global Catalog Version**: GC-2025.10.2
 
@@ -29,7 +29,7 @@
 
 ---
 
-## Version 3.1.0 - Previous Release
+## Version 3.0.14 - Previous Release
 
 ### New Features
 
