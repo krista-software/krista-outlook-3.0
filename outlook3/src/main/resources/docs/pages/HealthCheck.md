@@ -2,7 +2,9 @@
 
 ## Overview
 
-Performs comprehensive health validation of the Outlook3 Extension including configuration status, authentication health, API connectivity, and system readiness. This catalog request provides detailed system diagnostics for monitoring and troubleshooting purposes.
+Performs comprehensive health validation of the Outlook3 Extension including configuration status, authentication
+health, API connectivity, and system readiness. This catalog request provides detailed system diagnostics for monitoring
+and troubleshooting purposes.
 
 ## Request Details
 
@@ -16,45 +18,49 @@ This catalog request requires no input parameters.
 
 ## Output Parameters
 
-| Parameter Name | Type | Description |
-|----------------|------|-------------|
-| Health Status | Entity(Health Details) | Comprehensive health information about the extension |
+| Parameter Name | Type                   | Description                                          |
+|----------------|------------------------|------------------------------------------------------|
+| Health Status  | Entity(Health Details) | Comprehensive health information about the extension |
 
 ### Health Details Entity Structure
 
 The health status entity contains the following diagnostic information:
 
-| Field Name | Type | Description |
-|------------|------|-------------|
-| Overall Status | Text | Overall health status (Healthy, Warning, Critical) |
-| Configuration Status | Text | Configuration validation status |
-| Authentication Status | Text | Authentication health status |
-| API Connectivity | Text | Microsoft Graph API connectivity status |
-| Last Check Time | Date | Timestamp of the health check |
-| Detailed Results | List<Text> | Detailed diagnostic messages |
-| Recommendations | List<Text> | Recommended actions for issues found |
+| Field Name            | Type       | Description                                        |
+|-----------------------|------------|----------------------------------------------------|
+| Overall Status        | Text       | Overall health status (Healthy, Warning, Critical) |
+| Configuration Status  | Text       | Configuration validation status                    |
+| Authentication Status | Text       | Authentication health status                       |
+| API Connectivity      | Text       | Microsoft Graph API connectivity status            |
+| Last Check Time       | Date       | Timestamp of the health check                      |
+| Detailed Results      | List<Text> | Detailed diagnostic messages                       |
+| Recommendations       | List<Text> | Recommended actions for issues found               |
 
 ## Health Check Components
 
 ### 1. Configuration Validation
+
 - **Authentication Mode**: Verifies public or private authentication configuration
 - **Required Parameters**: Checks all necessary configuration parameters are present
 - **Parameter Validity**: Validates format and content of configuration values
 - **Credential Status**: Verifies client secrets haven't expired (Private Auth)
 
 ### 2. Authentication Health
+
 - **Token Status**: Checks access token validity and expiration
 - **Token Refresh**: Verifies refresh token functionality
 - **Permission Validation**: Confirms required OAuth scopes are granted
 - **Account Access**: Validates user account accessibility
 
 ### 3. API Connectivity
+
 - **Endpoint Accessibility**: Tests connectivity to Microsoft Graph API endpoints
 - **Response Validation**: Verifies API responses are properly formatted
 - **Rate Limit Status**: Checks current rate limiting status
 - **Service Availability**: Confirms Microsoft Graph service availability
 
 ### 4. System Readiness
+
 - **Extension Status**: Verifies extension is properly loaded and configured
 - **Resource Availability**: Checks system resources and dependencies
 - **Network Connectivity**: Validates network connectivity requirements
@@ -63,18 +69,21 @@ The health status entity contains the following diagnostic information:
 ## Health Status Levels
 
 ### Healthy
+
 - All components functioning normally
 - No issues detected
 - System ready for production use
 - All tests passed successfully
 
 ### Warning
+
 - Minor issues detected that don't prevent operation
 - Some non-critical components may have issues
 - System functional but may need attention
 - Recommended actions available
 
 ### Critical
+
 - Major issues preventing normal operation
 - Authentication or connectivity failures
 - System not ready for production use
@@ -83,11 +92,13 @@ The health status entity contains the following diagnostic information:
 ## Usage Examples
 
 ### Example 1: Healthy System
+
 **Scenario**: All systems functioning normally
 
 **Input**: (No parameters required)
 
 **Output**:
+
 ```json
 {
   "Health Status": {
@@ -108,11 +119,13 @@ The health status entity contains the following diagnostic information:
 ```
 
 ### Example 2: Warning Status
+
 **Scenario**: Minor issues detected
 
 **Input**: (No parameters required)
 
 **Output**:
+
 ```json
 {
   "Health Status": {
@@ -136,11 +149,13 @@ The health status entity contains the following diagnostic information:
 ```
 
 ### Example 3: Critical Status
+
 **Scenario**: Major issues preventing operation
 
 **Input**: (No parameters required)
 
 **Output**:
+
 ```json
 {
   "Health Status": {
@@ -168,24 +183,28 @@ The health status entity contains the following diagnostic information:
 ## Diagnostic Categories
 
 ### Configuration Diagnostics
+
 - **Parameter Validation**: All required parameters present and valid
 - **Credential Status**: Client secrets and certificates not expired
 - **Authentication Mode**: Correct mode selected and configured
 - **Redirect URI**: Proper redirect URI configuration
 
 ### Authentication Diagnostics
+
 - **Token Acquisition**: Ability to acquire new access tokens
 - **Token Refresh**: Refresh token functionality working
 - **Scope Validation**: Required permissions granted and functional
 - **Account Status**: User account accessible and not disabled
 
 ### Connectivity Diagnostics
+
 - **Network Access**: Internet connectivity available
 - **DNS Resolution**: Microsoft Graph endpoints resolvable
 - **SSL/TLS**: Secure connections working properly
 - **Firewall**: No blocking of required endpoints
 
 ### Performance Diagnostics
+
 - **Response Times**: API response times within acceptable ranges
 - **Rate Limiting**: Current rate limit status and usage
 - **Resource Usage**: System resource utilization
@@ -194,24 +213,28 @@ The health status entity contains the following diagnostic information:
 ## Best Practices
 
 ### 1. Regular Monitoring
+
 - Run health checks on a regular schedule
 - Set up automated monitoring and alerting
 - Track health trends over time
 - Monitor before and after configuration changes
 
 ### 2. Proactive Maintenance
+
 - Address warnings before they become critical
 - Monitor token expiration times
 - Keep client secrets updated
 - Review and update configurations regularly
 
 ### 3. Troubleshooting Integration
+
 - Use health check results to guide troubleshooting
-- Combine with [Test Connection](TestConnection.md) for comprehensive diagnostics
+- Combine with [Test Connection](pages/TestConnection.md) for comprehensive diagnostics
 - Document common issues and resolutions
 - Share diagnostic information with support teams
 
 ### 4. Performance Monitoring
+
 - Track API response times and performance metrics
 - Monitor rate limiting and usage patterns
 - Identify performance degradation early
@@ -220,6 +243,7 @@ The health status entity contains the following diagnostic information:
 ## Common Use Cases
 
 ### 1. System Monitoring
+
 ```
 Scenario: Regular monitoring of extension health
 Action: Schedule periodic health checks
@@ -227,6 +251,7 @@ Result: Proactive identification of issues before they impact users
 ```
 
 ### 2. Troubleshooting Support
+
 ```
 Scenario: Investigate reported issues with email operations
 Action: Run health check to identify root causes
@@ -234,6 +259,7 @@ Result: Specific diagnostic information to guide resolution
 ```
 
 ### 3. Deployment Validation
+
 ```
 Scenario: Verify system health after configuration changes
 Action: Run health check after updates or maintenance
@@ -241,6 +267,7 @@ Result: Confirmation that changes didn't introduce issues
 ```
 
 ### 4. Performance Monitoring
+
 ```
 Scenario: Monitor system performance and identify trends
 Action: Regular health checks with performance tracking
@@ -249,14 +276,15 @@ Result: Early identification of performance degradation
 
 ## Related Catalog Requests
 
-- [Test Connection](TestConnection.md) - Focused connection testing
-- [Save Outlook Public Configuration](SaveOutlookPublicConfiguration.md) - Configure public authentication
-- [Save Outlook Private Configuration](SaveOutlookPrivateConfiguration.md) - Configure private authentication
-- [Extension Configuration](ExtensionConfiguration.md) - Setup and configuration guide
+- [Test Connection](pages/TestConnection.md) - Focused connection testing
+- [Save Outlook Public Configuration](pages/SaveOutlookPublicConfiguration.md) - Configure public authentication
+- [Save Outlook Private Configuration](pages/SaveOutlookPrivateConfiguration.md) - Configure private authentication
+- [Extension Configuration](pages/ExtensionConfiguration.md) - Setup and configuration guide
 
 ## Technical Implementation
 
 ### Helper Class
+
 - **Class**: HealthCheckServiceImpl
 - **Package**: app.krista.extensions.essentials.collaboration.outlook3.impl
 - **Method**: performHealthCheck()
@@ -264,6 +292,7 @@ Result: Early identification of performance degradation
 - **Service**: Multi-component health assessment
 
 ### Telemetry Metrics
+
 - **HEALTH_CHECK_SUCCESS**: Successful health check operations
 - **HEALTH_CHECK_FAILURE**: Failed health check operations
 - **HEALTH_STATUS_HEALTHY**: Count of healthy status results
@@ -273,17 +302,21 @@ Result: Early identification of performance degradation
 ## Troubleshooting
 
 ### Critical Health Status
+
 **Symptoms**: Health check returns Critical status
 **Steps**:
+
 1. Review detailed results for specific issues
 2. Follow recommendations provided in health check
 3. Check configuration parameters and credentials
 4. Verify network connectivity and authentication
-5. Use [Test Connection](TestConnection.md) for additional diagnostics
+5. Use [Test Connection](pages/TestConnection.md) for additional diagnostics
 
 ### Authentication Health Issues
+
 **Symptoms**: Authentication status shows problems
 **Steps**:
+
 1. Check if client secret has expired (Private Auth)
 2. Verify authentication token validity
 3. Confirm required permissions are granted
@@ -291,8 +324,10 @@ Result: Early identification of performance degradation
 5. Review Microsoft Entra ID application configuration
 
 ### API Connectivity Problems
+
 **Symptoms**: API connectivity shows disconnected or slow
 **Steps**:
+
 1. Check internet connectivity
 2. Verify Microsoft Graph service status
 3. Test DNS resolution for graph.microsoft.com
@@ -300,8 +335,10 @@ Result: Early identification of performance degradation
 5. Monitor for rate limiting issues
 
 ### Performance Warnings
+
 **Symptoms**: Health check shows performance warnings
 **Steps**:
+
 1. Monitor API response times over time
 2. Check for rate limiting or throttling
 3. Review system resource usage
@@ -310,7 +347,7 @@ Result: Early identification of performance degradation
 
 ## See Also
 
-- [Extension Configuration](ExtensionConfiguration.md) - Setup and configuration guide
-- [Authentication](Authentication.md) - Authentication troubleshooting
-- [Test Connection](TestConnection.md) - Connection testing
+- [Extension Configuration](pages/ExtensionConfiguration.md) - Setup and configuration guide
+- [Authentication](pages/Authentication.md) - Authentication troubleshooting
+- [Test Connection](pages/TestConnection.md) - Connection testing
 - [Microsoft Graph Service Health](https://status.graph.microsoft.com/) - Check service status

@@ -2,7 +2,8 @@
 
 ## Overview
 
-Marks an email message as read or unread using the message ID. This catalog request provides essential email management functionality for tracking email status and organizing inbox workflows.
+Marks an email message as read or unread using the message ID. This catalog request provides essential email management
+functionality for tracking email status and organizing inbox workflows.
 
 ## Request Details
 
@@ -12,47 +13,51 @@ Marks an email message as read or unread using the message ID. This catalog requ
 
 ## Input Parameters
 
-| Parameter Name | Type | Required | Description | Example |
-|----------------|------|----------|-------------|---------|
-| Message ID | Text | Yes | Unique identifier of the email to mark | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
-| Is Read | Boolean | Yes | Mark as read (true) or unread (false) | true |
+| Parameter Name | Type    | Required | Description                            | Example                                   |
+|----------------|---------|----------|----------------------------------------|-------------------------------------------|
+| Message ID     | Text    | Yes      | Unique identifier of the email to mark | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
+| Is Read        | Boolean | Yes      | Mark as read (true) or unread (false)  | true                                      |
 
 ### Parameter Details
 
 #### Message ID
+
 - **Format**: Base64-encoded string from Microsoft Graph
 - **Source**: Obtained from other catalog requests like Fetch Inbox, Fetch Mail Details By Query
 - **Validation**: Must be a valid, existing message ID
 - **Case Sensitivity**: Exact match required
 
 #### Is Read
-- **Values**: 
-  - `true` - Mark email as read
-  - `false` - Mark email as unread
+
+- **Values**:
+    - `true` - Mark email as read
+    - `false` - Mark email as unread
 - **Purpose**: Update the read status of the email
 - **Effect**: Changes the visual appearance in email clients
 
 ## Output Parameters
 
-| Parameter Name | Type | Description |
-|----------------|------|-------------|
-| Response | Text | Success confirmation message |
+| Parameter Name | Type | Description                  |
+|----------------|------|------------------------------|
+| Response       | Text | Success confirmation message |
 
 **Example Output**: "Success"
 
 ## Validation Rules
 
-| Validation | Error Message | Resolution |
-|------------|---------------|------------|
-| Message ID is empty | "Message ID cannot be empty" | Provide a valid message ID |
+| Validation           | Error Message                                           | Resolution                                 |
+|----------------------|---------------------------------------------------------|--------------------------------------------|
+| Message ID is empty  | "Message ID cannot be empty"                            | Provide a valid message ID                 |
 | Message ID not found | "Unable to mark message, no email found with messageID" | Verify message ID exists and is accessible |
-| Is Read is null | "Is Read parameter is required" | Provide true or false value |
+| Is Read is null      | "Is Read parameter is required"                         | Provide true or false value                |
 
 ## Error Handling
 
 ### Input Errors (INPUT_ERROR)
+
 **Cause**: Invalid or missing required parameters
 **Common Scenarios**:
+
 - Empty or null message ID
 - Missing Is Read parameter
 - Invalid message ID format
@@ -60,8 +65,10 @@ Marks an email message as read or unread using the message ID. This catalog requ
 **Resolution**: Validate all required parameters before submission
 
 ### Logic Errors (LOGIC_ERROR)
+
 **Cause**: Business logic validation failures
 **Common Scenarios**:
+
 - Message ID not found in mailbox
 - User lacks permission to modify the email
 - Email has been deleted
@@ -69,8 +76,10 @@ Marks an email message as read or unread using the message ID. This catalog requ
 **Resolution**: Verify message ID exists and user has modify permissions
 
 ### System Errors (SYSTEM_ERROR)
+
 **Cause**: Microsoft Graph API or system-level failures
 **Common Scenarios**:
+
 - Network connectivity issues
 - Microsoft Graph service unavailable
 - Authentication token expired
@@ -80,38 +89,46 @@ Marks an email message as read or unread using the message ID. This catalog requ
 ## Usage Examples
 
 ### Example 1: Mark Email as Read
+
 **Scenario**: Mark a processed email as read
 
 **Input**:
+
 ```
 Message ID: "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."
 Is Read: true
 ```
 
 **Output**:
+
 ```
 Response: "Success"
 ```
 
 ### Example 2: Mark Email as Unread
+
 **Scenario**: Mark an important email as unread for follow-up
 
 **Input**:
+
 ```
 Message ID: "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."
 Is Read: false
 ```
 
 **Output**:
+
 ```
 Response: "Success"
 ```
 
 ### Example 3: Workflow Integration
+
 **Scenario**: Mark emails as read after automated processing
 
 **Process**:
-1. Fetch unread emails using [Fetch Inbox With Preferences](FetchInboxWithPreferences.md)
+
+1. Fetch unread emails using [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md)
 2. Process each email according to business logic
 3. Mark processed emails as read using this catalog request
 4. Continue with next batch of unread emails
@@ -136,24 +153,28 @@ Response: "Success"
 ## Best Practices
 
 ### 1. Message ID Management
+
 - Store message IDs from previous catalog requests
 - Validate message ID exists before attempting to mark
 - Handle cases where emails may be deleted during processing
 - Use consistent ID format throughout application
 
 ### 2. Workflow Integration
+
 - Mark emails as read after successful processing
 - Use unread status to identify emails requiring attention
 - Implement proper error handling for marking operations
 - Consider batch processing for multiple emails
 
 ### 3. Status Tracking
+
 - Track read/unread status changes for audit purposes
 - Use read status as part of email processing workflows
 - Consider user preferences for automatic read marking
 - Implement consistent status management across application
 
 ### 4. Error Handling
+
 - Implement retry logic for transient failures
 - Handle cases where emails are deleted during processing
 - Provide meaningful error messages to users
@@ -162,6 +183,7 @@ Response: "Success"
 ## Common Use Cases
 
 ### 1. Email Processing Workflow
+
 ```
 Scenario: Mark emails as read after automated processing
 Action: Process email content, then mark as read
@@ -169,6 +191,7 @@ Result: Processed emails are visually distinguished from unprocessed
 ```
 
 ### 2. Priority Email Management
+
 ```
 Scenario: Mark important emails as unread for follow-up
 Action: Mark high-priority emails as unread after initial review
@@ -176,6 +199,7 @@ Result: Important emails remain visible for follow-up action
 ```
 
 ### 3. Batch Email Processing
+
 ```
 Scenario: Process multiple emails and update their status
 Action: Fetch unread emails, process each, mark as read
@@ -183,6 +207,7 @@ Result: Systematic processing with clear status tracking
 ```
 
 ### 4. User Interface Integration
+
 ```
 Scenario: Allow users to manually mark emails read/unread
 Action: Provide UI controls that call this catalog request
@@ -191,14 +216,15 @@ Result: Users can manage email status through custom interface
 
 ## Related Catalog Requests
 
-- [Mark Message Category And Status](MarkMessageCategoryAndStatus.md) - Advanced message marking with categories
-- [Fetch Inbox With Preferences](FetchInboxWithPreferences.md) - Filter emails by read status
-- [Fetch Inbox](FetchInbox.md) - Retrieve emails with read status information
-- [Add Category To Message](AddCategoryToMessage.md) - Add categories to emails
+- [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md) - Advanced message marking with categories
+- [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md) - Filter emails by read status
+- [Fetch Inbox](pages/FetchInbox.md) - Retrieve emails with read status information
+- [Add Category To Message](pages/AddCategoryToMessage.md) - Add categories to emails
 
 ## Technical Implementation
 
 ### Helper Class
+
 - **Class**: MessagingAreaImpl
 - **Package**: app.krista.extensions.essentials.collaboration.outlook3.impl
 - **Method**: markMessage(String messageId, Boolean isRead)
@@ -206,6 +232,7 @@ Result: Users can manage email status through custom interface
 - **Service**: Microsoft Graph Mail API message update functionality
 
 ### Telemetry Metrics
+
 - **MARK_MESSAGE_SUCCESS**: Successful message marking operations
 - **MARK_MESSAGE_FAILURE**: Failed message marking operations
 - **MARK_AS_READ**: Count of emails marked as read
@@ -214,32 +241,40 @@ Result: Users can manage email status through custom interface
 ## Troubleshooting
 
 ### Message ID Not Found
+
 **Cause**: Invalid or non-existent message ID
 **Solution**:
+
 1. Verify message ID is complete and correct
 2. Check if email has been deleted or moved
 3. Ensure user has access to the email
 4. Use Fetch Mail By Message Id to validate access
 
 ### Permission Denied
+
 **Cause**: User lacks permission to modify the email
 **Solution**:
+
 1. Verify Mail.ReadWrite permission is granted
 2. Check if user owns or has access to the email
 3. Confirm authentication token is valid
 4. Test with known modifiable emails
 
 ### Operation Failed
+
 **Cause**: System or network issues
 **Solution**:
+
 1. Check network connectivity to Microsoft Graph
 2. Verify Microsoft Graph service status
 3. Retry operation after brief delay
 4. Check authentication token validity
 
 ### Inconsistent Status
+
 **Cause**: Caching or synchronization issues
 **Solution**:
+
 1. Allow time for changes to propagate
 2. Refresh email client or application
 3. Verify operation completed successfully
@@ -247,7 +282,7 @@ Result: Users can manage email status through custom interface
 
 ## See Also
 
-- [Extension Configuration](ExtensionConfiguration.md) - Setup and configuration
-- [Authentication](Authentication.md) - Authentication requirements
-- [Mark Message Category And Status](MarkMessageCategoryAndStatus.md) - Advanced message marking
-- [Fetch Inbox With Preferences](FetchInboxWithPreferences.md) - Filter by read status
+- [Extension Configuration](pages/ExtensionConfiguration.md) - Setup and configuration
+- [Authentication](pages/Authentication.md) - Authentication requirements
+- [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md) - Advanced message marking
+- [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md) - Filter by read status

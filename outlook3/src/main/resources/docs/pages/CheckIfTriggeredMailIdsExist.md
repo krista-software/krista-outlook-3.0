@@ -247,10 +247,10 @@ Result: Maintain data integrity and clean up invalid references
 
 ## Related Catalog Requests
 
-- [Send Alert Using Notification Delta](SendAlertUsingNotificationDelta.md) - Process validated notifications
-- [Fetch Mail By Message Id](FetchMailByMessageId.md) - Retrieve details for validated emails
-- [Mark Message](MarkMessage.md) - Process validated emails
-- [Move Message](MoveMessage.md) - Move validated emails
+- [Send Alert Using Notification Delta](pages/SendAlertUsingNotificationDelta.md) - Process validated notifications
+- [Fetch Mail By Message Id](pages/FetchMailByMessageId.md) - Retrieve details for validated emails
+- [Mark Message](pages/MarkMessage.md) - Process validated emails
+- [Move Message](pages/MoveMessage.md) - Move validated emails
 
 ## Technical Implementation
 
@@ -303,7 +303,7 @@ Result: Maintain data integrity and clean up invalid references
 
 ## See Also
 
-- [Extension Configuration](ExtensionConfiguration.md) - Setup and configuration
-- [Authentication](Authentication.md) - Authentication requirements
-- [Send Alert Using Notification Delta](SendAlertUsingNotificationDelta.md) - Process notifications
-- [Fetch Mail By Message Id](FetchMailByMessageId.md) - Retrieve validated emails
+- [Extension Configuration](pages/ExtensionConfiguration.md) - Setup and configuration
+- [Authentication](pages/Authentication.md) - Authentication requirements
+- [Send Alert Using Notification Delta](pages/SendAlertUsingNotificationDelta.md) - Process notifications
+- [Fetch Mail By Message Id](pages/FetchMailByMessageId.md) - Retrieve validated emails

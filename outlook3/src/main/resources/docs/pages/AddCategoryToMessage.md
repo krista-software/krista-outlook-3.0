@@ -167,10 +167,10 @@ Result: Customer emails are organized by service requirements
 
 ## Related Catalog Requests
 
-- [Mark Message Category And Status](MarkMessageCategoryAndStatus.md) - Combined status and category marking
-- [Mark Message](MarkMessage.md) - Basic message status marking
-- [List Categories](ListCategories.md) - Get available categories
-- [Fetch Mail Details By Query](FetchMailDetailsByQuery.md) - Search emails by category
+- [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md) - Combined status and category marking
+- [Mark Message](pages/MarkMessage.md) - Basic message status marking
+- [List Categories](pages/ListCategories.md) - Get available categories
+- [Fetch Mail Details By Query](pages/FetchMailDetailsByQuery.md) - Search emails by category
 
 ## Technical Implementation
 
@@ -223,7 +223,7 @@ Result: Customer emails are organized by service requirements
 
 ## See Also
 
-- [Extension Configuration](ExtensionConfiguration.md) - Setup and configuration
-- [Authentication](Authentication.md) - Authentication requirements
-- [Mark Message Category And Status](MarkMessageCategoryAndStatus.md) - Combined operations
-- [List Categories](ListCategories.md) - Get available categories
+- [Extension Configuration](pages/ExtensionConfiguration.md) - Setup and configuration
+- [Authentication](pages/Authentication.md) - Authentication requirements
+- [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md) - Combined operations
+- [List Categories](pages/ListCategories.md) - Get available categories
