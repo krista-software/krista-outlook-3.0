@@ -93,7 +93,9 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Labels", type = "[ Text ]", required = false)
-    public ExtensionResponse fetchAllLabels() {
+    public ExtensionResponse fetchAllLabels(
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.fetchAllLabels");
@@ -129,9 +131,12 @@ public class MessagingArea {
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mail", type = "Entity(Mail Details)", required = false)
     public ExtensionResponse fetchMailByMessageId(
-            @Field(name = "Message ID", type = "Text") String messageID) {
+            @Field(name = "Message ID", type = "Text") String messageID,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
+            LOGGER.info("Executing fetchMailByMessageId with messageID: {}, allowRetry: {}", messageID, allowRetry);
             telemetryHelper.incrementCount("outlook3.fetchMailByMessageId");
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
@@ -145,34 +150,49 @@ public class MessagingArea {
                 }
 
                 telemetryHelper.recordSuccess("outlook3.fetchMailByMessageId", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageID, "mail_found", String.valueOf(mailDetails != null)));
+                        TelemetryHelper.safeTagMap("message_id", messageID, "mail_found", String.valueOf(mailDetails != null),
+                                "allow_retry", String.valueOf(allowRetry)));
 
                 return ExtensionResponseFactory.create(Map.of("Mail", mailDetails));
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.fetchMailByMessageId", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageID, "validation_count", String.valueOf(validationResults.size())));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.fetchMailByMessageId", startTime,
+                            TelemetryHelper.safeTagMap("message_id", messageID, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
 
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
-                        OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults
-                ), Map.class));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                            OutlookResources.MESSAGE_ID, messageID,
+                            SubCatalogConstants.VALIDATION_RESULTS, validationResults
+                    ), Map.class));
 
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL,
-                        Map.of(OutlookResources.STATE_ID, stateId));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL,
+                            Map.of(OutlookResources.STATE_ID, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.fetchMailByMessageId", startTime,
+                            "Validation failed without retry",
+                            TelemetryHelper.safeTagMap("message_id", messageID, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.fetchMailByMessageId", startTime, cause.getMessage(),
-                    safeTagMap("message_id", messageID));
+                    safeTagMap("message_id", messageID, "allow_retry", String.valueOf(allowRetry)));
 
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch mail by message id :{}", cause.getMessage());
 
             telemetryHelper.recordError("outlook3.fetchMailByMessageId", startTime, cause,
-                    safeTagMap("message_id", messageID));
+                    safeTagMap("message_id", messageID, "allow_retry", String.valueOf(allowRetry)));
 
             return ExtensionResponseFactory.create("Error occurred while fetch mail by message id",
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -191,10 +211,12 @@ public class MessagingArea {
     @Field(name = "Message ID", type = "Text", required = false)
     public ExtensionResponse moveMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
-            @Field(name = "Folder Name", type = "Text") String folderName) {
+            @Field(name = "Folder Name", type = "Text") String folderName,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
-            LOGGER.info("Moving message with ID {} to folder: {}", messageID, folderName);
+            LOGGER.info("Moving message with ID {} to folder: {}, allowRetry: {}", messageID, folderName, allowRetry);
 
             telemetryHelper.incrementCount("outlook3.moveMessage");
 
@@ -207,38 +229,58 @@ public class MessagingArea {
                 Folder folder = account.getFolderByName(List.of(folderName.split(Constants.FORWARD_SLASH)));
 
                 telemetryHelper.recordSuccess("outlook3.moveMessage", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName));
+                        TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName,
+                                "allow_retry", String.valueOf(allowRetry)));
 
                 return ExtensionResponseFactory.create(Map.of(OutlookResources.MESSAGE_ID, email.moveToFolder(folder)));
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.moveMessage", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName,
-                                "validation_count", String.valueOf(validationResults.size())));
+                // Only trigger SubCatalog flow if allowRetry is true
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.moveMessage", startTime,
+                            TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName,
+                                    "allow_retry", String.valueOf(allowRetry),
+                                    "validation_count", String.valueOf(validationResults.size())));
 
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
-                        OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                            OutlookResources.MESSAGE_ID, messageID,
+                            SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                        validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE,
-                        Map.of(
-                                OutlookResources.STATE_ID, stateId,
-                                OutlookResources.MESSAGE_ID, messageID,
-                                OutlookResources.FOLDER_NAME, folderName));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_MOVE_MESSAGE,
+                            Map.of(
+                                    OutlookResources.STATE_ID, stateId,
+                                    OutlookResources.MESSAGE_ID, messageID,
+                                    OutlookResources.FOLDER_NAME, folderName));
+                } else {
+                    // Return validation error directly without retry option
+                    telemetryHelper.recordValidationError("outlook3.moveMessage", startTime,
+                            "Validation failed without retry",
+                            TelemetryHelper.safeTagMap("message_id", messageID, "folder_name", folderName,
+                                    "allow_retry", String.valueOf(allowRetry),
+                                    "validation_count", String.valueOf(validationResults.size())));
+
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.moveMessage", startTime, cause.getMessage(),
-                    safeTagMap("message_id", messageID, "folder_name", folderName));
+                    safeTagMap("message_id", messageID, "folder_name", folderName,
+                            "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
 
         } catch (Exception cause) {
             LOGGER.error("Error occurred while moving message to folder: {}", cause.getMessage());
 
             telemetryHelper.recordError("outlook3.moveMessage", startTime, cause,
-                    safeTagMap("message_id", messageID, "folder_name", folderName));
+                    safeTagMap("message_id", messageID, "folder_name", folderName,
+                            "allow_retry", String.valueOf(allowRetry)));
 
             return ExtensionResponseFactory.create("Error occurred while moving message to folder",
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -265,11 +307,13 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         try {
-            LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
+            LOGGER.info("replyToAll: messageId: {}; message: {}, allowRetry: {}", messageId, message, allowRetry);
             telemetryHelper.incrementCount("outlook3.replyToAllWithCCAndBCC");
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
@@ -284,33 +328,49 @@ public class MessagingArea {
                 telemetryHelper.recordSuccess("outlook3.replyToAllWithCCAndBCC", startTime,
                         TelemetryHelper.safeTagMap("message_id", messageId,
                                 "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty()),
-                                "body_type", bodyType));
+                                "body_type", bodyType,
+                                "allow_retry", String.valueOf(allowRetry)));
 
                 return messagingAreaImpl.replyToAllWithCCAndBCC(
                         attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.replyToAllWithCCAndBCC", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageId,
-                                "validation_count", String.valueOf(validationResults.size())));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.replyToAllWithCCAndBCC", startTime,
+                            TelemetryHelper.safeTagMap("message_id", messageId,
+                                    "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
 
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(
-                        Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(
+                            Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
-                        validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS,
-                        StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL_WITH_FIELDS,
+                            StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.replyToAllWithCCAndBCC", startTime,
+                            "Validation failed without retry",
+                            TelemetryHelper.safeTagMap("message_id", messageId,
+                                    "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.replyToAllWithCCAndBCC", startTime, cause.getMessage(),
-                    safeTagMap("message_id", messageId));
+                    safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To All With CC and BCC :{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.replyToAllWithCCAndBCC", startTime, cause,
-                    safeTagMap("message_id", messageId));
+                    safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while Reply To All With CC and BCC",
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(
@@ -332,44 +392,60 @@ public class MessagingArea {
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field.File(name = "Attachments", multipleFileUpload = true, required = false) List<File> attachments,
             @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.replyToAll");
 
-            LOGGER.info("replyToAll: messageId: {}; message: {}", messageId, message);
+            LOGGER.info("replyToAll: messageId: {}; message: {}, allowRetry: {}", messageId, message, allowRetry);
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageId));
 
             if (validationResults.isEmpty()) {
                 telemetryHelper.recordSuccess("outlook3.replyToAll", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageId));
+                        TelemetryHelper.safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
                 return messagingAreaImpl.replyToAll(attachments, messageId, message, bodyType);
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.replyToAll", startTime,
-                        TelemetryHelper.safeTagMap("message_id", messageId, "validation_count", String.valueOf(validationResults.size())));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.replyToAll", startTime,
+                            TelemetryHelper.safeTagMap("message_id", messageId, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
 
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
-                        OutlookResources.MESSAGE_ID, messageId,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                            OutlookResources.MESSAGE_ID, messageId,
+                            SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL,
-                        StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_ALL,
+                            StateMapperUtil.addReplyToALLMetaToMap(messageId, message, attachments, bodyType, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.replyToAll", startTime,
+                            "Validation failed without retry",
+                            TelemetryHelper.safeTagMap("message_id", messageId, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.replyToAll", startTime, cause.getMessage(),
-                    safeTagMap("message_id", messageId));
+                    safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To All :{}", cause.getMessage());
 
             telemetryHelper.recordError("outlook3.replyToAll", startTime, cause,
-                    safeTagMap("message_id", messageId));
+                    safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while Reply To All",
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants(
@@ -387,17 +463,20 @@ public class MessagingArea {
     @Field.Desc(name = "Sent Mails", type = "[ Entity(Mail Details) ]", required = false)
     public ExtensionResponse fetchSent(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
-            @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
+            @Field(name = "Page Size", type = "Number", required = false) Double pageSize,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.fetchSent");
-            LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+            LOGGER.info("fetchSent: pageNumber: {}; pageSize: {}, allowRetry: {}", pageNumber, pageSize, allowRetry);
 
             Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
             if (validationResourceMap.isEmpty()) {
                 telemetryHelper.recordSuccess("outlook3.fetchSent", startTime,
                         safeTagMap("page_number", String.valueOf(pageNumber),
-                                "page_size", String.valueOf(pageSize)));
+                                "page_size", String.valueOf(pageSize),
+                                "allow_retry", String.valueOf(allowRetry)));
                 return fetchSentResponse(pageNumber, pageSize);
             } else {
                 List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
@@ -405,30 +484,48 @@ public class MessagingArea {
                     telemetryHelper.recordSuccess("outlook3.fetchSent", startTime,
                             safeTagMap("page_number", String.valueOf(pageNumber),
                                     "page_size", String.valueOf(pageSize),
-                                    "validation_skipped", "true"));
+                                    "validation_skipped", "true",
+                                    "allow_retry", String.valueOf(allowRetry)));
                     return fetchSentResponse(pageNumber, pageSize);
                 } else {
-                    telemetryHelper.recordRetryPrompted("outlook3.fetchSent", startTime,
-                            safeTagMap("page_number", String.valueOf(pageNumber),
-                                    "page_size", String.valueOf(pageSize),
-                                    "validation_count", String.valueOf(validationResults.size())));
-                    String stateId = UUID.randomUUID().toString();
-                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                    return responseGenerator.generateConfirmationResponse(
-                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                            SubCatalogConstants.CONFIRM_REENTER_FETCH_SENT, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                    if (Boolean.TRUE.equals(allowRetry)) {
+                        telemetryHelper.recordRetryPrompted("outlook3.fetchSent", startTime,
+                                safeTagMap("page_number", String.valueOf(pageNumber),
+                                        "page_size", String.valueOf(pageSize),
+                                        "validation_count", String.valueOf(validationResults.size()),
+                                        "allow_retry", String.valueOf(allowRetry)));
+                        String stateId = UUID.randomUUID().toString();
+                        internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                        return responseGenerator.generateConfirmationResponse(
+                                ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                                SubCatalogConstants.CONFIRM_REENTER_FETCH_SENT, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                    } else {
+                        telemetryHelper.recordValidationError("outlook3.fetchSent", startTime,
+                                "Validation failed without retry",
+                                safeTagMap("page_number", String.valueOf(pageNumber),
+                                        "page_size", String.valueOf(pageSize),
+                                        "validation_count", String.valueOf(validationResults.size()),
+                                        "allow_retry", String.valueOf(allowRetry)));
+                        return responseGenerator.generateFetchDenyResponse(
+                                ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                                validationResults,
+                                null,
+                                Map.of());
+                    }
                 }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.fetchSent", startTime, cause.getMessage(),
                     safeTagMap("page_number", String.valueOf(pageNumber),
-                            "page_size", String.valueOf(pageSize)));
+                            "page_size", String.valueOf(pageSize),
+                            "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch sent:{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.fetchSent", startTime, cause,
                     safeTagMap("page_number", String.valueOf(pageNumber),
-                            "page_size", String.valueOf(pageSize)));
+                            "page_size", String.valueOf(pageSize),
+                            "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while fetch sent", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch sent", List.of())),
                     null, null);
@@ -452,9 +549,12 @@ public class MessagingArea {
             @Field(name = "Message Id", type = "Text") String messageId,
             @Field(name = "To", type = "Text") String to,
             @Field(name = "Message", type = "RichText", required = false) String message,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
+            LOGGER.info("forwardMail: messageId: {}, to: {}, allowRetry: {}", messageId, to, allowRetry);
             telemetryHelper.incrementCount("outlook3.forwardMail");
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
@@ -462,26 +562,40 @@ public class MessagingArea {
 
             if (validationResults.isEmpty()) {
                 telemetryHelper.recordSuccess("outlook3.forwardMail", startTime,
-                        safeTagMap("message_id", messageId, "to", to));
+                        safeTagMap("message_id", messageId, "to", to, "allow_retry", String.valueOf(allowRetry)));
                 return messagingAreaImpl.forwardMail(messageId, to, message, bodyType);
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.forwardMail", startTime,
-                        safeTagMap("message_id", messageId, "to", to,
-                                "validation_count", String.valueOf(validationResults.size())));
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL,
-                        StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.forwardMail", startTime,
+                            safeTagMap("message_id", messageId, "to", to,
+                                    "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults, SubCatalogConstants.CONFIRM_REENTER_FORWARD_MAIL,
+                            StateMapperUtil.addForwardMailMetaToMap(messageId, message, to, bodyType, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.forwardMail", startTime,
+                            "Validation failed without retry",
+                            safeTagMap("message_id", messageId, "to", to,
+                                    "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.forwardMail", startTime, cause.getMessage(),
-                    safeTagMap("message_id", messageId, "to", to));
+                    safeTagMap("message_id", messageId, "to", to, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while forward mail :{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.forwardMail", startTime, cause,
-                    safeTagMap("message_id", messageId, "to", to));
+                    safeTagMap("message_id", messageId, "to", to, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while forward mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while forward mail", List.of())),
                     null, null);
@@ -495,21 +609,26 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Mails", type = "[ Entity(Mail Details) ]", required = false)
-    public ExtensionResponse fetchMailDetailsByQuery(@Field(name = "Query", type = "Text") String query) {
+    public ExtensionResponse fetchMailDetailsByQuery(
+            @Field(name = "Query", type = "Text") String query,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.fetchMailDetailsByQuery");
-            LOGGER.info("fetchMailDetailsByQuery: {}", query);
+            LOGGER.info("fetchMailDetailsByQuery: {}, allowRetry: {}", query, allowRetry);
             List<Email> emails = account.searchEmails(query);
             List<MailDetails> response = emails.stream().map(email -> mailHandler.fromEmail(email, null)).collect(Collectors.toList());
             telemetryHelper.recordSuccess("outlook3.fetchMailDetailsByQuery", startTime,
-                    safeTagMap("query", query, "result_count", String.valueOf(response.size())));
+                    safeTagMap("query", query, "result_count", String.valueOf(response.size()), "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create(Map.of("Mails", response));
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.fetchMailDetailsByQuery", startTime, cause.getMessage(), safeTagMap("query", query));
+            telemetryHelper.recordValidationError("outlook3.fetchMailDetailsByQuery", startTime, cause.getMessage(),
+                    safeTagMap("query", query, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
-            telemetryHelper.recordError("outlook3.fetchMailDetailsByQuery", startTime, cause, safeTagMap("query", query));
+            telemetryHelper.recordError("outlook3.fetchMailDetailsByQuery", startTime, cause,
+                    safeTagMap("query", query, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create(cause, "Invalid query provided, Please check.", ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Invalid query provided, Please check.", List.of())),
                     null, null);
@@ -531,9 +650,12 @@ public class MessagingArea {
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
+            LOGGER.info("sendMail: to: {}, subject: {}, allowRetry: {}", to, subject, allowRetry);
             telemetryHelper.incrementCount("outlook3.sendMail");
 
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(
@@ -544,24 +666,39 @@ public class MessagingArea {
 
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = messagingAreaImpl.sendMail(subject, message, attachments, to, cc, bcc, replyTo, bodyType);
-                telemetryHelper.recordSuccess("outlook3.sendMail", startTime, safeTagMap("to", to));
+                telemetryHelper.recordSuccess("outlook3.sendMail", startTime, safeTagMap("to", to, "allow_retry", String.valueOf(allowRetry)));
                 return response;
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.sendMail", startTime,
-                        safeTagMap("to", to, "validation_count", String.valueOf(validationResults.size())));
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL,
-                        StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.sendMail", startTime,
+                            safeTagMap("to", to, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL,
+                            StateMapperUtil.addSendMailMetaToMap(subject, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.sendMail", startTime,
+                            "Validation failed without retry",
+                            safeTagMap("to", to, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.sendMail", startTime, cause.getMessage(), safeTagMap("to", to));
+            telemetryHelper.recordValidationError("outlook3.sendMail", startTime, cause.getMessage(),
+                    safeTagMap("to", to, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while send mail :{}", cause.getMessage());
-            telemetryHelper.recordError("outlook3.sendMail", startTime, cause, safeTagMap("to", to));
+            telemetryHelper.recordError("outlook3.sendMail", startTime, cause,
+                    safeTagMap("to", to, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while send mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while send mail", List.of())),
                     null, null);
@@ -584,9 +721,12 @@ public class MessagingArea {
             @Field.Text(name = "Cc", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String cc,
             @Field.Text(name = "Reply To", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String replyTo,
             @Field.Desc(name = "Entity List", type = "[ Entity ]") List<EntityValue> entityList,
-            @Field.Desc(name = "Remove Entity Field From Table", type = "[ Text ]", required = false) List<String> removeEntityFieldFromTable) {
+            @Field.Desc(name = "Remove Entity Field From Table", type = "[ Text ]", required = false) List<String> removeEntityFieldFromTable,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
+            LOGGER.info("sendMailWithTable: to: {}, subject: {}, allowRetry: {}", to, subject, allowRetry);
             telemetryHelper.incrementCount("outlook3.sendMailWithTable");
 
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(
@@ -597,25 +737,41 @@ public class MessagingArea {
 
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = messagingAreaImpl.sendMailWithTable(subject, message, attachments, to, cc, bcc, replyTo, entityList, removeEntityFieldFromTable);
-                telemetryHelper.recordSuccess("outlook3.sendMailWithTable", startTime, Map.of("to", to));
+                telemetryHelper.recordSuccess("outlook3.sendMailWithTable", startTime,
+                        safeTagMap("to", to, "allow_retry", String.valueOf(allowRetry)));
                 return response;
             } else {
-                telemetryHelper.recordRetryPrompted("outlook3.sendMailWithTable", startTime, safeTagMap(
-                        "to", to, "validation_count", String.valueOf(validationResults.size())));
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
-                internalStateManager.putMetaInfo(stateId, Map.of(OutlookResources.ENTITY_LIST, entityList));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE,
-                        StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted("outlook3.sendMailWithTable", startTime, safeTagMap(
+                            "to", to, "validation_count", String.valueOf(validationResults.size()),
+                            "allow_retry", String.valueOf(allowRetry)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(StateMapperUtil.addSendMailWithTableAttachmentToMap(attachments, entityList, removeEntityFieldFromTable, validationResults)));
+                    internalStateManager.putMetaInfo(stateId, Map.of(OutlookResources.ENTITY_LIST, entityList));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_SEND_MAIL_WITH_TABLE,
+                            StateMapperUtil.addSendMailWithTableMetaToMap(subject, to, cc, bcc, replyTo, message, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.sendMailWithTable", startTime,
+                            "Validation failed without retry",
+                            safeTagMap("to", to, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.sendMailWithTable", startTime, cause.getMessage(), safeTagMap("to", to));
+            telemetryHelper.recordValidationError("outlook3.sendMailWithTable", startTime, cause.getMessage(),
+                    safeTagMap("to", to, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Send Mail With Table :{}", cause.getMessage());
-            telemetryHelper.recordError("outlook3.sendMailWithTable", startTime, cause, safeTagMap("to", to));
+            telemetryHelper.recordError("outlook3.sendMailWithTable", startTime, cause,
+                    safeTagMap("to", to, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while Send Mail With Table", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Send Mail With Table", List.of())),
                     null, null);
@@ -631,44 +787,70 @@ public class MessagingArea {
     @Field.Desc(name = "Inbox Mails", type = "[ Entity(Mail Details) ]", required = false)
     public ExtensionResponse fetchInbox(
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
-            @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
+            @Field(name = "Page Size", type = "Number", required = false) Double pageSize,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.fetchInbox");
-            LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}", pageNumber, pageSize);
+            LOGGER.info("fetchInbox: pageNumber: {}; pageSize: {}, allowRetry: {}", pageNumber, pageSize, allowRetry);
 
             Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
             if (validationResourceMap.isEmpty()) {
                 ExtensionResponse response = fetchInboxResponse(pageNumber, pageSize);
-                telemetryHelper.recordSuccess("outlook3.fetchInbox", startTime, Map.of("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
+                telemetryHelper.recordSuccess("outlook3.fetchInbox", startTime,
+                        safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize),
+                                "allow_retry", String.valueOf(allowRetry)));
                 return response;
             }
 
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationResourceMap);
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = fetchInboxResponse(pageNumber, pageSize);
-                telemetryHelper.recordSuccess("outlook3.fetchInbox", startTime, Map.of("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
+                telemetryHelper.recordSuccess("outlook3.fetchInbox", startTime,
+                        safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize),
+                                "allow_retry", String.valueOf(allowRetry)));
                 return response;
             }
 
-            telemetryHelper.recordRetryPrompted("outlook3.fetchInbox", startTime, safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize), "validation_count", String.valueOf(validationResults.size())));
-            String stateId = UUID.randomUUID().toString();
-            Map<String, Object> stateMap = new HashMap<>();
-            stateMap.put(SubCatalogConstants.VALIDATION_RESULTS, validationResults);
-            if (pageNumber != null) stateMap.put(OutlookResources.PAGE_NUMBER, pageNumber);
-            if (pageSize != null) stateMap.put(OutlookResources.PAGE_SIZE, pageSize);
-            internalStateManager.put(stateId, Constants.GSON.toJson(stateMap));
+            if (Boolean.TRUE.equals(allowRetry)) {
+                telemetryHelper.recordRetryPrompted("outlook3.fetchInbox", startTime,
+                        safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize),
+                                "validation_count", String.valueOf(validationResults.size()),
+                                "allow_retry", String.valueOf(allowRetry)));
+                String stateId = UUID.randomUUID().toString();
+                Map<String, Object> stateMap = new HashMap<>();
+                stateMap.put(SubCatalogConstants.VALIDATION_RESULTS, validationResults);
+                if (pageNumber != null) stateMap.put(OutlookResources.PAGE_NUMBER, pageNumber);
+                if (pageSize != null) stateMap.put(OutlookResources.PAGE_SIZE, pageSize);
+                internalStateManager.put(stateId, Constants.GSON.toJson(stateMap));
 
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX, StateMapperUtil.addPageMetaDataToMap(pageNumber, pageSize, stateId));
+            } else {
+                telemetryHelper.recordValidationError("outlook3.fetchInbox", startTime,
+                        "Validation failed without retry",
+                        safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize),
+                                "validation_count", String.valueOf(validationResults.size()),
+                                "allow_retry", String.valueOf(allowRetry)));
+                return responseGenerator.generateFetchDenyResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        null,
+                        Map.of());
+            }
 
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.fetchInbox", startTime, cause.getMessage(), safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
+            telemetryHelper.recordValidationError("outlook3.fetchInbox", startTime, cause.getMessage(),
+                    safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize),
+                            "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while fetch inbox :{}", cause.getMessage());
-            telemetryHelper.recordError("outlook3.fetchInbox", startTime, cause, safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize)));
+            telemetryHelper.recordError("outlook3.fetchInbox", startTime, cause,
+                    safeTagMap("page_number", String.valueOf(pageNumber), "page_size", String.valueOf(pageSize),
+                            "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox ", List.of())),
                     null, null);
@@ -685,7 +867,9 @@ public class MessagingArea {
     public ExtensionResponse fetchInboxWithPreferences(
             @Field(name = "Page Number", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Double pageNumber,
             @Field(name = "Page Size", type = "Number", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Double pageSize,
-            @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference) {
+            @Field.Desc(name = "Preference", type = "{ Mail Body: PickOne(Text|Html) }", required = false) Map<String, Object> preference,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.fetchInboxWithPreferences");
@@ -695,17 +879,18 @@ public class MessagingArea {
             preference.put("Mail Body", "Html");
         }
 
-        LOGGER.info("fetchInboxWithPreference: pageNumber: {}; pageSize: {}; preference: {}", pageNumber, pageSize, preference);
+        LOGGER.info("fetchInboxWithPreference: pageNumber: {}; pageSize: {}; preference: {}, allowRetry: {}", pageNumber, pageSize, preference, allowRetry);
 
         try {
             Map<Validator.ValidationResource, String> validationResourceMap = ValidationResourceUtil.prepareValidateFetchInboxMap(pageNumber, pageSize);
 
             if (validationResourceMap.isEmpty()) {
                 ExtensionResponse response = fetchInboxResponseWithPref(pageNumber, pageSize, preference);
-                telemetryHelper.recordSuccess("outlook3.fetchInboxWithPreferences", startTime, Map.of(
+                telemetryHelper.recordSuccess("outlook3.fetchInboxWithPreferences", startTime, safeTagMap(
                         "page_number", String.valueOf(pageNumber),
                         "page_size", String.valueOf(pageSize),
-                        "preference", preference.toString()
+                        "preference", preference.toString(),
+                        "allow_retry", String.valueOf(allowRetry)
                 ));
                 return response;
             }
@@ -714,34 +899,54 @@ public class MessagingArea {
 
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = fetchInboxResponseWithPref(pageNumber, pageSize, preference);
-                telemetryHelper.recordSuccess("outlook3.fetchInboxWithPreferences", startTime, Map.of(
+                telemetryHelper.recordSuccess("outlook3.fetchInboxWithPreferences", startTime, safeTagMap(
                         "page_number", String.valueOf(pageNumber),
                         "page_size", String.valueOf(pageSize),
-                        "preference", preference.toString()
+                        "preference", preference.toString(),
+                        "allow_retry", String.valueOf(allowRetry)
                 ));
                 return response;
             }
 
-            telemetryHelper.recordRetryPrompted("outlook3.fetchInboxWithPreferences", startTime, safeTagMap(
-                    "page_number", String.valueOf(pageNumber),
-                    "page_size", String.valueOf(pageSize),
-                    "preference", preference.toString(),
-                    "validation_count", String.valueOf(validationResults.size())
-            ));
+            if (Boolean.TRUE.equals(allowRetry)) {
+                telemetryHelper.recordRetryPrompted("outlook3.fetchInboxWithPreferences", startTime, safeTagMap(
+                        "page_number", String.valueOf(pageNumber),
+                        "page_size", String.valueOf(pageSize),
+                        "preference", preference.toString(),
+                        "validation_count", String.valueOf(validationResults.size()),
+                        "allow_retry", String.valueOf(allowRetry)
+                ));
 
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
-                    StateMapperUtil.addFetchInboxWithPrefMetaDataToMap(pageNumber, pageSize, preference, stateId)
-            );
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_INBOX_WITH_PREFERENCE,
+                        StateMapperUtil.addFetchInboxWithPrefMetaDataToMap(pageNumber, pageSize, preference, stateId)
+                );
+            } else {
+                telemetryHelper.recordValidationError("outlook3.fetchInboxWithPreferences", startTime,
+                        "Validation failed without retry",
+                        safeTagMap(
+                                "page_number", String.valueOf(pageNumber),
+                                "page_size", String.valueOf(pageSize),
+                                "preference", preference.toString(),
+                                "validation_count", String.valueOf(validationResults.size()),
+                                "allow_retry", String.valueOf(allowRetry)
+                        ));
+                return responseGenerator.generateFetchDenyResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        null,
+                        Map.of());
+            }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.fetchInboxWithPreferences", startTime, cause.getMessage(), safeTagMap(
                     "page_number", String.valueOf(pageNumber),
                     "page_size", String.valueOf(pageSize),
-                    "preference", preference.toString()
+                    "preference", preference.toString(),
+                    "allow_retry", String.valueOf(allowRetry)
             ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
@@ -749,7 +954,8 @@ public class MessagingArea {
             telemetryHelper.recordError("outlook3.fetchInboxWithPreferences", startTime, cause, safeTagMap(
                     "page_number", String.valueOf(pageNumber),
                     "page_size", String.valueOf(pageSize),
-                    "preference", preference.toString()
+                    "preference", preference.toString(),
+                    "allow_retry", String.valueOf(allowRetry)
             ));
             return ExtensionResponseFactory.create("Error occurred while fetch inbox ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while fetch inbox with given preferences ", List.of())),
@@ -777,7 +983,9 @@ public class MessagingArea {
     @Field(name = "Response", type = "Text", required = false)
     public ExtensionResponse markMessage(
             @Field(name = "Message ID", type = "Text") String messageID,
-            @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label) {
+            @Field.Desc(name = "Label", type = "PickOne(Read|Unread)") String label,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.markMessage");
@@ -790,39 +998,59 @@ public class MessagingArea {
                 ExtensionResponse response = messagingAreaImpl.markMessage(messageID, label);
                 telemetryHelper.recordSuccess("outlook3.markMessage", startTime, Map.of(
                         "message_id", messageID,
-                        "label", label
+                        "label", label,
+                        "allow_retry", String.valueOf(allowRetry)
                 ));
                 return response;
             }
 
-            telemetryHelper.recordRetryPrompted("outlook3.markMessage", startTime, safeTagMap(
-                    "message_id", messageID,
-                    "label", label,
-                    "validation_count", String.valueOf(validationResults.size())
-            ));
+            // Only trigger SubCatalog flow if allowRetry is true
+            if (Boolean.TRUE.equals(allowRetry)) {
+                telemetryHelper.recordRetryPrompted("outlook3.markMessage", startTime, safeTagMap(
+                        "message_id", messageID,
+                        "label", label,
+                        "allow_retry", String.valueOf(allowRetry),
+                        "validation_count", String.valueOf(validationResults.size())
+                ));
 
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
-                    OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                        OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
-                            OutlookResources.STATE_ID, stateId,
-                            OutlookResources.LABEL, label,
-                            OutlookResources.MESSAGE_ID, messageID));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
+                                OutlookResources.STATE_ID, stateId,
+                                OutlookResources.LABEL, label,
+                                OutlookResources.MESSAGE_ID, messageID));
+            } else {
+                // Return validation error directly without retry option
+                telemetryHelper.recordValidationError("outlook3.markMessage", startTime,
+                        "Validation failed without retry",
+                        safeTagMap("message_id", messageID, "label", label,
+                                "allow_retry", String.valueOf(allowRetry),
+                                "validation_count", String.valueOf(validationResults.size())));
+
+                return responseGenerator.generateFetchDenyResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        null,
+                        Map.of());
+            }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.markMessage", startTime, cause.getMessage(), safeTagMap(
                     "message_id", messageID,
-                    "label", label
+                    "label", label,
+                    "allow_retry", String.valueOf(allowRetry)
             ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while mark message :{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.markMessage", startTime, cause, safeTagMap(
                     "message_id", messageID,
-                    "label", label
+                    "label", label,
+                    "allow_retry", String.valueOf(allowRetry)
             ));
             return ExtensionResponseFactory.create("Error occurred while mark message ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while mark message ", List.of())),
@@ -845,13 +1073,15 @@ public class MessagingArea {
             @Field(name = "Cc", type = "Text", required = false) String cc,
             @Field(name = "Bcc", type = "Text", required = false) String bcc,
             @Field(name = "Reply To", type = "Text", required = false) String replyTo,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.replyToMailWithCCAndBCC");
 
         try {
-            LOGGER.info("replyToMailWithCCAndBCC: messageId: {}; bodyType: {}", messageId, bodyType);
+            LOGGER.info("replyToMailWithCCAndBCC: messageId: {}; bodyType: {}, allowRetry: {}", messageId, bodyType, allowRetry);
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(
@@ -863,35 +1093,53 @@ public class MessagingArea {
 
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = messagingAreaImpl.replyToMailWithCCAndBCC(attachments, messageId, to, cc, bcc, replyTo, message, bodyType);
-                telemetryHelper.recordSuccess("outlook3.replyToMailWithCCAndBCC", startTime, Map.of(
+                telemetryHelper.recordSuccess("outlook3.replyToMailWithCCAndBCC", startTime, safeTagMap(
                         "message_id", messageId,
                         "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty()),
                         "to", to != null ? "true" : "false",
                         "cc", cc != null ? "true" : "false",
-                        "bcc", bcc != null ? "true" : "false"
+                        "bcc", bcc != null ? "true" : "false",
+                        "allow_retry", String.valueOf(allowRetry)
                 ));
                 return response;
             }
 
-            telemetryHelper.recordRetryPrompted("outlook3.replyToMailWithCCAndBCC", startTime, safeTagMap(
-                    "message_id", messageId,
-                    "validation_count", String.valueOf(validationResults.size())
-            ));
+            if (Boolean.TRUE.equals(allowRetry)) {
+                telemetryHelper.recordRetryPrompted("outlook3.replyToMailWithCCAndBCC", startTime, safeTagMap(
+                        "message_id", messageId,
+                        "validation_count", String.valueOf(validationResults.size()),
+                        "allow_retry", String.valueOf(allowRetry)
+                ));
 
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS,
-                    StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL_WITH_FIELDS,
+                        StateMapperUtil.addReplyToALLFieldsMetaToMap(messageId, to, cc, bcc, replyTo, message, attachments, bodyType, stateId));
+            } else {
+                telemetryHelper.recordValidationError("outlook3.replyToMailWithCCAndBCC", startTime,
+                        "Validation failed without retry",
+                        safeTagMap("message_id", messageId,
+                                "validation_count", String.valueOf(validationResults.size()),
+                                "allow_retry", String.valueOf(allowRetry)));
+
+                return responseGenerator.generateFetchDenyResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        null,
+                        Map.of());
+            }
 
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.replyToMailWithCCAndBCC", startTime, cause.getMessage(), safeTagMap("message_id", messageId));
+            telemetryHelper.recordValidationError("outlook3.replyToMailWithCCAndBCC", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To Mail With CC and BCC :{}", cause.getMessage());
-            telemetryHelper.recordError("outlook3.replyToMailWithCCAndBCC", startTime, cause, safeTagMap("message_id", messageId));
+            telemetryHelper.recordError("outlook3.replyToMailWithCCAndBCC", startTime, cause,
+                    safeTagMap("message_id", messageId, "allow_retry", String.valueOf(allowRetry)));
             cause.printStackTrace();
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail With CC and BCC ", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail With CC and BCC ", List.of())), null, null);
@@ -910,47 +1158,67 @@ public class MessagingArea {
             @Field(name = "Message ID", type = "Text") String messageID,
             @Field(name = "Message", type = "RichText", required = false) String message,
             @Field(name = "Attachments", type = "File", required = false) List<File> attachments,
-            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType) {
+            @Field.PickOne(name = "BodyType", values = {"Text", "HTML"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String bodyType,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         telemetryHelper.incrementCount("outlook3.replyToMail");
 
         try {
-            LOGGER.info("replyToMail: messageID: {}; message: {}", messageID, message);
+            LOGGER.info("replyToMail: messageID: {}; message: {}, allowRetry: {}", messageID, message, allowRetry);
 
             List<ValidationOrchestrator.ValidationResult> validationResults =
                     validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
-                telemetryHelper.recordSuccess("outlook3.replyToMail", startTime, Map.of(
+                telemetryHelper.recordSuccess("outlook3.replyToMail", startTime, safeTagMap(
                         "message_id", messageID,
-                        "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty())
+                        "has_attachments", String.valueOf(attachments != null && !attachments.isEmpty()),
+                        "allow_retry", String.valueOf(allowRetry)
                 ));
                 return response;
             }
 
-            telemetryHelper.recordRetryPrompted("outlook3.replyToMail", startTime, safeTagMap(
-                    "message_id", messageID,
-                    "validation_count", String.valueOf(validationResults.size())
-            ));
+            if (Boolean.TRUE.equals(allowRetry)) {
+                telemetryHelper.recordRetryPrompted("outlook3.replyToMail", startTime, safeTagMap(
+                        "message_id", messageID,
+                        "validation_count", String.valueOf(validationResults.size()),
+                        "allow_retry", String.valueOf(allowRetry)
+                ));
 
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
-                    OutlookResources.MESSAGE_ID, messageID,
-                    SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                        OutlookResources.MESSAGE_ID, messageID,
+                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL,
-                    StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_REPLY_TO_MAIL,
+                        StateMapperUtil.addReplyToALLMetaToMap(messageID, message, attachments, bodyType, stateId));
+            } else {
+                telemetryHelper.recordValidationError("outlook3.replyToMail", startTime,
+                        "Validation failed without retry",
+                        safeTagMap("message_id", messageID,
+                                "validation_count", String.valueOf(validationResults.size()),
+                                "allow_retry", String.valueOf(allowRetry)));
+
+                return responseGenerator.generateFetchDenyResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        null,
+                        Map.of());
+            }
 
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.replyToMail", startTime, cause.getMessage(), safeTagMap("message_id", messageID));
+            telemetryHelper.recordValidationError("outlook3.replyToMail", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageID, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Reply To Mail :{}", cause.getMessage());
-            telemetryHelper.recordError("outlook3.replyToMail", startTime, cause, safeTagMap("message_id", messageID));
+            telemetryHelper.recordError("outlook3.replyToMail", startTime, cause,
+                    safeTagMap("message_id", messageID, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while Reply To Mail", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Reply To Mail", List.of())), null, null);
         }
@@ -1055,43 +1323,65 @@ public class MessagingArea {
     public ExtensionResponse fetchMailsByLabel(
             @Field(name = "Label", type = "Text") String label,
             @Field(name = "Page Number", type = "Number", required = false) Double pageNumber,
-            @Field(name = "Page Size", type = "Number", required = false) Double pageSize) {
+            @Field(name = "Page Size", type = "Number", required = false) Double pageSize,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
-        LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}, pageSize: {}", label, pageNumber, pageSize);
+        LOGGER.info("fetchMailsByLabel: label: {}, pageNumber: {}, pageSize: {}, allowRetry: {}", label, pageNumber, pageSize, allowRetry);
 
         try {
             Map<Validator.ValidationResource, String> validationMap = ValidationResourceUtil.prepareValidateLabelMap(label, pageNumber, pageSize);
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(validationMap);
 
             if (validationResults.isEmpty()) {
-                telemetryHelper.recordSuccess("outlook3.fetchMailsByLabel", startTime, Map.of(
+                telemetryHelper.recordSuccess("outlook3.fetchMailsByLabel", startTime, safeTagMap(
                         "label", label,
                         "page_number", String.valueOf(pageNumber),
-                        "page_size", String.valueOf(pageSize)
+                        "page_size", String.valueOf(pageSize),
+                        "allow_retry", String.valueOf(allowRetry)
                 ));
                 return messagingAreaImpl.fetchMailByLabel(label, pageNumber, pageSize);
             }
 
-            telemetryHelper.recordRetryPrompted("outlook3.fetchMailsByLabel", startTime, safeTagMap(
-                    "label", label,
-                    "page_number", String.valueOf(pageNumber),
-                    "page_size", String.valueOf(pageSize),
-                    "validation_count", String.valueOf(validationResults.size())
-            ));
+            if (Boolean.TRUE.equals(allowRetry)) {
+                telemetryHelper.recordRetryPrompted("outlook3.fetchMailsByLabel", startTime, safeTagMap(
+                        "label", label,
+                        "page_number", String.valueOf(pageNumber),
+                        "page_size", String.valueOf(pageSize),
+                        "validation_count", String.valueOf(validationResults.size()),
+                        "allow_retry", String.valueOf(allowRetry)
+                ));
 
-            String stateId = UUID.randomUUID().toString();
-            internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-            return responseGenerator.generateConfirmationResponse(
-                    ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                    SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL,
-                    StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
+                String stateId = UUID.randomUUID().toString();
+                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                return responseGenerator.generateConfirmationResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                        SubCatalogConstants.CONFIRM_REENTER_FETCH_MAIL_BY_LABEL,
+                        StateMapperUtil.addFetchMailByLableMetaToMap(label, pageNumber, pageSize, stateId));
+            } else {
+                telemetryHelper.recordValidationError("outlook3.fetchMailsByLabel", startTime,
+                        "Validation failed without retry",
+                        safeTagMap(
+                                "label", label,
+                                "page_number", String.valueOf(pageNumber),
+                                "page_size", String.valueOf(pageSize),
+                                "validation_count", String.valueOf(validationResults.size()),
+                                "allow_retry", String.valueOf(allowRetry)
+                        ));
+                return responseGenerator.generateFetchDenyResponse(
+                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                        validationResults,
+                        null,
+                        Map.of());
+            }
 
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError("outlook3.fetchMailsByLabel", startTime, cause.getMessage(), safeTagMap(
                     "label", label,
                     "page_number", String.valueOf(pageNumber),
-                    "page_size", String.valueOf(pageSize)
+                    "page_size", String.valueOf(pageSize),
+                    "allow_retry", String.valueOf(allowRetry)
             ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
@@ -1099,7 +1389,8 @@ public class MessagingArea {
             telemetryHelper.recordError("outlook3.fetchMailsByLabel", startTime, cause, safeTagMap(
                     "label", label,
                     "page_number", String.valueOf(pageNumber),
-                    "page_size", String.valueOf(pageSize)
+                    "page_size", String.valueOf(pageSize),
+                    "allow_retry", String.valueOf(allowRetry)
             ));
             return ExtensionResponseFactory.create("Error occurred while Fetch Mails By Label",
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
@@ -1176,7 +1467,7 @@ public class MessagingArea {
 
         try {
             LOGGER.info("fetchLatestMail: start");
-            List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0).getResponseValue().get("Inbox Mails");
+            List<MailDetails> mailDetailsList = (List<MailDetails>) fetchInbox(1.0, 1.0, null).getResponseValue().get("Inbox Mails");
             MailDetails mailDetails = mailDetailsList.isEmpty() ? null : mailDetailsList.getFirst();
 
             if (mailDetails != null) {
@@ -1243,30 +1534,52 @@ public class MessagingArea {
     public ExtensionResponse addCategoryToMessage(
             @Field.Text(name = "Message ID", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageID,
             @Field.Text(name = "Category", attributes = {@Attribute(name = "visualWidth", value = "S")}) String category,
-            @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean createCategory) {
+            @Field.Boolean(name = "Create Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean createCategory,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         try {
+            LOGGER.info("addCategoryToMessage: messageID: {}, category: {}, allowRetry: {}", messageID, category, allowRetry);
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
             if (validationResults.isEmpty()) {
-                telemetryHelper.recordSuccess("outlook3.addCategoryToMessage", startTime, Map.of("message_id", messageID, "category", category, "create_category", String.valueOf(createCategory)));
+                telemetryHelper.recordSuccess("outlook3.addCategoryToMessage", startTime,
+                        safeTagMap("message_id", messageID, "category", category, "create_category", String.valueOf(createCategory),
+                                "allow_retry", String.valueOf(allowRetry)));
                 return messagingAreaImpl.addCategoryToMessage(messageID, category, createCategory);
             } else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID, SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
-                telemetryHelper.recordRetryPrompted("outlook3.addCategoryToMessage", startTime, safeTagMap("message_id", messageID, "category", category, "validation_count", String.valueOf(validationResults.size())));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE,
-                        StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID, SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                    telemetryHelper.recordRetryPrompted("outlook3.addCategoryToMessage", startTime,
+                            safeTagMap("message_id", messageID, "category", category, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_ADD_CATEGORY_TO_MESSAGE,
+                            StateMapperUtil.addCategoryToMessageMetaToMap(messageID, category, createCategory, stateId));
+                } else {
+                    telemetryHelper.recordValidationError("outlook3.addCategoryToMessage", startTime,
+                            "Validation failed without retry",
+                            safeTagMap("message_id", messageID, "category", category,
+                                    "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError("outlook3.addCategoryToMessage", startTime, cause.getMessage(), safeTagMap("message_id", messageID, "category", category));
+            telemetryHelper.recordValidationError("outlook3.addCategoryToMessage", startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageID, "category", category, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Add Category To Message:{}", cause.getMessage());
-            telemetryHelper.recordError("outlook3.addCategoryToMessage", startTime, cause, safeTagMap("message_id", messageID, "category", category));
+            telemetryHelper.recordError("outlook3.addCategoryToMessage", startTime, cause,
+                    safeTagMap("message_id", messageID, "category", category, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while Add Category To Message", ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Add Category To Message", List.of())), null, null);
         }
@@ -1282,40 +1595,60 @@ public class MessagingArea {
     @Field.Boolean(name = "Category Removed", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
     public ExtensionResponse removeCategoryFromMessage(
             @Field.Text(name = "Message ID", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageID,
-            @Field.Text(name = "Category", attributes = {@Attribute(name = "visualWidth", value = "S")}) String category) {
+            @Field.Text(name = "Category", attributes = {@Attribute(name = "visualWidth", value = "S")}) String category,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
 
         long startTime = System.currentTimeMillis();
         String baseMetric = "outlook3.removeCategoryFromMessage";
 
         try {
+            LOGGER.info("removeCategoryFromMessage: messageID: {}, category: {}, allowRetry: {}", messageID, category, allowRetry);
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(
                     Map.of(Validator.ValidationResource.MESSAGE_ID, messageID, Validator.ValidationResource.CATEGORY, category));
 
             if (validationResults.isEmpty()) {
                 ExtensionResponse response = messagingAreaImpl.removeCategoryFromMessage(messageID, category);
-                telemetryHelper.recordSuccess(baseMetric, startTime, Map.of("message_id", messageID, "category", category));
+                telemetryHelper.recordSuccess(baseMetric, startTime,
+                        safeTagMap("message_id", messageID, "category", category, "allow_retry", String.valueOf(allowRetry)));
                 return response;
             } else {
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(OutlookResources.MESSAGE_ID, messageID,
+                            SubCatalogConstants.VALIDATION_RESULTS, validationResults)));
 
-                telemetryHelper.recordRetryPrompted(baseMetric, startTime, safeTagMap("message_id", messageID, "category", category,
-                        "validation_count", String.valueOf(validationResults.size())));
+                    telemetryHelper.recordRetryPrompted(baseMetric, startTime, safeTagMap("message_id", messageID, "category", category,
+                            "validation_count", String.valueOf(validationResults.size()),
+                            "allow_retry", String.valueOf(allowRetry)));
 
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(
-                                OutlookResources.STATE_ID, stateId,
-                                OutlookResources.MESSAGE_ID, messageID,
-                                OutlookResources.CATEGORY, category));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_REMOVE_CATEGORY, Map.of(
+                                    OutlookResources.STATE_ID, stateId,
+                                    OutlookResources.MESSAGE_ID, messageID,
+                                    OutlookResources.CATEGORY, category));
+                } else {
+                    telemetryHelper.recordValidationError(baseMetric, startTime,
+                            "Validation failed without retry",
+                            safeTagMap("message_id", messageID, "category", category,
+                                    "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
-            telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(), safeTagMap("message_id", messageID, "category", category));
+            telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(),
+                    safeTagMap("message_id", messageID, "category", category, "allow_retry", String.valueOf(allowRetry)));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Remove Category From Message:{}", cause.getMessage());
-            telemetryHelper.recordError(baseMetric, startTime, cause, safeTagMap("message_id", messageID, "category", category));
+            telemetryHelper.recordError(baseMetric, startTime, cause,
+                    safeTagMap("message_id", messageID, "category", category, "allow_retry", String.valueOf(allowRetry)));
             return ExtensionResponseFactory.create("Error occurred while Remove Category From Message",
                     ExtensionResponse.Error.ExceptionType.SYSTEM_ERROR,
                     List.of(RemediationActionFactory.createInformActionALLParticipants("Error occurred while Remove Category From Message", List.of())),
@@ -1387,12 +1720,15 @@ public class MessagingArea {
     public ExtensionResponse markMessageCategoryAndStatus(
             @Field.Text(name = "Message ID", attributes = {@Attribute(name = "visualWidth", value = "S")}) String messageID,
             @Field.PickOne(name = "Label", values = {"Read", "Unread"}, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String label,
-            @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String category) {
+            @Field.Text(name = "Category", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}) String category,
+            @Field.Boolean(name = "Allow Retry", required = false,
+                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
         long startTime = System.currentTimeMillis();
         String baseMetric = "mark_message_category_and_status";
-        Map<String, String> tags = safeTagMap("message_id", messageID);
+        Map<String, String> tags = safeTagMap("message_id", messageID, "allow_retry", String.valueOf(allowRetry));
 
         try {
+            LOGGER.info("markMessageCategoryAndStatus: messageID: {}, label: {}, category: {}, allowRetry: {}", messageID, label, category, allowRetry);
             List<ValidationOrchestrator.ValidationResult> validationResults = validationOrchestrator.validate(Map.of(Validator.ValidationResource.MESSAGE_ID, messageID));
 
             if (validationResults.isEmpty()) {
@@ -1400,19 +1736,33 @@ public class MessagingArea {
                 telemetryHelper.recordSuccess(baseMetric, startTime, tags);
                 return response;
             } else {
-                telemetryHelper.recordRetryPrompted(baseMetric, startTime, tags);
-                String stateId = UUID.randomUUID().toString();
-                internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
-                        OutlookResources.MESSAGE_ID, messageID,
-                        SubCatalogConstants.VALIDATION_RESULTS, validationResults
-                )));
-                return responseGenerator.generateConfirmationResponse(
-                        ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
-                        SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
-                                OutlookResources.STATE_ID, stateId,
-                                OutlookResources.LABEL, label,
-                                OutlookResources.MESSAGE_ID, messageID
-                        ));
+                if (Boolean.TRUE.equals(allowRetry)) {
+                    telemetryHelper.recordRetryPrompted(baseMetric, startTime,
+                            safeTagMap("message_id", messageID, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    String stateId = UUID.randomUUID().toString();
+                    internalStateManager.put(stateId, Constants.GSON.toJson(Map.of(
+                            OutlookResources.MESSAGE_ID, messageID,
+                            SubCatalogConstants.VALIDATION_RESULTS, validationResults
+                    )));
+                    return responseGenerator.generateConfirmationResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR, validationResults,
+                            SubCatalogConstants.CONFIRM_REENTER_MARK_MESSAGE, Map.of(
+                                    OutlookResources.STATE_ID, stateId,
+                                    OutlookResources.LABEL, label,
+                                    OutlookResources.MESSAGE_ID, messageID
+                            ));
+                } else {
+                    telemetryHelper.recordValidationError(baseMetric, startTime,
+                            "Validation failed without retry",
+                            safeTagMap("message_id", messageID, "validation_count", String.valueOf(validationResults.size()),
+                                    "allow_retry", String.valueOf(allowRetry)));
+                    return responseGenerator.generateFetchDenyResponse(
+                            ExtensionResponse.Error.ExceptionType.INPUT_ERROR,
+                            validationResults,
+                            null,
+                            Map.of());
+                }
             }
         } catch (MustAuthorizeException cause) {
             telemetryHelper.recordValidationError(baseMetric, startTime, cause.getMessage(), tags);
