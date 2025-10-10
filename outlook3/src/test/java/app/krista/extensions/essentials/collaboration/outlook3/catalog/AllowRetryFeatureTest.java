@@ -186,8 +186,8 @@ public class AllowRetryFeatureTest {
     @DisplayName("moveMessage: Validation failure with allowRetry=true triggers SubCatalog flow")
     void testMoveMessage_ValidationFailure_AllowRetryTrue_TriggersSubCatalog() {
         // Arrange
-        ValidationOrchestrator.ValidationResult validationResult = 
-                new ValidationOrchestrator.ValidationResult("Message ID", VALIDATION_ERROR_MESSAGE);
+        ValidationOrchestrator.ValidationResult validationResult =
+                new ValidationOrchestrator.ValidationResult("Please confirm Message ID", "Message ID", "Please enter valid Message ID", VALIDATION_ERROR_MESSAGE, "Text");
         List<ValidationOrchestrator.ValidationResult> validationResults = List.of(validationResult);
         
         when(validationOrchestrator.validate(anyMap())).thenReturn(validationResults);
@@ -219,8 +219,8 @@ public class AllowRetryFeatureTest {
     @DisplayName("moveMessage: Validation failure with allowRetry=false returns immediate error")
     void testMoveMessage_ValidationFailure_AllowRetryFalse_ReturnsImmediateError() {
         // Arrange
-        ValidationOrchestrator.ValidationResult validationResult = 
-                new ValidationOrchestrator.ValidationResult("Message ID", VALIDATION_ERROR_MESSAGE);
+        ValidationOrchestrator.ValidationResult validationResult =
+                new ValidationOrchestrator.ValidationResult("Please confirm Message ID", "Message ID", "Please enter valid Message ID", VALIDATION_ERROR_MESSAGE, "Text");
         List<ValidationOrchestrator.ValidationResult> validationResults = List.of(validationResult);
         
         when(validationOrchestrator.validate(anyMap())).thenReturn(validationResults);
@@ -252,8 +252,8 @@ public class AllowRetryFeatureTest {
     @DisplayName("moveMessage: Validation failure with allowRetry=null returns immediate error (backward compatibility)")
     void testMoveMessage_ValidationFailure_AllowRetryNull_ReturnsImmediateError() {
         // Arrange
-        ValidationOrchestrator.ValidationResult validationResult = 
-                new ValidationOrchestrator.ValidationResult("Message ID", VALIDATION_ERROR_MESSAGE);
+        ValidationOrchestrator.ValidationResult validationResult =
+                new ValidationOrchestrator.ValidationResult("Please confirm Message ID", "Message ID", "Please enter valid Message ID", VALIDATION_ERROR_MESSAGE, "Text");
         List<ValidationOrchestrator.ValidationResult> validationResults = List.of(validationResult);
         
         when(validationOrchestrator.validate(anyMap())).thenReturn(validationResults);
@@ -298,8 +298,8 @@ public class AllowRetryFeatureTest {
     @DisplayName("markMessage: Validation failure with allowRetry=true triggers SubCatalog flow")
     void testMarkMessage_ValidationFailure_AllowRetryTrue_TriggersSubCatalog() {
         // Arrange
-        ValidationOrchestrator.ValidationResult validationResult = 
-                new ValidationOrchestrator.ValidationResult("Message ID", VALIDATION_ERROR_MESSAGE);
+        ValidationOrchestrator.ValidationResult validationResult =
+                new ValidationOrchestrator.ValidationResult("Please confirm Message ID", "Message ID", "Please enter valid Message ID", VALIDATION_ERROR_MESSAGE, "Text");
         List<ValidationOrchestrator.ValidationResult> validationResults = List.of(validationResult);
         
         when(validationOrchestrator.validate(anyMap())).thenReturn(validationResults);
@@ -319,3 +319,171 @@ public class AllowRetryFeatureTest {
         verify(telemetryHelper, times(1)).recordRetryPrompted(eq("outlook3.markMessage"), anyLong(), anyMap());
     }
 
+    // ========== Fetch All Labels Tests (Method without validation) ==========
+
+    @Test
+    @DisplayName("fetchAllLabels: Accepts allowRetry parameter (null)")
+    void testFetchAllLabels_AllowRetryNull() {
+        // Arrange
+        List<String> mockLabels = List.of("Inbox", "Sent", "Archive");
+        when(account.getFolderNames()).thenReturn(mockLabels);
+
+        // Act
+        ExtensionResponse response = messagingArea.fetchAllLabels(null);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(mockLabels, response.getResponseValue().get("Labels"));
+        verify(account, times(1)).getFolderNames();
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.fetchAllLabels"), anyLong(), anyMap());
+        // Validation should not be called for methods without validation
+        verify(validationOrchestrator, never()).validate(anyMap());
+    }
+
+    @Test
+    @DisplayName("fetchAllLabels: Accepts allowRetry parameter (true)")
+    void testFetchAllLabels_AllowRetryTrue() {
+        // Arrange
+        List<String> mockLabels = List.of("Inbox", "Sent", "Archive");
+        when(account.getFolderNames()).thenReturn(mockLabels);
+
+        // Act
+        ExtensionResponse response = messagingArea.fetchAllLabels(true);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(mockLabels, response.getResponseValue().get("Labels"));
+        verify(account, times(1)).getFolderNames();
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.fetchAllLabels"), anyLong(), anyMap());
+        // Validation should not be called for methods without validation
+        verify(validationOrchestrator, never()).validate(anyMap());
+    }
+
+    // ========== Telemetry Tests ==========
+
+    @Test
+    @DisplayName("Telemetry: allow_retry parameter is included in success telemetry")
+    void testTelemetry_AllowRetryParameterIncluded() {
+        // Arrange
+        when(validationOrchestrator.validate(anyMap())).thenReturn(Collections.emptyList());
+        when(account.getEmail(TEST_MESSAGE_ID)).thenReturn(email);
+        when(account.getFolderByName(anyList())).thenReturn(folder);
+        when(email.moveToFolder(folder)).thenReturn(TEST_MESSAGE_ID);
+
+        // Act
+        messagingArea.moveMessage(TEST_MESSAGE_ID, TEST_FOLDER_NAME, true);
+
+        // Assert - Verify telemetry includes allow_retry parameter
+        verify(telemetryHelper, times(1)).recordSuccess(
+                eq("outlook3.moveMessage"),
+                anyLong(),
+                argThat(map -> map.containsKey("allow_retry") && map.get("allow_retry").equals("true"))
+        );
+    }
+
+    @Test
+    @DisplayName("Telemetry: Increment count is called for all operations")
+    void testTelemetry_IncrementCountCalled() {
+        // Arrange
+        when(validationOrchestrator.validate(anyMap())).thenReturn(Collections.emptyList());
+        when(account.getEmail(TEST_MESSAGE_ID)).thenReturn(email);
+        when(account.getFolderByName(anyList())).thenReturn(folder);
+        when(email.moveToFolder(folder)).thenReturn(TEST_MESSAGE_ID);
+
+        // Act
+        messagingArea.moveMessage(TEST_MESSAGE_ID, TEST_FOLDER_NAME, false);
+
+        // Assert
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.moveMessage"), anyLong(), anyMap());
+    }
+
+    // ========== Integration Tests ==========
+
+    @Test
+    @DisplayName("Integration: Complete successful flow with allowRetry=null")
+    void testIntegration_CompleteFlow_AllowRetryNull() {
+        // Arrange
+        when(validationOrchestrator.validate(anyMap())).thenReturn(Collections.emptyList());
+        when(account.getEmail(TEST_MESSAGE_ID)).thenReturn(email);
+        when(account.getFolderByName(anyList())).thenReturn(folder);
+        when(email.moveToFolder(folder)).thenReturn(TEST_MESSAGE_ID);
+
+        // Act
+        ExtensionResponse response = messagingArea.moveMessage(TEST_MESSAGE_ID, TEST_FOLDER_NAME, null);
+
+        // Assert - Complete flow verification
+        assertNotNull(response);
+        verify(validationOrchestrator, times(1)).validate(anyMap());
+        verify(account, times(1)).getEmail(TEST_MESSAGE_ID);
+        verify(account, times(1)).getFolderByName(anyList());
+        verify(email, times(1)).moveToFolder(folder);
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.moveMessage"), anyLong(), anyMap());
+
+        // Should not trigger retry flow
+        verify(responseGenerator, never()).generateConfirmationResponse(any(), any(), any(), any());
+        verify(internalStateManager, never()).put(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Integration: Complete successful flow with allowRetry=true")
+    void testIntegration_CompleteFlow_AllowRetryTrue() {
+        // Arrange
+        when(validationOrchestrator.validate(anyMap())).thenReturn(Collections.emptyList());
+        when(account.getEmail(TEST_MESSAGE_ID)).thenReturn(email);
+        when(account.getFolderByName(anyList())).thenReturn(folder);
+        when(email.moveToFolder(folder)).thenReturn(TEST_MESSAGE_ID);
+
+        // Act
+        ExtensionResponse response = messagingArea.moveMessage(TEST_MESSAGE_ID, TEST_FOLDER_NAME, true);
+
+        // Assert - Complete flow verification
+        assertNotNull(response);
+        verify(validationOrchestrator, times(1)).validate(anyMap());
+        verify(account, times(1)).getEmail(TEST_MESSAGE_ID);
+        verify(account, times(1)).getFolderByName(anyList());
+        verify(email, times(1)).moveToFolder(folder);
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.moveMessage"), anyLong(), anyMap());
+
+        // Should not trigger retry flow when validation passes
+        verify(responseGenerator, never()).generateConfirmationResponse(any(), any(), any(), any());
+        verify(internalStateManager, never()).put(anyString(), anyString());
+    }
+
+    // ========== Backward Compatibility Tests ==========
+
+    @Test
+    @DisplayName("Backward Compatibility: null allowRetry executes successfully")
+    void testBackwardCompatibility_NullAllowRetry() {
+        // Arrange
+        when(validationOrchestrator.validate(anyMap())).thenReturn(Collections.emptyList());
+        ExtensionResponse mockResponse = mock(ExtensionResponse.class);
+        when(messagingAreaImpl.markMessage(TEST_MESSAGE_ID, TEST_LABEL)).thenReturn(mockResponse);
+
+        // Act
+        ExtensionResponse response = messagingArea.markMessage(TEST_MESSAGE_ID, TEST_LABEL, null);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(mockResponse, response);
+        verify(messagingAreaImpl, times(1)).markMessage(TEST_MESSAGE_ID, TEST_LABEL);
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.markMessage"), anyLong(), anyMap());
+    }
+
+    @Test
+    @DisplayName("Backward Compatibility: false allowRetry executes successfully")
+    void testBackwardCompatibility_FalseAllowRetry() {
+        // Arrange
+        when(validationOrchestrator.validate(anyMap())).thenReturn(Collections.emptyList());
+        ExtensionResponse mockResponse = mock(ExtensionResponse.class);
+        when(messagingAreaImpl.markMessage(TEST_MESSAGE_ID, TEST_LABEL)).thenReturn(mockResponse);
+
+        // Act
+        ExtensionResponse response = messagingArea.markMessage(TEST_MESSAGE_ID, TEST_LABEL, false);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(mockResponse, response);
+        verify(messagingAreaImpl, times(1)).markMessage(TEST_MESSAGE_ID, TEST_LABEL);
+        verify(telemetryHelper, times(1)).recordSuccess(eq("outlook3.markMessage"), anyLong(), anyMap());
+    }
+}
