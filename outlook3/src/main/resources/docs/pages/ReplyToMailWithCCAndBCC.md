@@ -14,16 +14,17 @@ attachment support.
 
 ## Input Parameters
 
-| Parameter Name | Type      | Required | Description                                               | Example                                                   |
-|----------------|-----------|----------|-----------------------------------------------------------|-----------------------------------------------------------|
-| Message ID     | Text      | Yes      | Unique identifier of the email to reply to                | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."                 |
-| Message        | Rich Text | Yes      | Reply message content                                     | "Thank you for your email. Please see my response below." |
-| To             | Text      | Yes      | Primary recipients (overwrites original if set)           | "original-sender@company.com"                             |
-| Cc             | Text      | No       | Carbon copy recipients (overwrites original if set)       | "manager@company.com, team@company.com"                   |
-| Bcc            | Text      | No       | Blind carbon copy recipients (overwrites original if set) | "compliance@company.com"                                  |
-| Reply To       | Text      | No       | Reply-to email address (overwrites original if set)       | "support@company.com"                                     |
-| Attachments    | File      | No       | Files to attach to the reply                              | document.pdf                                              |
-| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)                 | "HTML"                                                    |
+| Parameter Name | Type      | Required | Description                                                    | Example                                                   |
+|----------------|-----------|----------|----------------------------------------------------------------|-----------------------------------------------------------|
+| Message ID     | Text      | Yes      | Unique identifier of the email to reply to                     | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."                 |
+| Message        | Rich Text | Yes      | Reply message content                                          | "Thank you for your email. Please see my response below." |
+| To             | Text      | Yes      | Primary recipients (overwrites original if set)                | "original-sender@company.com"                             |
+| Cc             | Text      | No       | Carbon copy recipients (overwrites original if set)            | "manager@company.com, team@company.com"                   |
+| Bcc            | Text      | No       | Blind carbon copy recipients (overwrites original if set)      | "compliance@company.com"                                  |
+| Reply To       | Text      | No       | Reply-to email address (overwrites original if set)            | "support@company.com"                                     |
+| Attachments    | File      | No       | Files to attach to the reply                                   | document.pdf                                              |
+| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)                      | "HTML"                                                    |
+| Allow Retry    | Boolean   | No       | Enable interactive retry on validation errors (default: false) | true                                                      |
 
 ### Parameter Details
 

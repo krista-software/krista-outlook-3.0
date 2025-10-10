@@ -13,10 +13,11 @@ functionality for tracking email status and organizing inbox workflows.
 
 ## Input Parameters
 
-| Parameter Name | Type    | Required | Description                            | Example                                   |
-|----------------|---------|----------|----------------------------------------|-------------------------------------------|
-| Message ID     | Text    | Yes      | Unique identifier of the email to mark | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
-| Is Read        | Boolean | Yes      | Mark as read (true) or unread (false)  | true                                      |
+| Parameter Name | Type    | Required | Description                                                  | Example                                   |
+|----------------|---------|----------|--------------------------------------------------------------|-------------------------------------------|
+| Message ID     | Text    | Yes      | Unique identifier of the email to mark                       | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
+| Is Read        | Boolean | Yes      | Mark as read (true) or unread (false)                        | true                                      |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true                                      |
 
 ### Parameter Details
 
@@ -34,6 +35,15 @@ functionality for tracking email status and organizing inbox workflows.
     - `false` - Mark email as unread
 - **Purpose**: Update the read status of the email
 - **Effect**: Changes the visual appearance in email clients
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct errors
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 
@@ -122,7 +132,41 @@ Is Read: false
 Response: "Success"
 ```
 
-### Example 3: Workflow Integration
+### Example 3: Interactive Retry on Validation Error
+
+**Scenario**: Allow user to correct invalid message ID
+
+**Input**:
+
+```
+Message ID: "invalid-id"
+Is Read: true
+Allow Retry: true
+```
+
+**Behavior**:
+- System validates message ID and detects it's invalid
+- User is prompted to re-enter the correct message ID
+- User provides valid message ID and operation succeeds
+
+### Example 4: Automated Processing Without Retry
+
+**Scenario**: Automated workflow that handles errors programmatically
+
+**Input**:
+
+```
+Message ID: "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."
+Is Read: true
+Allow Retry: false
+```
+
+**Behavior**:
+- If validation fails, error is returned immediately
+- Calling application handles error programmatically
+- No user interaction required
+
+### Example 5: Workflow Integration
 
 **Scenario**: Mark emails as read after automated processing
 
@@ -130,7 +174,7 @@ Response: "Success"
 
 1. Fetch unread emails using [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md)
 2. Process each email according to business logic
-3. Mark processed emails as read using this catalog request
+3. Mark processed emails as read using this catalog request (Allow Retry: false for automation)
 4. Continue with next batch of unread emails
 
 ## Business Rules

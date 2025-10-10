@@ -2,7 +2,7 @@
 
 ## Overview
 
-Configures the Outlook3 Extension for Public Authentication mode. This catalog request sets up simplified authentication
+Configures the Outlook Extension for Public Authentication mode. This catalog request sets up simplified authentication
 using Microsoft's public OAuth endpoints, perfect for development, testing, and environments that don't require custom
 Microsoft Entra ID applications.
 

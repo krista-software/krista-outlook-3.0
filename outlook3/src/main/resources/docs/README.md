@@ -1,8 +1,8 @@
-# Outlook3 Extension
+# Outlook Extension
 
 ## Overview
 
-The Krista Outlook3 Extension is an advanced email collaboration platform that provides comprehensive integration with Microsoft Outlook through both simplified public authentication and full-featured private authentication modes. This extension enables sophisticated email management, automation, and real-time processing capabilities for enterprise-grade email workflows.
+The Krista Outlook Extension is an advanced email collaboration platform that provides comprehensive integration with Microsoft Outlook through both simplified public authentication and full-featured private authentication modes. This extension enables sophisticated email management, automation, and real-time processing capabilities for enterprise-grade email workflows.
 
 ## Key Features
 
@@ -86,18 +86,23 @@ Once configured, you can immediately leverage 18+ specialized catalog requests f
 - [Reply To Mail With CC and BCC](pages/ReplyToMailWithCCAndBCC.md) - Advanced reply with recipient control
 - [Reply To All](pages/ReplyToAll.md) - Reply to all recipients
 - [Reply To All With CC and BCC](pages/ReplyToAllWithCCAndBCC.md) - Reply-all with recipient management
+- [Forward Mail](pages/ForwardMail.md) - Forward emails to other recipients
 
 ### Query Operations
 - [Fetch Inbox](pages/FetchInbox.md) - Retrieve inbox emails with pagination
 - [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md) - Advanced inbox filtering
 - [Fetch Sent](pages/FetchSent.md) - Get sent emails with pagination
 - [Fetch Mail Details By Query](pages/FetchMailDetailsByQuery.md) - Search emails with advanced queries
+- [Fetch Mail By Message ID](pages/FetchMailByMessageId.md) - Retrieve specific email by message ID
+- [Fetch Mails By Label](pages/FetchMailsByLabel.md) - Get emails from specific folders/labels
+- [Fetch All Labels](pages/FetchAllLabels.md) - Retrieve all available folders and labels
 - [Fetch Latest Mail](pages/FetchLatestMail.md) - Get most recent email within time window
 
 ### Message Management
 - [Mark Message](pages/MarkMessage.md) - Mark emails as read/unread with labels
 - [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md) - Advanced message categorization
 - [Add Category To Message](pages/AddCategoryToMessage.md) - Assign categories to emails
+- [Remove Category From Message](pages/RemoveCategoryFromMessage.md) - Remove categories from emails
 - [Move Message](pages/MoveMessage.md) - Move emails between folders
 
 ### Async & Event Operations

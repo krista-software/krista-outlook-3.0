@@ -138,7 +138,7 @@ public class MessagingAreaTest {
     public void testFetchAllLabels() {
         List<String> labels = Arrays.asList("Archive", "Conversation History", "Deleted Items", "Drafts", "Inbox", "Junk Email", "Outbox", "Sent Items");
         doReturn(labels).when(account).getFolderNames();
-        ExtensionResponse response1 = messagingArea.fetchAllLabels();
+        ExtensionResponse response1 = messagingArea.fetchAllLabels(null);
         List<String> allLabels = (List<String>) response1.getResponseValue().get("Labels");
         assertTrue(allLabels.contains("Archive"));
     }
@@ -177,13 +177,13 @@ public class MessagingAreaTest {
     @Test
     public void testFetchMailDetailsByQuery() {
         String query = null;
-        ExtensionResponse response1 = messagingArea.fetchMailDetailsByQuery(query);
+        ExtensionResponse response1 = messagingArea.fetchMailDetailsByQuery(query, null);
         assertEquals(response1.getResponseValue().get("Mails"), List.of());
         query = "";
-        ExtensionResponse response2 = messagingArea.fetchMailDetailsByQuery(query);
+        ExtensionResponse response2 = messagingArea.fetchMailDetailsByQuery(query, null);
         assertEquals(response2.getResponseValue().get("Mails"), List.of());
         query = "   ";
-        ExtensionResponse response3 = messagingArea.fetchMailDetailsByQuery(query);
+        ExtensionResponse response3 = messagingArea.fetchMailDetailsByQuery(query, null);
         assertEquals(response3.getResponseValue().get("Mails"), List.of());
     }
 
@@ -218,7 +218,7 @@ public class MessagingAreaTest {
         when(account.getSentFolder()).thenReturn(mock(Folder.class));
         when(account.getSentFolder().getEmails(pageNumber, pageSize)).thenReturn(emails);
 
-        ExtensionResponse response = messagingArea.fetchSent(pageNumber, pageSize);
+        ExtensionResponse response = messagingArea.fetchSent(pageNumber, pageSize, null);
 
         assertEquals(1, ((List<?>) response.getResponseValue().get("Sent Mails")).size());
     }

@@ -13,9 +13,10 @@ to find specific emails based on content, sender, subject, or other criteria wit
 
 ## Input Parameters
 
-| Parameter Name | Type | Required | Description                              | Example                                 |
-|----------------|------|----------|------------------------------------------|-----------------------------------------|
-| Query          | Text | Yes      | Search query using Outlook search syntax | "from:john@company.com subject:project" |
+| Parameter Name | Type    | Required | Description                                                    | Example                                 |
+|----------------|---------|----------|----------------------------------------------------------------|-----------------------------------------|
+| Query          | Text    | Yes      | Search query using Outlook search syntax                       | "from:john@company.com subject:project" |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true                                    |
 
 ### Parameter Details
 
@@ -28,6 +29,15 @@ to find specific emails based on content, sender, subject, or other criteria wit
     - `"hasattachments:yes"` - Emails with attachments
     - `"received:today"` - Emails received today
 - **Exact Match**: Enclose search terms in double quotes for exact matches
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows (parameter added for API consistency)
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 - **Case Sensitivity**: Generally case-insensitive
 - **Operators**: Supports AND, OR, NOT operators
 
