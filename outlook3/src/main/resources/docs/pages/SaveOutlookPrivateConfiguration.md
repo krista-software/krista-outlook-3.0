@@ -2,7 +2,7 @@
 
 ## Overview
 
-Configures the Outlook3 Extension for Private Authentication mode using your own Azure AD application. This catalog
+Configures the Outlook Extension for Private Authentication mode using your own Azure AD application. This catalog
 request sets up enterprise-grade authentication with full OAuth 2.0 implementation, providing complete control over
 security policies and compliance requirements.
 

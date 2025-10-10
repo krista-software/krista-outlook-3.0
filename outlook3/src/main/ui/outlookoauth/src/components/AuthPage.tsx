@@ -29,24 +29,28 @@ const AuthPage = () => {
     const [toastType, setToastType] = useState<string>("error");
     const [authPayload, setAuthPayload] = useState<AuthPayload | null>(null);
     const [isConnectionSuccess, setIsConnectionSuccess] = useState<boolean>(false);
+    const [userHasSelectedTab, setUserHasSelectedTab] = useState<boolean>(false);
 
     const getAuth = useCallback(async () => {
         try {
             const key = await getAuthKey();
-            if (key !== selectedOption) {
+            // Only set the tab from backend if user hasn't manually selected a tab yet
+            if (key && !userHasSelectedTab) {
                 setSelectedOption(key as AuthType);
             }
         } catch (error) {
             console.error('Error fetching credentials:', error);
         }
-    }, [selectedOption]);
+    }, [userHasSelectedTab]);
 
     useEffect(() => {
+        // Only run on initial component mount
         getAuth().catch(error => console.log(error));
     }, [getAuth]);
 
     const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedOption(e.target.value as AuthType);
+        setUserHasSelectedTab(true); // Mark that user has manually selected a tab
     };
 
     const showNotification = (message: string, type: string) => {

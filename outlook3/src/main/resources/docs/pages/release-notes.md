@@ -1,56 +1,24 @@
 # Release Notes
 
-## Version 3.0.15 - Current Release
+## Version 3.0.16 - Current Release
 
-- **Developer**: Vrushali Gaikwad, Vaibhav Choudhary
+- **Developer**: Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
 - **Global Catalog Version**: GC-2025.10.2
 
-### New Features
-
-- Enhanced email processing capabilities
-- Improved authentication flow
-- Better error handling and logging
-- Advanced filtering options for email retrieval
-
 ### Improvements
 
-- Performance optimizations for large email volumes
-- Updated user interface components
-- Enhanced security measures
-- Better integration with Microsoft Graph API
-
-### Bug Fixes
-
-- Fixed authentication token refresh issues
-- Resolved email body encoding problems
-- Corrected timezone handling in email timestamps
-- Fixed attachment download failures for certain file types
+- Added Retry Mechanism Flag for all catalog requests 
 
 ---
 
-## Version 3.0.14 - Previous Release
-
-### New Features
-
-- Private Authentication support for enterprise customers
-- Enhanced attachment handling capabilities
-- Improved email organization features
-- Advanced workflow automation options
+## Version 3.0.15 - Previous Release
 
 ### Improvements
-
-- Better rate limiting management
-- Enhanced error messages and debugging
-- Improved API response times
-- Updated documentation and examples
+- Enhanced API documentation
 
 ### Bug Fixes
-
-- Fixed OAuth token validation issues
-- Resolved email threading problems
-- Corrected notification delivery delays
-- Fixed browser compatibility issues
+- Fetch Inbox Async was not returning any emails so we have made some logger changes due to excessive logging
 
 ---
 
@@ -106,12 +74,10 @@
 
 ## Version History Summary
 
-| Version   | Release Date     | Key Features                                                                       |
-|-----------|------------------|------------------------------------------------------------------------------------|
-| **3.2.0** | Current Release  | Enhanced email processing, improved authentication, better error handling          |
-| **3.1.0** | Previous Release | Private Authentication, enhanced attachments, advanced workflow automation         |
-| **3.0.0** | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI |
-| **2.5.x** | 2024 Q2-Q3       | Legacy version (deprecated)                                                        |
-| **2.0.x** | 2024 Q1          | Legacy version (deprecated)                                                        |
+| Version    | Release Date     | Key Features                                                                                                                             |
+|------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| **3.0.16** | Current Release  | Added Retry Mechanism Flag for all catalog requests                                                                                      |
+| **3.0.15** | Previous Release | Fetch Inbox Async was not returning any emails so we have made some logger changes due to excessive logging , Enhanced API documentation |
+| **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                                       |
 
 Stay updated with the latest features and improvements by subscribing to our release notifications! 

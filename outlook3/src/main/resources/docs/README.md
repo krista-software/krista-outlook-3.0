@@ -1,8 +1,8 @@
-# Outlook3 Extension
+# Outlook Extension
 
 ## Overview
 
-The Krista Outlook3 Extension is an advanced email collaboration platform that provides comprehensive integration with Microsoft Outlook through both simplified public authentication and full-featured private authentication modes. This extension enables sophisticated email management, automation, and real-time processing capabilities for enterprise-grade email workflows.
+The Krista Outlook Extension is an advanced email collaboration platform that provides comprehensive integration with Microsoft Outlook through both simplified public authentication and full-featured private authentication modes. This extension enables sophisticated email management, automation, and real-time processing capabilities for enterprise-grade email workflows.
 
 ## Key Features
 
