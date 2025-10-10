@@ -14,11 +14,12 @@ organization.
 
 ## Input Parameters
 
-| Parameter Name | Type    | Required | Description                            | Example                                   |
-|----------------|---------|----------|----------------------------------------|-------------------------------------------|
-| Message ID     | Text    | Yes      | Unique identifier of the email to mark | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
-| Is Read        | Boolean | Yes      | Mark as read (true) or unread (false)  | true                                      |
-| Category       | Text    | No       | Category name to assign to the email   | "Important"                               |
+| Parameter Name | Type    | Required | Description                                                    | Example                                   |
+|----------------|---------|----------|----------------------------------------------------------------|-------------------------------------------|
+| Message ID     | Text    | Yes      | Unique identifier of the email to mark                         | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
+| Is Read        | Boolean | Yes      | Mark as read (true) or unread (false)                          | true                                      |
+| Category       | Text    | No       | Category name to assign to the email                           | "Important"                               |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true                                      |
 
 ### Parameter Details
 

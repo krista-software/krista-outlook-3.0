@@ -13,10 +13,11 @@ access to all emails sent by the authenticated user, enabling tracking, analysis
 
 ## Input Parameters
 
-| Parameter Name | Type   | Required | Description                                   | Example |
-|----------------|--------|----------|-----------------------------------------------|---------|
-| Page Number    | Number | No       | Page number for pagination (1-based indexing) | 1       |
-| Page Size      | Number | No       | Number of emails per page                     | 10      |
+| Parameter Name | Type    | Required | Description                                                    | Example |
+|----------------|---------|----------|----------------------------------------------------------------|---------|
+| Page Number    | Number  | No       | Page number for pagination (1-based indexing)                  | 1       |
+| Page Size      | Number  | No       | Number of emails per page                                      | 10      |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true    |
 
 ### Parameter Details
 

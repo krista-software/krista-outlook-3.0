@@ -14,16 +14,17 @@ BCC, and Reply-To fields.
 
 ## Input Parameters
 
-| Parameter Name | Type      | Required | Description                                    | Example                                    |
-|----------------|-----------|----------|------------------------------------------------|--------------------------------------------|
-| Subject        | Text      | Yes      | Email subject line                             | "Project Status Update"                    |
-| Message        | Rich Text | Yes      | Email body content                             | "Please find the latest project status..." |
-| To             | Text      | Yes      | Primary recipients (comma-separated)           | "user1@company.com, user2@company.com"     |
-| Cc             | Text      | No       | Carbon copy recipients (comma-separated)       | "manager@company.com"                      |
-| Bcc            | Text      | No       | Blind carbon copy recipients (comma-separated) | "archive@company.com"                      |
-| Reply To       | Text      | No       | Reply-to email address                         | "noreply@company.com"                      |
-| Attachments    | File      | No       | Files to attach to the email                   | document.pdf                               |
-| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)      | "HTML"                                     |
+| Parameter Name | Type      | Required | Description                                                    | Example                                    |
+|----------------|-----------|----------|----------------------------------------------------------------|--------------------------------------------|
+| Subject        | Text      | Yes      | Email subject line                                             | "Project Status Update"                    |
+| Message        | Rich Text | Yes      | Email body content                                             | "Please find the latest project status..." |
+| To             | Text      | Yes      | Primary recipients (comma-separated)                           | "user1@company.com, user2@company.com"     |
+| Cc             | Text      | No       | Carbon copy recipients (comma-separated)                       | "manager@company.com"                      |
+| Bcc            | Text      | No       | Blind carbon copy recipients (comma-separated)                 | "archive@company.com"                      |
+| Reply To       | Text      | No       | Reply-to email address                                         | "noreply@company.com"                      |
+| Attachments    | File      | No       | Files to attach to the email                                   | document.pdf                               |
+| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)                      | "HTML"                                     |
+| Allow Retry    | Boolean   | No       | Enable interactive retry on validation errors (default: false) | true                                       |
 
 ### Parameter Details
 
@@ -83,6 +84,15 @@ BCC, and Reply-To fields.
 - **Default**: "Text" if not specified
 - **Text**: Plain text formatting only
 - **HTML**: Rich HTML formatting with tags and styling
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct invalid email addresses
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 
@@ -203,6 +213,42 @@ BodyType: "Text"
 Message: "Mail Sent Successfully To: finance-team@company.com, cfo@company.com"
 ```
 
+### Example 4: Interactive Retry on Invalid Email
+
+**Scenario**: Allow user to correct invalid email addresses
+
+**Input**:
+
+```
+Subject: "Team Update"
+Message: "Important team announcement"
+To: "invalid-email, user@company.com"
+Allow Retry: true
+```
+
+**Behavior**:
+- System validates email addresses and detects invalid format
+- User is prompted to re-enter correct email addresses
+- User provides valid addresses and email is sent successfully
+
+### Example 5: Automated Sending Without Retry
+
+**Scenario**: Automated notification system
+
+**Input**:
+
+```
+Subject: "System Alert"
+Message: "System status notification"
+To: "admin@company.com"
+Allow Retry: false
+```
+
+**Behavior**:
+- If validation fails, error is returned immediately
+- Calling application handles error programmatically
+- No user interaction required
+
 ## Business Rules
 
 1. **Recipient Validation**: All email addresses are validated before sending
@@ -211,6 +257,7 @@ Message: "Mail Sent Successfully To: finance-team@company.com, cfo@company.com"
 4. **Content Encoding**: All content is properly encoded for international characters
 5. **Size Limits**: Email size including attachments cannot exceed 25MB
 6. **Delivery Confirmation**: Success message includes actual recipients who received the email
+7. **Error Handling Control**: Allow Retry parameter controls whether validation errors trigger interactive retry prompts or immediate error returns
 
 ## Limitations
 

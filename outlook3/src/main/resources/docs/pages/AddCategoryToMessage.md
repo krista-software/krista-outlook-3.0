@@ -12,10 +12,11 @@ Assigns a category to an email message using the message ID and category name. T
 
 ## Input Parameters
 
-| Parameter Name | Type | Required | Description | Example |
-|----------------|------|----------|-------------|---------|
-| Message ID | Text | Yes | Unique identifier of the email to categorize | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
-| Category | Text | Yes | Category name to assign to the email | "Important" |
+| Parameter Name | Type    | Required | Description                                                    | Example                                   |
+|----------------|---------|----------|----------------------------------------------------------------|-------------------------------------------|
+| Message ID     | Text    | Yes      | Unique identifier of the email to categorize                   | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
+| Category       | Text    | Yes      | Category name to assign to the email                           | "Important"                               |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true                                      |
 
 ### Parameter Details
 
@@ -28,6 +29,15 @@ Assigns a category to an email message using the message ID and category name. T
 #### Category
 - **Format**: Category name as string
 - **Validation**: Category must exist in the user's mailbox
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct invalid message IDs or category names
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 - **Purpose**: Assign email to specific category for organization
 - **Examples**: "Important", "Project Alpha", "Customer Service", "Follow-up"
 

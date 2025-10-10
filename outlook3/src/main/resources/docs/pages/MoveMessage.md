@@ -13,10 +13,11 @@ allows you to organize emails by moving them between different folders in the ma
 
 ## Input Parameters
 
-| Parameter Name | Type | Required | Description                            | Example                                   |
-|----------------|------|----------|----------------------------------------|-------------------------------------------|
-| Message ID     | Text | Yes      | Unique identifier of the email to move | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
-| Folder Name    | Text | Yes      | Name of the destination folder         | "Archive"                                 |
+| Parameter Name | Type    | Required | Description                                                    | Example                                   |
+|----------------|---------|----------|----------------------------------------------------------------|-------------------------------------------|
+| Message ID     | Text    | Yes      | Unique identifier of the email to move                         | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..." |
+| Folder Name    | Text    | Yes      | Name of the destination folder                                 | "Archive"                                 |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true                                      |
 
 ### Parameter Details
 
@@ -34,6 +35,15 @@ allows you to organize emails by moving them between different folders in the ma
 - **Subfolders**: Use forward slash notation (e.g., "Projects/2023")
 - **Case Sensitivity**: Must match exact folder name
 - **Validation**: Folder must exist in the user's mailbox
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct errors
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 
@@ -106,6 +116,40 @@ Folder Name: "Customer Service"
 Response: "Success"
 ```
 
+### Example 4: Interactive Retry on Validation Error
+
+**Scenario**: Allow user to correct invalid message ID or folder name
+
+**Input**:
+
+```
+Message ID: "invalid-id"
+Folder Name: "Archive"
+Allow Retry: true
+```
+
+**Behavior**:
+- System validates message ID and detects it's invalid
+- User is prompted to re-enter the correct message ID
+- User provides valid message ID and operation succeeds
+
+### Example 5: Automated Processing Without Retry
+
+**Scenario**: Automated workflow that handles errors programmatically
+
+**Input**:
+
+```
+Message ID: "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."
+Folder Name: "Archive"
+Allow Retry: false
+```
+
+**Behavior**:
+- If validation fails, error is returned immediately
+- Calling application handles error programmatically
+- No user interaction required
+
 ## Business Rules
 
 1. **Folder Existence**: Destination folder must exist in the user's mailbox
@@ -114,6 +158,7 @@ Response: "Success"
 4. **Folder Permissions**: User must have write access to destination folder
 5. **Same Folder Prevention**: Cannot move email to its current folder
 6. **Immediate Effect**: Email is moved immediately and removed from source folder
+7. **Error Handling Control**: Allow Retry parameter controls whether validation errors trigger interactive retry prompts or immediate error returns
 
 ## Limitations
 

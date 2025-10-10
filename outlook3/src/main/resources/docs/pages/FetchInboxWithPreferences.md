@@ -14,14 +14,15 @@ support.
 
 ## Input Parameters
 
-| Parameter Name | Type    | Required | Description                                   | Example              |
-|----------------|---------|----------|-----------------------------------------------|----------------------|
-| Page Number    | Number  | No       | Page number for pagination (1-based indexing) | 1                    |
-| Page Size      | Number  | No       | Number of emails per page                     | 10                   |
-| Is Read        | Boolean | No       | Filter by read status (true/false)            | false                |
-| From Date      | Date    | No       | Start date for date range filter              | "2023-01-01"         |
-| To Date        | Date    | No       | End date for date range filter                | "2023-12-31"         |
-| From Email     | Text    | No       | Filter by sender email address                | "sender@company.com" |
+| Parameter Name | Type    | Required | Description                                                    | Example              |
+|----------------|---------|----------|----------------------------------------------------------------|----------------------|
+| Page Number    | Number  | No       | Page number for pagination (1-based indexing)                  | 1                    |
+| Page Size      | Number  | No       | Number of emails per page                                      | 10                   |
+| Is Read        | Boolean | No       | Filter by read status (true/false)                             | false                |
+| From Date      | Date    | No       | Start date for date range filter                               | "2023-01-01"         |
+| To Date        | Date    | No       | End date for date range filter                                 | "2023-12-31"         |
+| From Email     | Text    | No       | Filter by sender email address                                 | "sender@company.com" |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true                 |
 
 ### Parameter Details
 
@@ -63,6 +64,15 @@ support.
 - **Purpose**: Filter emails from specific sender
 - **Validation**: Must be valid email address format
 - **Case Sensitivity**: Case-insensitive matching
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct invalid pagination or filter parameters
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 

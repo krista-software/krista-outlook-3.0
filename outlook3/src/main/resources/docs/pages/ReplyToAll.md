@@ -13,12 +13,13 @@ request maintains the conversation thread while ensuring all original participan
 
 ## Input Parameters
 
-| Parameter Name | Type      | Required | Description                                | Example                                        |
-|----------------|-----------|----------|--------------------------------------------|------------------------------------------------|
-| Message ID     | Text      | Yes      | Unique identifier of the email to reply to | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."      |
-| Message        | Rich Text | Yes      | Reply message content                      | "Thank you all for your input on this matter." |
-| Attachments    | File      | No       | Files to attach to the reply               | document.pdf                                   |
-| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)  | "HTML"                                         |
+| Parameter Name | Type      | Required | Description                                                    | Example                                        |
+|----------------|-----------|----------|----------------------------------------------------------------|------------------------------------------------|
+| Message ID     | Text      | Yes      | Unique identifier of the email to reply to                     | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."      |
+| Message        | Rich Text | Yes      | Reply message content                                          | "Thank you all for your input on this matter." |
+| Attachments    | File      | No       | Files to attach to the reply                                   | document.pdf                                   |
+| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)                      | "HTML"                                         |
+| Allow Retry    | Boolean   | No       | Enable interactive retry on validation errors (default: false) | true                                           |
 
 ### Parameter Details
 
@@ -50,6 +51,15 @@ request maintains the conversation thread while ensuring all original participan
 - **Default**: "Text" if not specified
 - **Text**: Plain text formatting only
 - **HTML**: Rich HTML formatting with tags and styling
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct invalid message IDs
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 

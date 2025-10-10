@@ -14,17 +14,18 @@ summaries, and data-driven communications.
 
 ## Input Parameters
 
-| Parameter Name                 | Type         | Required | Description                                    | Example                                                            |
-|--------------------------------|--------------|----------|------------------------------------------------|--------------------------------------------------------------------|
-| Subject                        | Text         | Yes      | Email subject line                             | "Weekly Sales Report"                                              |
-| Message                        | Rich Text    | Yes      | Email body content (table will be appended)    | "Please review the weekly sales data below:"                       |
-| To                             | Text         | Yes      | Primary recipients (comma-separated)           | "sales-team@company.com"                                           |
-| Cc                             | Text         | No       | Carbon copy recipients (comma-separated)       | "manager@company.com"                                              |
-| Bcc                            | Text         | No       | Blind carbon copy recipients (comma-separated) | "executives@company.com"                                           |
-| Reply To                       | Text         | No       | Reply-to email address                         | "sales-reports@company.com"                                        |
-| Attachments                    | File         | No       | Files to attach to the email                   | report.pdf                                                         |
-| Entity List                    | List<Entity> | Yes      | Data entities to convert to HTML table         | [{"Name": "John", "Sales": 1000}, {"Name": "Jane", "Sales": 1500}] |
-| Remove Entity Field From Table | List<String> | No       | Entity fields to exclude from table            | ["primaryKey", "internalId"]                                       |
+| Parameter Name                 | Type         | Required | Description                                                    | Example                                                            |
+|--------------------------------|--------------|----------|----------------------------------------------------------------|--------------------------------------------------------------------|
+| Subject                        | Text         | Yes      | Email subject line                                             | "Weekly Sales Report"                                              |
+| Message                        | Rich Text    | Yes      | Email body content (table will be appended)                    | "Please review the weekly sales data below:"                       |
+| To                             | Text         | Yes      | Primary recipients (comma-separated)                           | "sales-team@company.com"                                           |
+| Cc                             | Text         | No       | Carbon copy recipients (comma-separated)                       | "manager@company.com"                                              |
+| Bcc                            | Text         | No       | Blind carbon copy recipients (comma-separated)                 | "executives@company.com"                                           |
+| Reply To                       | Text         | No       | Reply-to email address                                         | "sales-reports@company.com"                                        |
+| Attachments                    | File         | No       | Files to attach to the email                                   | report.pdf                                                         |
+| Entity List                    | List<Entity> | Yes      | Data entities to convert to HTML table                         | [{"Name": "John", "Sales": 1000}, {"Name": "Jane", "Sales": 1500}] |
+| Remove Entity Field From Table | List<String> | No       | Entity fields to exclude from table                            | ["primaryKey", "internalId"]                                       |
+| Allow Retry                    | Boolean      | No       | Enable interactive retry on validation errors (default: false) | true                                                               |
 
 ### Parameter Details
 
@@ -48,6 +49,15 @@ summaries, and data-driven communications.
 - **Date Fields**: Field names containing "date" are formatted as dates
 - **Time Fields**: Field names containing "time" are formatted as time
 - **Examples**: "approvedOnDate", "approved_on_date", "startTime", "start_time"
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct invalid email addresses or empty entity lists
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 

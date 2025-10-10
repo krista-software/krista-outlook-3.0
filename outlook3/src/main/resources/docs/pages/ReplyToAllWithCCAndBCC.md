@@ -13,16 +13,17 @@ catalog request provides advanced recipient management for reply-all operations 
 
 ## Input Parameters
 
-| Parameter Name | Type      | Required | Description                                               | Example                                             |
-|----------------|-----------|----------|-----------------------------------------------------------|-----------------------------------------------------|
-| Message ID     | Text      | Yes      | Unique identifier of the email to reply to                | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."           |
-| Message        | Rich Text | Yes      | Reply message content                                     | "Thank you all for your feedback on this proposal." |
-| To             | Text      | Yes      | Primary recipients (overwrites original if set)           | "original-sender@company.com, team@company.com"     |
-| Cc             | Text      | No       | Carbon copy recipients (overwrites original if set)       | "manager@company.com, director@company.com"         |
-| Bcc            | Text      | No       | Blind carbon copy recipients (overwrites original if set) | "compliance@company.com"                            |
-| Reply To       | Text      | No       | Reply-to email address (overwrites original if set)       | "project-team@company.com"                          |
-| Attachments    | File      | No       | Files to attach to the reply                              | document.pdf                                        |
-| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)                 | "HTML"                                              |
+| Parameter Name | Type      | Required | Description                                                    | Example                                             |
+|----------------|-----------|----------|----------------------------------------------------------------|-----------------------------------------------------|
+| Message ID     | Text      | Yes      | Unique identifier of the email to reply to                     | "AQMkADY4ZTFiMGIxLWU1YjUtNDEwMS04Y2Q0..."           |
+| Message        | Rich Text | Yes      | Reply message content                                          | "Thank you all for your feedback on this proposal." |
+| To             | Text      | Yes      | Primary recipients (overwrites original if set)                | "original-sender@company.com, team@company.com"     |
+| Cc             | Text      | No       | Carbon copy recipients (overwrites original if set)            | "manager@company.com, director@company.com"         |
+| Bcc            | Text      | No       | Blind carbon copy recipients (overwrites original if set)      | "compliance@company.com"                            |
+| Reply To       | Text      | No       | Reply-to email address (overwrites original if set)            | "project-team@company.com"                          |
+| Attachments    | File      | No       | Files to attach to the reply                                   | document.pdf                                        |
+| BodyType       | PickOne   | No       | Format of the message body (Text or HTML)                      | "HTML"                                              |
+| Allow Retry    | Boolean   | No       | Enable interactive retry on validation errors (default: false) | true                                                |
 
 ### Parameter Details
 

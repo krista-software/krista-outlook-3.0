@@ -13,10 +13,11 @@ access to inbox emails with configurable page sizes and page numbers for efficie
 
 ## Input Parameters
 
-| Parameter Name | Type   | Required | Description                                   | Example |
-|----------------|--------|----------|-----------------------------------------------|---------|
-| Page Number    | Number | No       | Page number for pagination (1-based indexing) | 1       |
-| Page Size      | Number | No       | Number of emails per page                     | 10      |
+| Parameter Name | Type    | Required | Description                                                    | Example |
+|----------------|---------|----------|----------------------------------------------------------------|---------|
+| Page Number    | Number  | No       | Page number for pagination (1-based indexing)                  | 1       |
+| Page Size      | Number  | No       | Number of emails per page                                      | 10      |
+| Allow Retry    | Boolean | No       | Enable interactive retry on validation errors (default: false) | true    |
 
 ### Parameter Details
 
@@ -33,6 +34,15 @@ access to inbox emails with configurable page sizes and page numbers for efficie
 - **Range**: 1 to 15 emails per page
 - **Validation**: Must be between 1 and 15
 - **Limitation**: Microsoft Graph API pagination limits
+
+#### Allow Retry
+
+- **Values**:
+    - `true` - Prompt user to retry on validation errors
+    - `false` or `null` - Return immediate error without retry option (default)
+- **Purpose**: Controls error handling behavior for validation failures
+- **Use Case**: Set to `true` for interactive workflows where users can correct invalid pagination parameters
+- **Default Behavior**: When not specified or `false`, validation errors return immediately
 
 ## Output Parameters
 
