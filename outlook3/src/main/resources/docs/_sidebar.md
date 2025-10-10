@@ -15,18 +15,23 @@
     * [Reply To Mail With CC and BCC](pages/ReplyToMailWithCCAndBCC.md)
     * [Reply To All](pages/ReplyToAll.md)
     * [Reply To All With CC and BCC](pages/ReplyToAllWithCCAndBCC.md)
+    * [Forward Mail](pages/ForwardMail.md)
 
 * **Query Operations**
     * [Fetch Inbox](pages/FetchInbox.md)
     * [Fetch Inbox With Preferences](pages/FetchInboxWithPreferences.md)
     * [Fetch Sent](pages/FetchSent.md)
     * [Fetch Mail Details By Query](pages/FetchMailDetailsByQuery.md)
+    * [Fetch Mail By Message ID](pages/FetchMailByMessageId.md)
+    * [Fetch Mails By Label](pages/FetchMailsByLabel.md)
+    * [Fetch All Labels](pages/FetchAllLabels.md)
     * [Fetch Latest Mail](pages/FetchLatestMail.md)
 
 * **Message Management**
     * [Mark Message](pages/MarkMessage.md)
     * [Mark Message Category And Status](pages/MarkMessageCategoryAndStatus.md)
     * [Add Category To Message](pages/AddCategoryToMessage.md)
+    * [Remove Category From Message](pages/RemoveCategoryFromMessage.md)
     * [Move Message](pages/MoveMessage.md)
 
 * **Async & Event Operations**
