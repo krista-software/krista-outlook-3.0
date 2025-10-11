@@ -85,7 +85,7 @@ public final class OutlookAttributes {
             this.publicClientId = properties.getProperty("public.clientId");
             this.publicClientSecret = properties.getProperty("public.clientSecret");
         } catch (IOException cause) {
-            throw new RuntimeException("Failed to load public configuration file.", cause);
+            throw new RuntimeException("We couldn't load the configuration file required for public authentication. Please verify that the configuration file exists and is accessible, or contact your administrator for assistance.", cause);
         }
     }
 

@@ -84,7 +84,7 @@ public class MailHandler {
             } catch (IOException zipCause) {
                 LOGGER.error("Both regular and zip upload failed: fileName={}, size={}, regularError={}, zipError={}",
                         file.getName(), fileSize, cause.getMessage(), zipCause.getMessage(), zipCause);
-                throw new RuntimeException("Failed to store content to file handle: " + file.getName(), zipCause);
+                throw new RuntimeException("We couldn't upload the file '" + file.getName() + "'. The file may be too large, corrupted, or in an unsupported format. Please verify the file and try again.", zipCause);
             }
         }
     }

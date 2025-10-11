@@ -147,7 +147,7 @@ public class EntityHelperUtil {
         htmlContent.append(Constants.CLOSE_BODY_TAG);
     }
 
-    private static StringBuilder addTableHeader(StringBuilder htmlContent, List<String> headerKeys, int headerSize) {
+    private static void addTableHeader(StringBuilder htmlContent, List<String> headerKeys, int headerSize) {
         htmlContent.append(Constants.TR_TAG);
         for (int hdrCell = 0; hdrCell < headerSize; hdrCell++) {
             htmlContent.append(Constants.TH_TAG);
@@ -155,7 +155,6 @@ public class EntityHelperUtil {
             htmlContent.append(Constants.CLOSE_TH_TAG);
         }
         htmlContent.append(Constants.CLOSE_TR_TAG);
-        return htmlContent;
     }
 
     public static String getCommaSeparatedEmail(List<EmailAddress> emails) {
@@ -182,7 +181,7 @@ public class EntityHelperUtil {
         return attachments;
     }
 
-    public static String getFileType(java.io.File file) throws IOException {
+    public static String getFileType(java.io.File file) {
         String contentType = URLConnection.guessContentTypeFromName(file.getName());
         return contentType != null ? contentType : Constants.APPLICATION_X_BINARY;
     }

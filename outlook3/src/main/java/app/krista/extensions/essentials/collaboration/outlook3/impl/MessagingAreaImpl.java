@@ -46,9 +46,9 @@ public class MessagingAreaImpl {
     private static final String MESSAGE_ID_CANNOT_BE_EMPTY = "Message ID cannot be empty.";
     private final Account account;
     private final MailHandler mailHandler;
-    private Entities registry;
+    private final Entities registry;
     private GraphServiceClientProvider provider;
-    private GraphServiceClientProviderFactory providerFactory;
+    private final GraphServiceClientProviderFactory providerFactory;
 
     @Inject
     public MessagingAreaImpl(Account account, MailHandler mailHandler, Entities registry, GraphServiceClientProviderFactory providerFactory) {
@@ -98,9 +98,9 @@ public class MessagingAreaImpl {
                     .buildRequest()
                     .select(Constants.MAILBOX_SETTINGS)
                     .get();
-        } catch (IOException cause) {
-            LOGGER.error("Failed to get user mailbox settings: {}", cause.getMessage(), cause);
-            return null;
+        } catch (IOException ioException) {
+            LOGGER.error("Failed to get user mailbox settings: {}", ioException.getMessage(), ioException);
+            throw new RuntimeException("We couldn't retrieve your mailbox settings. Please try again.", ioException);
         }
 
         String timeZone = Constants.UTC; // Default fallback

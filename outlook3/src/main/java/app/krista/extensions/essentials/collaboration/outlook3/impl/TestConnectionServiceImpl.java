@@ -69,10 +69,15 @@ public class TestConnectionServiceImpl {
         String authUrl = null;
         try {
             LOGGER.info("Verifying API access for email: {}", outlookAttributes.getEmail());
-            if (isFromCatalog) {
-                getProviderFactory().create(authContextId).getGraphServiceClientForUser(false, authorizationContext.getAuthorizedAccount().getAccountId()).me().mailFolders().buildRequest().get();
-            } else {
-                getProviderFactory().create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+            try {
+                if (isFromCatalog) {
+                    getProviderFactory().create(authContextId).getGraphServiceClientForUser(false, authorizationContext.getAuthorizedAccount().getAccountId()).me().mailFolders().buildRequest().get();
+                } else {
+                    getProviderFactory().create(authContextId).getGraphServiceClientForAdmin().me().mailFolders().buildRequest().get();
+                }
+            } catch (IOException ioException) {
+                LOGGER.error("Failed to connect to Microsoft Graph API: {}", ioException.getMessage(), ioException);
+                throw new RuntimeException("We couldn't establish a connection to Microsoft services. Please try again.", ioException);
             }
             if (outlookAttributes.isAllowMailAlert()) {
                 LOGGER.info("Mail alerts enabled, creating subscription");
@@ -101,8 +106,6 @@ public class TestConnectionServiceImpl {
             OAuth20Service oAuth20Service = new OAuthService(outlookAttributes).getOAuth20Service();
             authUrl = oAuth20Service.getAuthorizationUrl(state) + AUTH_URL_QUERY_PARAMS;
             return createTestConnectionResponse(false, AUTHORIZATION_PROMPT, authUrl);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         } finally {
             if (authUrl == null) {
                 outlookAttributeStore.remove(authContextId);

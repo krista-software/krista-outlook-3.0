@@ -49,7 +49,7 @@ public class OutlookExtension {
 
     @InvokerRequest(InvokerRequest.Type.TEST_CONNECTION)
     public void testConnection() {
-        throw new IllegalArgumentException("Please use Authentication tab for test connection.");
+        throw new IllegalArgumentException("To test your connection, please navigate to the 'Authentication' tab and click the 'Authorize' button to verify your Microsoft account credentials.");
     }
 
     @InvokerRequest(InvokerRequest.Type.INVOKER_REMOVED)

@@ -15,7 +15,7 @@ public class Label {
     @Searchable
     @ToString
     @Field(name = "Name", type = "Text")
-    public String name;
+    public final String name;
 
     public Label(String name) {
         this.name = name;

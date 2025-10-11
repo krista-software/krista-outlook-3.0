@@ -251,17 +251,16 @@ public class AccountImpl implements Account {
     }
 
     @Override
-    public OutlookCategory createCategory(String category) {
+    public void createCategory(String category) {
         LOGGER.info("Creating category with display name: {}", category);
         OutlookCategory outlookCategory = new OutlookCategory();
         outlookCategory.displayName = category;
 
         try {
-            return getUserRequestBuilder(null, null).outlook().masterCategories().buildRequest()
+            getUserRequestBuilder(null, null).outlook().masterCategories().buildRequest()
                     .post(outlookCategory);
         } catch (GraphServiceException cause) {
             LOGGER.error("Failed to create new category with name: {} , {}", category, cause.getMessage(), cause);
-            return null;
         }
     }
 

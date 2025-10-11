@@ -110,10 +110,9 @@ public interface Email {
      *
      * @param message     message to be sent
      * @param attachments attachments to be attached
-     * @return {@link Email} object of outlook
      */
 
-    Email replyText(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType);
+    void replyText(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType);
 
     /**
      * Returns {@link Email} object of outlook
@@ -150,9 +149,8 @@ public interface Email {
      * @param message     message to be sent
      * @param attachments attachments to be added
      * @param bodyType    type of the email body (e.g., "Text" or "HTML")
-     * @return {@link Email} object of outlook
      */
-    Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType);
+    void replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType);
 
     /**
      * This request forward given mail to given to address

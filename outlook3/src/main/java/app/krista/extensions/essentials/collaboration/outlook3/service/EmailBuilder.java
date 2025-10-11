@@ -36,14 +36,14 @@ public interface EmailBuilder {
         return withBcc(List.of(new EmailAddress(name, emailAddress)));
     }
 
-    EmailBuilder withContent(String contentType, String content);
+    void withContent(String contentType, String content);
 
-    EmailBuilder withText(String textContent);
+    void withText(String textContent);
 
-    EmailBuilder withAttachment(List<Attachment> attachments);
+    void withAttachment(List<Attachment> attachments);
 
     void send();
 
-    EmailBuilder withReplyTo(List<EmailAddress> replyToAddress);
+    void withReplyTo(List<EmailAddress> replyToAddress);
 
 }

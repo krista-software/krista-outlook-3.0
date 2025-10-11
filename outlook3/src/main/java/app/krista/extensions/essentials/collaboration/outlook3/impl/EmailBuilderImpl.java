@@ -59,23 +59,20 @@ public class EmailBuilderImpl implements EmailBuilder {
     }
 
     @Override
-    public EmailBuilderImpl withContent(String contentType, String content) {
+    public void withContent(String contentType, String content) {
         message.body = new ItemBody();
         message.body.content = content;
         message.body.contentType = ("HTML".equals(contentType)) ? BodyType.HTML : BodyType.TEXT;
-        return this;
     }
 
     @Override
-    public EmailBuilderImpl withText(String textContent) {
+    public void withText(String textContent) {
         message.subject = textContent;
-        return this;
     }
 
     @Override
-    public EmailBuilderImpl withAttachment(List<Attachment> attachments) {
+    public void withAttachment(List<Attachment> attachments) {
         message.attachments = new AttachmentCollectionPage(attachments, null);
-        return this;
     }
 
     @Override
@@ -84,11 +81,10 @@ public class EmailBuilderImpl implements EmailBuilder {
     }
 
     @Override
-    public EmailBuilderImpl withReplyTo(List<EmailAddress> replyToAddress) {
+    public void withReplyTo(List<EmailAddress> replyToAddress) {
         if (!replyToAddress.isEmpty()) {
             message.replyTo = replyToAddress.stream().map(this::toRecipient).collect(Collectors.toList());
         }
-        return this;
     }
 
     public Recipient toRecipient(EmailAddress emailAddress) {
