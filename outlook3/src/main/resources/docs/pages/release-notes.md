@@ -1,10 +1,10 @@
 # Release Notes
 
-## Version 3.0.16 - Current Release
+## Version 3.0.17 - Current Release
 
 - **Developer**: Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
-- **Global Catalog Version**: GC-2025.10.2
+- **Global Catalog Version**: GC-2025.10.3
 - **Release Date**: October 2025
 
 ### New Features
