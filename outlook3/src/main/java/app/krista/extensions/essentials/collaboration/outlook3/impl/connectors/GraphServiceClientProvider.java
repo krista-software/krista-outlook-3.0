@@ -147,9 +147,9 @@ public class GraphServiceClientProvider {
             return requestContext.invokeAsUser()
                     ? getGraphServiceClientForUser(null, null).me()
                     : getGraphServiceClientForUser(null, null).users(attributes.getEmail());
-        } catch (IOException cause) {
-            LOGGER.error("getUserRequestBuilder() -> Exception occurred: {}", cause.getMessage(), cause);
-            throw new IllegalStateException(cause);
+        } catch (IOException e) {
+            LOGGER.error("Failed to get user request builder: {}", e.getMessage(), e);
+            throw new RuntimeException("We couldn't establish a connection to Microsoft services. Please try again.", e);
         }
     }
 

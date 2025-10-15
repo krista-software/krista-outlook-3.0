@@ -55,9 +55,9 @@ public class MessagingArea {
     private final ExtensionResponseGenerator responseGenerator;
     private final ErrorHandlingStateManager internalStateManager;
     private final ValidationOrchestrator validationOrchestrator;
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private RequestContext requestContext;
-    private AuthorizationContext authorizationContext;
+    final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final RequestContext requestContext;
+    private final AuthorizationContext authorizationContext;
     private final TestConnectionServiceImpl testConnectionService;
     private final Invoker invoker;
     private final TelemetryHelper telemetryHelper;

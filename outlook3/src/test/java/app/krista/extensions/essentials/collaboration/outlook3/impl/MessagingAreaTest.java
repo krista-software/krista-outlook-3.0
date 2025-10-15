@@ -194,13 +194,13 @@ public class MessagingAreaTest {
         List<File> attachments = null;
         String bodyType = "HTML";
         ExtensionResponse response1 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
-        assertEquals(response1.getResponseValue().get("Message"), "Invalid message id");
+        assertEquals(response1.getResponseValue().get("Message"), "The message you're trying to access could not be found. It may have been deleted or moved. Please refresh your inbox and try again.");
         messageID = "";
         ExtensionResponse response2 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
-        assertEquals(response2.getResponseValue().get("Message"), "Invalid message id");
+        assertEquals(response2.getResponseValue().get("Message"), "The message you're trying to access could not be found. It may have been deleted or moved. Please refresh your inbox and try again.");
         messageID = "  ";
         ExtensionResponse response3 = messagingAreaImpl.replyToMail(attachments, messageID, message, bodyType);
-        assertEquals(response3.getResponseValue().get("Message"), "Invalid message id");
+        assertEquals(response3.getResponseValue().get("Message"), "The message you're trying to access could not be found. It may have been deleted or moved. Please refresh your inbox and try again.");
     }
 
     @Test

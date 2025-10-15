@@ -168,8 +168,8 @@ public class EmailImpl implements Email {
     }
 
     @Override
-    public Email replyText(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType) {
-        return replyText(message, attachments, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), bodyType);
+    public void replyText(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType) {
+        replyText(message, attachments, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), bodyType);
 
     }
 
@@ -254,8 +254,8 @@ public class EmailImpl implements Email {
     }
 
     @Override
-    public Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType) {
-        return replyToAll(message, attachments, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), bodyType);
+    public void replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, String bodyType) {
+        replyToAll(message, attachments, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), bodyType);
     }
 
     @NotNull

@@ -63,7 +63,7 @@ public class LabelStore implements EntityStore<Label> {
     }
 
     @Override
-    public List<Label> search(SearchQuery searchQuery, long l, int i) throws IOException {
+    public List<Label> search(SearchQuery searchQuery, long l, int i) {
         final List<SearchCondition> searchConditions = searchQuery.getSearchConditions();
         if (Validators.isListNullOrEmpty(searchConditions)) {
             throw new IllegalArgumentException(Constants.FAILED_TO_SEARCH_FOR_LABELS + Constants.SEARCH_CONDITIONS_NOT_FOUND);

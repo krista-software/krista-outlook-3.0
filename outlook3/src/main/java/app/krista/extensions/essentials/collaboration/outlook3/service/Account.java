@@ -1,7 +1,5 @@
 package app.krista.extensions.essentials.collaboration.outlook3.service;
 
-import com.microsoft.graph.models.OutlookCategory;
-
 import java.util.List;
 
 /**
@@ -96,9 +94,8 @@ public interface Account {
      * Creates a new category in the Outlook account
      *
      * @param category name of the category to create
-     * @return the created {@link OutlookCategory} object
      */
-    OutlookCategory createCategory(String category);
+    void createCategory(String category);
 
     /**
      * Fetches the delta of notifications since the last query
