@@ -4,6 +4,7 @@ import app.krista.extension.executor.Invoker;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.AccountImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.SaveConfigurationImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
@@ -13,6 +14,9 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.O
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.RefreshTokenStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.*;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import app.krista.extensions.util.EventHandler;
 import app.krista.ksdk.authentication.AuthorizationListener;
 import app.krista.ksdk.context.AuthorizationContext;
@@ -23,6 +27,9 @@ import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.microsoft.graph.http.GraphServiceException;
+import com.microsoft.graph.models.Message;
+import com.microsoft.graph.options.HeaderOption;
+import com.microsoft.graph.options.QueryOption;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +41,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.concurrent.ExecutionException;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
@@ -237,9 +245,8 @@ public final class OutlookApiResource {
     }
 
     /**
-     * when mailNotification endpoint is called two times or more by Microsoft GraphAPI on same messageId which
-     * causes mail receive alert wait for event triggered two times or more, to avoid such case we are using
-     * isDuplicateMessageID to break the loop.
+     * Original simple mail notification endpoint - triggers for ALL emails in Inbox.
+     * This endpoint maintains backward compatibility with existing "Mail Received Alert" workflows.
      * Microsoft sends the notification twice when there is no acknowledgement from krista that it received the mail.
      *
      * @param notification the JSON payload from Microsoft Graph API containing mail event details
@@ -260,12 +267,203 @@ public final class OutlookApiResource {
             }
             FreeForm freeForm = new FreeForm();
             freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, messageId);
-            LOGGER.info("New email received, forwarding to Krista: {} ", messageId);
             eventHandler.handleEvent(Constants.MAIL_RECEIVED, freeForm);
         }
         MailSubscription.createOrUpdateSubscription(baseRoutingUrl, providerFactory.create());
         LOGGER.info("Acknowledgement sent...");
         return Response.status(200).build();
+    }
+
+    /**
+     * Enhanced folder monitoring notification endpoint - triggers for emails in monitored folders.
+     * This endpoint supports the new "Email Folder Alert" feature with rich metadata.
+     * Filters notifications based on configured monitored folders and provides comprehensive email data.
+     *
+     * @param notification the JSON payload from Microsoft Graph API containing mail event details
+     * @return a 200 OK response after processing or ignoring the notification
+     */
+    @POST
+    @Path("/folderMonitoringNotification")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response folderMonitoringNotification(JsonObject notification) {
+        JsonArray array = notification.get(Constants.VALUE).getAsJsonArray();
+        LOGGER.info("Krista received a new folder monitoring alert to process: {} ", array);
+
+        for (int i = 0; i < array.size(); i++) {
+            JsonObject notificationItem = array.get(i).getAsJsonObject();
+            String messageId = notificationItem.get(Constants.RESOURCE_DATA).getAsJsonObject().get(Constants.ID).getAsString();
+            String changeType = notificationItem.has(Constants.CHANGE_TYPE) ? notificationItem.get(Constants.CHANGE_TYPE).getAsString() : Constants.CREATED;
+            String subscriptionId = notificationItem.has(Constants.SUBSCRIPTION_ID) ? notificationItem.get(Constants.SUBSCRIPTION_ID).getAsString() : "";
+
+            if (isDuplicateMessageID(messageId)) {
+                LOGGER.info("Duplicate alert detected, rejecting: {} ", messageId);
+                break;
+            }
+
+            LOGGER.info("Processing folder monitoring notification - MessageId: {}, ChangeType: {}", messageId, changeType);
+
+            // Process the notification with full message details and folder filtering
+            processEnhancedEmailNotification(messageId, changeType, subscriptionId, i);
+        }
+        // Note: Folder monitoring subscription is managed separately via FolderMonitoringSubscription
+        LOGGER.info("Folder monitoring acknowledgement sent...");
+        return Response.status(200).build();
+    }
+
+    /**
+     * Process enhanced email notification by fetching full message details and filtering by monitored folders.
+     * This method is used by the new folder monitoring endpoint.
+     *
+     * @param messageId      the ID of the message
+     * @param changeType     the type of change (created or updated)
+     * @param subscriptionId the subscription ID
+     * @param notificationId the notification index
+     */
+    private void processEnhancedEmailNotification(String messageId, String changeType, String subscriptionId, int notificationId) {
+        try {
+            GraphServiceClientProvider provider = providerFactory.create();
+            OutlookAttributes attributes = outlookAttributeStore.load(invoker.getInvokerId());
+
+            if (attributes == null) {
+                LOGGER.warn("No Outlook attributes found for invoker, skipping notification processing");
+                return;
+            }
+
+            List<String> monitoredFolders = attributes.getMonitoredFolders();
+
+            // Fetch full message details including parentFolderId
+            Message message = provider.getUserRequestBuilder(null, null)
+                    .messages(messageId)
+                    .buildRequest(
+                            new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML),
+                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS + ",parentFolderId")
+                    )
+                    .get();
+
+            if (message == null) {
+                LOGGER.warn("Message not found for ID: {}", messageId);
+                return;
+            }
+
+            String parentFolderId = message.parentFolderId;
+            LOGGER.info("Message {} is in folder: {}", messageId, parentFolderId);
+
+            // If no monitored folders configured, trigger for all messages (backward compatibility)
+            boolean shouldTrigger = monitoredFolders.isEmpty();
+            String folderName = "";
+
+            if (!monitoredFolders.isEmpty() && parentFolderId != null) {
+                // Get folder details to check if it's in monitored list
+                try {
+                    AccountImpl account = new AccountImpl(provider);
+                    Folder folder = account.getFolder(parentFolderId);
+                    final String currentFolderName = folder.getFolderName();
+                    folderName = currentFolderName;
+
+                    // Check if folder name matches any monitored folder (case-insensitive)
+                    shouldTrigger = monitoredFolders.stream()
+                            .anyMatch(monitored -> monitored.equalsIgnoreCase(currentFolderName));
+
+                    LOGGER.info("Folder '{}' monitored: {}", folderName, shouldTrigger);
+                } catch (Exception e) {
+                    LOGGER.error("Error getting folder details for ID {}: {}", parentFolderId, e.getMessage());
+                }
+            }
+
+            if (shouldTrigger) {
+                // Build comprehensive event payload
+                FreeForm freeForm = buildEmailNotificationPayload(message, changeType, subscriptionId, notificationId, folderName, parentFolderId);
+
+                LOGGER.info("Triggering enhanced email folder notification for message {} in folder '{}'", messageId, folderName);
+                eventHandler.handleEvent(Constants.EMAIL_CHANGE_NOTIFICATION, freeForm);
+            } else {
+                LOGGER.info("Message {} in folder '{}' not in monitored folders, skipping", messageId, folderName);
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("Error processing email notification for message {}: {}", messageId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Build comprehensive email notification payload with all required fields
+     *
+     * @param message        the Microsoft Graph message object
+     * @param changeType     the type of change
+     * @param subscriptionId the subscription ID
+     * @param notificationId the notification ID
+     * @param folderName     the folder name
+     * @param folderId       the folder ID
+     * @return FreeForm object with all notification data
+     */
+    private FreeForm buildEmailNotificationPayload(Message message, String changeType, String subscriptionId,
+                                                    int notificationId, String folderName, String folderId) {
+        FreeForm freeForm = new FreeForm();
+
+        // Basic notification info
+        freeForm.put(Constants.NOTIFICATION_ID, Constants.TEXT, String.valueOf(notificationId));
+        freeForm.put(Constants.SUBSCRIPTION_ID, Constants.TEXT, subscriptionId);
+        freeForm.put(Constants.CHANGE_TYPE, Constants.TEXT, changeType);
+        freeForm.put(Constants.MESSAGE_ID, Constants.TEXT, message.id);
+
+        // Folder info
+        freeForm.put(Constants.FOLDER_ID, Constants.TEXT, folderId != null ? folderId : "");
+        freeForm.put(Constants.FOLDER_NAME, Constants.TEXT, folderName != null ? folderName : "");
+
+        // Message details
+        freeForm.put(Constants.SUBJECT, Constants.TEXT, message.subject != null ? message.subject : "");
+
+        // From
+        if (message.from != null && message.from.emailAddress != null) {
+            freeForm.put(Constants.FROM, Constants.TEXT, message.from.emailAddress.address != null ? message.from.emailAddress.address : "");
+        } else {
+            freeForm.put(Constants.FROM, Constants.TEXT, "");
+        }
+
+        // To recipients
+        if (message.toRecipients != null && !message.toRecipients.isEmpty()) {
+            String toAddresses = message.toRecipients.stream()
+                    .filter(r -> r.emailAddress != null && r.emailAddress.address != null)
+                    .map(r -> r.emailAddress.address)
+                    .collect(Collectors.joining(", "));
+            freeForm.put(Constants.TO, Constants.TEXT, toAddresses);
+        } else {
+            freeForm.put(Constants.TO, Constants.TEXT, "");
+        }
+
+        // CC recipients
+        if (message.ccRecipients != null && !message.ccRecipients.isEmpty()) {
+            String ccAddresses = message.ccRecipients.stream()
+                    .filter(r -> r.emailAddress != null && r.emailAddress.address != null)
+                    .map(r -> r.emailAddress.address)
+                    .collect(Collectors.joining(", "));
+            freeForm.put(Constants.CC, Constants.TEXT, ccAddresses);
+        } else {
+            freeForm.put(Constants.CC, Constants.TEXT, "");
+        }
+
+        // BCC recipients
+        if (message.bccRecipients != null && !message.bccRecipients.isEmpty()) {
+            String bccAddresses = message.bccRecipients.stream()
+                    .filter(r -> r.emailAddress != null && r.emailAddress.address != null)
+                    .map(r -> r.emailAddress.address)
+                    .collect(Collectors.joining(", "));
+            freeForm.put(Constants.BCC, Constants.TEXT, bccAddresses);
+        } else {
+            freeForm.put(Constants.BCC, Constants.TEXT, "");
+        }
+
+        // Body
+        if (message.body != null && message.body.content != null) {
+            freeForm.put(Constants.BODY, Constants.TEXT, message.body.content);
+        } else {
+            freeForm.put(Constants.BODY, Constants.TEXT, "");
+        }
+
+        // Attachments
+        freeForm.put(Constants.ATTACHMENTS, Constants.TEXT, message.hasAttachments != null && message.hasAttachments ? "true" : "false");
+
+        return freeForm;
     }
 
     @POST

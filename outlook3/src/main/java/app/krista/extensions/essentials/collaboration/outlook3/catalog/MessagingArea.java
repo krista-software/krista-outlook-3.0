@@ -1455,6 +1455,56 @@ public class MessagingArea {
     }
 
     @CatalogRequest(
+            id = "localDomainRequest_f8a4b2c1-3d5e-4f6a-9b8c-7e1d2a3b4c5d",
+            name = "Email Folder Alert",
+            description = "Enhanced email alert with folder monitoring - triggers when emails arrive in or are moved into monitored folders",
+            area = "Messaging",
+            type = CatalogRequest.Type.WAIT_FOR_EVENT)
+    @Field.Desc(name = "Email Details", type = "FreeForm", required = false)
+    public ExtensionResponse emailFolderAlert(
+            @Field(name = "eventName", type = "Text") String eventName,
+            @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            if (eventName.equalsIgnoreCase(Constants.EMAIL_CHANGE_NOTIFICATION)) {
+                String messageId = (String) eventData.get(Constants.MESSAGE_ID);
+                String folderName = (String) eventData.get(Constants.FOLDER_NAME);
+                String changeType = (String) eventData.get(Constants.CHANGE_TYPE);
+
+                LOGGER.info("Processing Email Folder Alert - MessageId: {}, Folder: {}, ChangeType: {}",
+                        messageId, folderName, changeType);
+
+                // Return the comprehensive event data directly
+                telemetryHelper.recordSuccess("outlook3.emailFolderAlert", startTime, Map.of(
+                        "message_id", messageId,
+                        "folder_name", folderName != null ? folderName : "unknown",
+                        "change_type", changeType != null ? changeType : "unknown",
+                        "subject", eventData.get(Constants.SUBJECT) != null ? eventData.get(Constants.SUBJECT).toString() : "N/A"
+                ));
+
+                return ExtensionResponseFactory.create(Map.of("Email Details", eventData));
+            } else {
+                LOGGER.error("Invalid event name for Email Folder Alert: {}", eventName);
+                telemetryHelper.recordValidationError("outlook3.emailFolderAlert", startTime, "Invalid event name", safeTagMap(
+                        "event_name", eventName
+                ));
+                throw new IllegalStateException("Invalid event name. Expected: " + Constants.EMAIL_CHANGE_NOTIFICATION);
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error("Authorization error in Email Folder Alert: {}", cause.getMessage());
+            telemetryHelper.recordValidationError("outlook3.emailFolderAlert", startTime, cause.getMessage(), safeTagMap(
+                    "event_name", eventName
+            ));
+            return handleAuthorizationException(cause, requestContext.invokeAsUser());
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while processing Email Folder Alert: {}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.emailFolderAlert", startTime, cause, safeTagMap("event_name", eventName));
+            throw new IllegalStateException("Error occurred while processing Email Folder Alert");
+        }
+    }
+
+    @CatalogRequest(
             id = "localDomainRequest_90b24da6-d02f-4fcb-9632-ef8e6ae1550a",
             name = "Fetch Latest Mail",
             description = "Returns the latest email received",
