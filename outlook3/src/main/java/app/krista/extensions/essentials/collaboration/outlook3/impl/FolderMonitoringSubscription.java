@@ -145,12 +145,19 @@ public class FolderMonitoringSubscription {
      */
     @NotNull
     private static Subscription setSubscriptionParameters(String routingUrl, String alertUserMailId) throws ParseException {
+        LOGGER.info("Setting subscription parameters for user: {}", alertUserMailId);
+        LOGGER.info("Routing URL: {}", routingUrl);
+
         Subscription subscription = new Subscription();
         subscription.changeType = Constants.CREATED_AND_UPDATED;
         subscription.notificationUrl = routingUrl + Constants.REST_OUTLOOK_FOLDER_MONITORING_NOTIFICATION;
         subscription.lifecycleNotificationUrl = routingUrl + Constants.REST_OUTLOOK_FOLDER_LIFECYCLE_NOTIFICATION;
         subscription.resource = "/users/" + alertUserMailId + Constants.ME_MESSAGES;
         subscription.expirationDateTime = getExpirationDateTime();
+
+        LOGGER.info("Subscription parameters set - Notification URL: {}, Resource: {}, Expiration: {}",
+                subscription.notificationUrl, subscription.resource, subscription.expirationDateTime);
+
         return subscription;
     }
 

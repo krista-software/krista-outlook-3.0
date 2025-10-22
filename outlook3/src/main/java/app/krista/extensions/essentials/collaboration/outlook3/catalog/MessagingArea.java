@@ -1455,12 +1455,12 @@ public class MessagingArea {
     }
 
     @CatalogRequest(
-            id = "localDomainRequest_f8a4b2c1-3d5e-4f6a-9b8c-7e1d2a3b4c5d",
+            id = "localDomainRequest_83b957ac-6629-4ddc-b90b-7e1e218585a9",
             name = "Email Folder Alert",
             description = "Enhanced email alert with folder monitoring - triggers when emails arrive in or are moved into monitored folders",
             area = "Messaging",
             type = CatalogRequest.Type.WAIT_FOR_EVENT)
-    @Field.Desc(name = "Email Details", type = "FreeForm", required = false)
+    @Field(name = "Email Details", type = "FreeForm", required = false, attributes = {}, options = {})
     public ExtensionResponse emailFolderAlert(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
@@ -1501,8 +1501,8 @@ public class MessagingArea {
             LOGGER.error("Error occurred while processing Email Folder Alert: {}", cause.getMessage());
             telemetryHelper.recordError("outlook3.emailFolderAlert", startTime, cause, safeTagMap("event_name", eventName));
             throw new IllegalStateException("Error occurred while processing Email Folder Alert");
-        }
-    }
+        }    }
+
 
     @CatalogRequest(
             id = "localDomainRequest_90b24da6-d02f-4fcb-9632-ef8e6ae1550a",
