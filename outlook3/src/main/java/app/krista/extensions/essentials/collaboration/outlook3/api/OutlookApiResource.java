@@ -302,6 +302,7 @@ public final class OutlookApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response folderMonitoringNotification(JsonObject notification) {
         JsonArray array = notification.get(Constants.VALUE).getAsJsonArray();
+        System.out.println("folderMonitoringNotification: " + array);
         LOGGER.info("Krista received a new folder monitoring alert to process: {} ", array);
 
         for (int i = 0; i < array.size(); i++) {
@@ -310,11 +311,10 @@ public final class OutlookApiResource {
             String changeType = notificationItem.has(Constants.CHANGE_TYPE) ? notificationItem.get(Constants.CHANGE_TYPE).getAsString() : Constants.CREATED;
             String subscriptionId = notificationItem.has(Constants.SUBSCRIPTION_ID) ? notificationItem.get(Constants.SUBSCRIPTION_ID).getAsString() : "";
 
-            if (isDuplicateMessageID(messageId)) {
-                LOGGER.info("Duplicate alert detected, rejecting: {} ", messageId);
-                break;
-            }
-
+            // Note: For folder monitoring, we don't use the duplicate check because:
+            // 1. We monitor both "created" and "updated" events
+            // 2. The same email can trigger multiple times (e.g., when moved between folders)
+            // 3. We want to process each event to track folder changes
             LOGGER.info("Processing folder monitoring notification - MessageId: {}, ChangeType: {}", messageId, changeType);
 
             // Process the notification with full message details and folder filtering
@@ -347,16 +347,28 @@ public final class OutlookApiResource {
             List<String> monitoredFolders = attributes.getMonitoredFolders();
 
             // Fetch full message details including parentFolderId
-            Message message = provider.getUserRequestBuilder(null, null)
-                    .messages(messageId)
-                    .buildRequest(
-                            new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML),
-                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS + ",parentFolderId")
-                    )
-                    .get();
+            Message message;
+            try {
+                message = provider.getUserRequestBuilder(null, null)
+                        .messages(messageId)
+                        .buildRequest(
+                                new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML),
+                                new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS + ",parentFolderId")
+                        )
+                        .get();
+            } catch (GraphServiceException gse) {
+                // Handle the case where the message was deleted before we could fetch it
+                if (gse.getMessage() != null && gse.getMessage().contains("ErrorItemNotFound")) {
+                    LOGGER.info("Message {} was deleted or moved before we could process it (ChangeType: {}). This is normal for delete operations.",
+                            messageId, changeType);
+                    return;
+                }
+                // Re-throw other GraphServiceExceptions
+                throw gse;
+            }
 
             if (message == null) {
-                LOGGER.warn("Message not found for ID: {}", messageId);
+                LOGGER.info("Message not found for ID: {}", messageId);
                 return;
             }
 
@@ -413,6 +425,9 @@ public final class OutlookApiResource {
      */
     private FreeForm buildEmailNotificationPayload(Message message, String changeType, String subscriptionId,
                                                     int notificationId, String folderName, String folderId) {
+        LOGGER.info("Building email notification payload - MessageId: {}, ChangeType: {}, Folder: {} ({}), Subject: {}",
+                message.id, changeType, folderName, folderId, message.subject);
+
         FreeForm freeForm = new FreeForm();
 
         // Basic notification info

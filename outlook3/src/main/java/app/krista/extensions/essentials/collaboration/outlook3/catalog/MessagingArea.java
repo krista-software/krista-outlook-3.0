@@ -1475,14 +1475,14 @@ public class MessagingArea {
 
                 LOGGER.info("Processing Email Folder Alert - MessageId: {}, Folder: {}, ChangeType: {}",
                         messageId, folderName, changeType);
-
-                // Return the comprehensive event data directly
-                telemetryHelper.recordSuccess("outlook3.emailFolderAlert", startTime, Map.of(
-                        "message_id", messageId,
-                        "folder_name", folderName != null ? folderName : "unknown",
-                        "change_type", changeType != null ? changeType : "unknown",
-                        "subject", eventData.get(Constants.SUBJECT) != null ? eventData.get(Constants.SUBJECT).toString() : "N/A"
-                ));
+//
+//                // Return the comprehensive event data directly
+//                telemetryHelper.recordSuccess("outlook3.emailFolderAlert", startTime, Map.of(
+//                        "message_id", messageId,
+//                        "folder_name", folderName != null ? folderName : "unknown",
+//                        "change_type", changeType != null ? changeType : "unknown",
+//                        "subject", eventData.get(Constants.SUBJECT) != null ? eventData.get(Constants.SUBJECT).toString() : "N/A"
+//                ));
 
                 return ExtensionResponseFactory.create(Map.of("Email Details", eventData));
             } else {
