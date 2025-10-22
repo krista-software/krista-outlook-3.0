@@ -5,7 +5,7 @@ plugins {
 }
 
 apply plugin: 'java-library'
-group 'app.krista.extensions.essentials.collaboration'
+group = 'app.krista.extensions.essentials.collaboration'
 
 /*
  * Use extension.name for archiveBaseName, extension.version for version.
@@ -54,12 +54,14 @@ task updateVersion {
 
 System.setProperty("extensionVersion", version.toString())
 
-sourceCompatibility = '21'
-targetCompatibility = '21'
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 repositories {
     maven {
-        url "https://packages.cicd.in.antbrains.com/artifactory/libs-release"
+        url = "https://packages.cicd.in.antbrains.com/artifactory/libs-release"
     }
     mavenCentral()
     mavenLocal()
@@ -78,12 +80,8 @@ tasks.named('compileTestJava') {
     dependsOn(tasks.named('buildAndCopyUI'))
 }
 
-configurations {
-    implementation {
-        canBeConsumed = false
-        canBeResolved = true
-    }
-}
+// Removed deprecated configurations block
+// The implementation configuration should not have canBeResolved set to true
 
 test {
     useJUnitPlatform()
@@ -91,7 +89,7 @@ test {
     // Add these settings to help diagnose test issues
     testLogging {
         events "passed", "skipped", "failed"
-        exceptionFormat "full"
+        exceptionFormat = "full"
     }
 
     // Enable experimental support for Java 23 in Byte Buddy
@@ -217,9 +215,9 @@ tasks.register('generateReleaseProperties') {
         def messagingAreaFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/catalog/MessagingArea.java'
         def setupAreaFilePath = 'src/main/java/app/krista/extensions/essentials/collaboration/outlook3/catalog/SetupArea.java'
 
-        def extensionFile = project.file(extensionFilePath)
-        def messagingAreaFile = project.file(messagingAreaFilePath)
-        def setupAreaFile = project.file(setupAreaFilePath)
+        def extensionFile = file(extensionFilePath)
+        def messagingAreaFile = file(messagingAreaFilePath)
+        def setupAreaFile = file(setupAreaFilePath)
 
         if (!extensionFile.exists()) {
             throw new GradleException("Extension file not found: ${extensionFilePath}")
@@ -287,7 +285,7 @@ tasks.register('generateReleaseProperties') {
             logger.lifecycle("Set default ecosystem name: Essentials")
         }
 
-        def releasePropertiesFile = project.file('release.properties')
+        def releasePropertiesFile = file('release.properties')
         def content = properties.collect { key, value -> "${key}=${value}" }.join('\n')
         releasePropertiesFile.text = content + '\n'
         logger.lifecycle("Generated release.properties with content:\n${content}")
@@ -355,7 +353,7 @@ jar {
 
     manifest {}
     from {
-        configurations.implementation.collect {
+        configurations.runtimeClasspath.collect {
             it.isDirectory() ? it : zipTree(it)
         }
     }

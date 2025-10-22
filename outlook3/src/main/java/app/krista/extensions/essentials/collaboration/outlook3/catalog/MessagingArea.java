@@ -19,7 +19,6 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAre
 import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
-import app.krista.extensions.essentials.collaboration.outlook3.service.Attachment;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import app.krista.extensions.util.EventHandler;
@@ -1455,55 +1454,6 @@ public class MessagingArea {
         }
     }
 
-//    @CatalogRequest(
-//            id = "localDomainRequest_83b957ac-6629-4ddc-b90b-7e1e218585a9",
-//            name = "Email Folder Alert",
-//            description = "Enhanced email alert with folder monitoring - triggers when emails arrive in or are moved into monitored folders",
-//            area = "Messaging",
-//            type = CatalogRequest.Type.WAIT_FOR_EVENT)
-//    @Field(name = "Email Details", type = "FreeForm", required = false, attributes = {}, options = {})
-//    public ExtensionResponse emailFolderAlert(
-//            @Field(name = "eventName", type = "Text") String eventName,
-//            @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
-//        long startTime = System.currentTimeMillis();
-//
-//        try {
-//            if (eventName.equalsIgnoreCase(Constants.EMAIL_CHANGE_NOTIFICATION)) {
-//                String messageId = (String) eventData.get(Constants.MESSAGE_ID);
-//                String folderName = (String) eventData.get(Constants.FOLDER_NAME);
-//                String changeType = (String) eventData.get(Constants.CHANGE_TYPE);
-//                LOGGER.info("eventData: " + eventData);
-//
-//                LOGGER.info("Processing Email Folder Alert - MessageId: {}, Folder: {}, ChangeType: {}",
-//                        messageId, folderName, changeType);
-////
-////                // Return the comprehensive event data directly
-////                telemetryHelper.recordSuccess("outlook3.emailFolderAlert", startTime, Map.of(
-////                        "message_id", messageId,
-////                        "folder_name", folderName != null ? folderName : "unknown",
-////                        "change_type", changeType != null ? changeType : "unknown",
-////                        "subject", eventData.get(Constants.SUBJECT) != null ? eventData.get(Constants.SUBJECT).toString() : "N/A"
-////                ));
-//
-//                return ExtensionResponseFactory.create(Map.of("Email Details", eventData));
-//            } else {
-//                LOGGER.error("Invalid event name for Email Folder Alert: {}", eventName);
-//                telemetryHelper.recordValidationError("outlook3.emailFolderAlert", startTime, "Invalid event name", safeTagMap(
-//                        "event_name", eventName
-//                ));
-//                throw new IllegalStateException("Invalid event name. Expected: " + Constants.EMAIL_CHANGE_NOTIFICATION);
-//            }
-//        } catch (MustAuthorizeException cause) {
-//            LOGGER.error("Authorization error in Email Folder Alert: {}", cause.getMessage());
-//            telemetryHelper.recordValidationError("outlook3.emailFolderAlert", startTime, cause.getMessage(), safeTagMap(
-//                    "event_name", eventName
-//            ));
-//            return handleAuthorizationException(cause, requestContext.invokeAsUser());
-//        } catch (Exception cause) {
-//            LOGGER.error("Error occurred while processing Email Folder Alert: {}", cause.getMessage());
-//            telemetryHelper.recordError("outlook3.emailFolderAlert", startTime, cause, safeTagMap("event_name", eventName));
-//            throw new IllegalStateException("Error occurred while processing Email Folder Alert");
-//        }    }
 
 
     @CatalogRequest(
@@ -1517,12 +1467,12 @@ public class MessagingArea {
     @Field.Text(name = "Change Type", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field.Text(name = "Folder ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field.Text(name = "Subject", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    @Field.File(name = "Attachments" , multipleFileUpload = true, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field(name = "Body", type = "Paragraph", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")}, options = {})
     @Field(name = "From", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    @Field(name = "To", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field(name = "CC", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field(name = "BCC", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field(name = "To", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Attachments", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     public ExtensionResponse receiveNotificationOfEmailChange(
             @Field(name = "eventName", type = "Text") String eventName,
             @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
@@ -1537,30 +1487,9 @@ public class MessagingArea {
                 LOGGER.info("Processing Receive notification of Email Change - MessageId: {}, Folder: {}, ChangeType: {}",
                         messageId, folderName, changeType);
 
-                // Fetch the full email with attachments (this runs with user authentication context)
-                Email email = account.getEmail(messageId);
-                List<File> attachmentFiles = new ArrayList<>();
-
-                if (email != null) {
-                    LOGGER.info("Fetching attachments for message {}", messageId);
-                    List<Attachment> fileAttachments = email.getFileAttachments(null);
-
-                    // Convert attachments to Krista Files
-                    for (Attachment attachment : fileAttachments) {
-                        try {
-                            java.io.File ioFile = attachment.download();
-                            File kristaFile = mailHandler.toKristaFiles(ioFile);
-                            attachmentFiles.add(kristaFile);
-                            LOGGER.debug("Successfully converted attachment: {}", attachment.getName());
-                        } catch (Exception e) {
-                            LOGGER.error("Failed to convert attachment '{}' for message {}: {}",
-                                    attachment.getName(), messageId, e.getMessage(), e);
-                        }
-                    }
-
-                    LOGGER.info("Successfully converted {} attachments for message {}",
-                            attachmentFiles.size(), messageId);
-                }
+                // Extract hasAttachments flag from eventData
+                String hasAttachmentsStr = (String) eventData.get(Constants.ATTACHMENTS);
+                boolean hasAttachments = "true".equalsIgnoreCase(hasAttachmentsStr);
 
                 // Extract all fields from eventData
                 Map<String, Object> responseMap = new HashMap<>();
@@ -1569,12 +1498,12 @@ public class MessagingArea {
                 responseMap.put("Change Type", eventData.get(Constants.CHANGE_TYPE));
                 responseMap.put("Folder ID", eventData.get(Constants.FOLDER_ID));
                 responseMap.put("Subject", eventData.get(Constants.SUBJECT));
-                responseMap.put("Attachments", attachmentFiles);  // Use fetched attachment files
                 responseMap.put("Body", eventData.get(Constants.BODY));
                 responseMap.put("From", eventData.get(Constants.FROM));
                 responseMap.put("To", eventData.get(Constants.TO));
                 responseMap.put("CC", eventData.get(Constants.CC));
                 responseMap.put("BCC", eventData.get(Constants.BCC));
+                responseMap.put("Attachments", hasAttachments);  // Boolean flag indicating if email has attachments
 
                 return ExtensionResponseFactory.create(responseMap);
             } else {
@@ -1594,7 +1523,9 @@ public class MessagingArea {
             LOGGER.error("Error occurred while processing Receive notification of Email Change: {}", cause.getMessage());
             telemetryHelper.recordError("outlook3.recieveNotificationOfEmailChange", startTime, cause, safeTagMap("event_name", eventName));
             throw new IllegalStateException("Error occurred while processing Receive notification of Email Change");
-        }    }
+        }     }
+
+
 
 
     @CatalogRequest(
