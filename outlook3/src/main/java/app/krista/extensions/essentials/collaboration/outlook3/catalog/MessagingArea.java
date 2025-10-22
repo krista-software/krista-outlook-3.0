@@ -19,6 +19,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.MessagingAre
 import app.krista.extensions.essentials.collaboration.outlook3.impl.TestConnectionServiceImpl;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Attachment;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import app.krista.extensions.util.EventHandler;
@@ -1516,9 +1517,10 @@ public class MessagingArea {
     @Field.Text(name = "Change Type", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field.Text(name = "Folder ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field.Text(name = "Subject", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
-    @Field.File(name = "Attachments" , multipleFileUpload = false, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.File(name = "Attachments" , multipleFileUpload = true, required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field(name = "Body", type = "Paragraph", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")}, options = {})
     @Field(name = "From", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field(name = "To", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field(name = "CC", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     @Field(name = "BCC", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
     public ExtensionResponse receiveNotificationOfEmailChange(
@@ -1535,6 +1537,31 @@ public class MessagingArea {
                 LOGGER.info("Processing Receive notification of Email Change - MessageId: {}, Folder: {}, ChangeType: {}",
                         messageId, folderName, changeType);
 
+                // Fetch the full email with attachments (this runs with user authentication context)
+                Email email = account.getEmail(messageId);
+                List<File> attachmentFiles = new ArrayList<>();
+
+                if (email != null) {
+                    LOGGER.info("Fetching attachments for message {}", messageId);
+                    List<Attachment> fileAttachments = email.getFileAttachments(null);
+
+                    // Convert attachments to Krista Files
+                    for (Attachment attachment : fileAttachments) {
+                        try {
+                            java.io.File ioFile = attachment.download();
+                            File kristaFile = mailHandler.toKristaFiles(ioFile);
+                            attachmentFiles.add(kristaFile);
+                            LOGGER.debug("Successfully converted attachment: {}", attachment.getName());
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to convert attachment '{}' for message {}: {}",
+                                    attachment.getName(), messageId, e.getMessage(), e);
+                        }
+                    }
+
+                    LOGGER.info("Successfully converted {} attachments for message {}",
+                            attachmentFiles.size(), messageId);
+                }
+
                 // Extract all fields from eventData
                 Map<String, Object> responseMap = new HashMap<>();
                 responseMap.put("Notification Id", eventData.get(Constants.NOTIFICATION_ID));
@@ -1542,7 +1569,7 @@ public class MessagingArea {
                 responseMap.put("Change Type", eventData.get(Constants.CHANGE_TYPE));
                 responseMap.put("Folder ID", eventData.get(Constants.FOLDER_ID));
                 responseMap.put("Subject", eventData.get(Constants.SUBJECT));
-                responseMap.put("Attachments", eventData.get(Constants.ATTACHMENTS));
+                responseMap.put("Attachments", attachmentFiles);  // Use fetched attachment files
                 responseMap.put("Body", eventData.get(Constants.BODY));
                 responseMap.put("From", eventData.get(Constants.FROM));
                 responseMap.put("To", eventData.get(Constants.TO));

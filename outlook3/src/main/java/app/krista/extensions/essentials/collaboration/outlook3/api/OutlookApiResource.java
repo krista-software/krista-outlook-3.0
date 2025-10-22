@@ -399,7 +399,7 @@ public final class OutlookApiResource {
 
             if (shouldTrigger) {
                 // Build comprehensive event payload
-                FreeForm freeForm = buildEmailNotificationPayload(message, changeType, subscriptionId, notificationId, folderName, parentFolderId);
+                FreeForm freeForm = buildEmailNotificationPayload(provider, message, changeType, subscriptionId, notificationId, folderName, parentFolderId);
 
                 LOGGER.info("Triggering enhanced email folder notification for message {} in folder '{}'", messageId, folderName);
                 eventHandler.handleEvent(Constants.EMAIL_CHANGE_NOTIFICATION, freeForm);
@@ -415,6 +415,7 @@ public final class OutlookApiResource {
     /**
      * Build comprehensive email notification payload with all required fields
      *
+     * @param provider       the GraphServiceClientProvider
      * @param message        the Microsoft Graph message object
      * @param changeType     the type of change
      * @param subscriptionId the subscription ID
@@ -423,8 +424,8 @@ public final class OutlookApiResource {
      * @param folderId       the folder ID
      * @return FreeForm object with all notification data
      */
-    private FreeForm buildEmailNotificationPayload(Message message, String changeType, String subscriptionId,
-                                                    int notificationId, String folderName, String folderId) {
+    private FreeForm buildEmailNotificationPayload(GraphServiceClientProvider provider, Message message, String changeType,
+                                                    String subscriptionId, int notificationId, String folderName, String folderId) {
         LOGGER.info("Building email notification payload - MessageId: {}, ChangeType: {}, Folder: {} ({}), Subject: {}",
                 message.id, changeType, folderName, folderId, message.subject);
 
@@ -490,8 +491,11 @@ public final class OutlookApiResource {
             freeForm.put(Constants.BODY, Constants.TEXT, "");
         }
 
-        // Attachments
-        freeForm.put(Constants.ATTACHMENTS, Constants.TEXT, message.hasAttachments != null && message.hasAttachments ? "true" : "false");
+        // Store attachment metadata (hasAttachments flag)
+        // Note: We don't fetch actual attachment files here because this runs in a webhook context
+        // without user authentication. The catalog method will fetch attachments when triggered.
+        freeForm.put(Constants.ATTACHMENTS, Constants.TEXT,
+                message.hasAttachments != null && message.hasAttachments ? "true" : "false");
 
         return freeForm;
     }
