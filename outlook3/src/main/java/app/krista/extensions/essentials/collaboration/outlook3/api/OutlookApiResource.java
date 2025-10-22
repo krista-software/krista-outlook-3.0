@@ -275,6 +275,21 @@ public final class OutlookApiResource {
     }
 
     /**
+     * Validation endpoint for folder monitoring subscription.
+     * Microsoft Graph sends a validation request when creating a subscription.
+     *
+     * @param validationToken the validation token from Microsoft Graph
+     * @return a 200 OK response with the validation token
+     */
+    @POST
+    @Path("/folderMonitoringNotification")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Response folderMonitoringValidation(@QueryParam(Constants.VALIDATION_TOKEN) String validationToken) {
+        LOGGER.info("Folder monitoring validation received: {}", validationToken);
+        return Response.status(200).type(MediaType.TEXT_PLAIN).entity(validationToken.trim()).build();
+    }
+
+    /**
      * Enhanced folder monitoring notification endpoint - triggers for emails in monitored folders.
      * This endpoint supports the new "Email Folder Alert" feature with rich metadata.
      * Filters notifications based on configured monitored folders and provides comprehensive email data.
@@ -479,6 +494,37 @@ public final class OutlookApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response lifecycleNotification(JsonObject notification) {
         LOGGER.info(" Lifecycle notification received: {} ", notification);
+        this.notificationProcessQueue.add(new Notification(Notification.NotificationType.LIFECYCLE, notification));
+        return Response.status(202).build();
+    }
+
+    /**
+     * Validation endpoint for folder monitoring lifecycle subscription.
+     * Microsoft Graph sends a validation request when creating a lifecycle subscription.
+     *
+     * @param validationToken the validation token from Microsoft Graph
+     * @return a 200 OK response with the validation token
+     */
+    @POST
+    @Path("/folderLifecycleNotification")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Response folderLifecycleValidation(@QueryParam(Constants.VALIDATION_TOKEN) String validationToken) {
+        LOGGER.info("Folder lifecycle validation received: {}", validationToken);
+        return Response.status(200).type(MediaType.TEXT_PLAIN).entity(validationToken.trim()).build();
+    }
+
+    /**
+     * Lifecycle notification endpoint for folder monitoring subscription.
+     * Handles subscription lifecycle events like reauthorization required or subscription removed.
+     *
+     * @param notification the JSON payload from Microsoft Graph API containing lifecycle event details
+     * @return a 202 Accepted response after queuing the notification
+     */
+    @POST
+    @Path("/folderLifecycleNotification")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response folderLifecycleNotification(JsonObject notification) {
+        LOGGER.info("Folder lifecycle notification received: {}", notification);
         this.notificationProcessQueue.add(new Notification(Notification.NotificationType.LIFECYCLE, notification));
         return Response.status(202).build();
     }

@@ -1471,6 +1471,7 @@ public class MessagingArea {
                 String messageId = (String) eventData.get(Constants.MESSAGE_ID);
                 String folderName = (String) eventData.get(Constants.FOLDER_NAME);
                 String changeType = (String) eventData.get(Constants.CHANGE_TYPE);
+                LOGGER.info("eventData: " + eventData);
 
                 LOGGER.info("Processing Email Folder Alert - MessageId: {}, Folder: {}, ChangeType: {}",
                         messageId, folderName, changeType);
