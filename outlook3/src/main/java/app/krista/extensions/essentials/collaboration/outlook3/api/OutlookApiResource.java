@@ -302,7 +302,6 @@ public final class OutlookApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response folderMonitoringNotification(JsonObject notification) {
         JsonArray array = notification.get(Constants.VALUE).getAsJsonArray();
-        System.out.println("folderMonitoringNotification: " + array);
         LOGGER.info("Krista received a new folder monitoring alert to process: {} ", array);
 
         for (int i = 0; i < array.size(); i++) {
