@@ -8,9 +8,7 @@ import org.jvnet.hk2.annotations.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators.addAttributeIfNotNull;
@@ -30,6 +28,8 @@ public final class OutlookAttributes {
     private final String authType;
     @SerializedName(TENANT_ID)
     private final String tenantId;
+    @SerializedName(MONITORED_FOLDERS)
+    private final List<String> monitoredFolders;
 
     private final String routingUrl;
     private String publicClientId;
@@ -39,6 +39,11 @@ public final class OutlookAttributes {
     @Inject
     public OutlookAttributes(String clientId, String clientSecret, String tenantId, String email, boolean allowMailAlert,
                              String authType, String routingUrl) {
+        this(clientId, clientSecret, tenantId, email, allowMailAlert, authType, routingUrl, new ArrayList<>());
+    }
+
+    public OutlookAttributes(String clientId, String clientSecret, String tenantId, String email, boolean allowMailAlert,
+                             String authType, String routingUrl, List<String> monitoredFolders) {
         loadPublicConfig();
         this.clientId = clientId == null ? publicClientId : clientId;
         this.clientSecret = clientSecret == null ? publicClientSecret : clientSecret;
@@ -47,17 +52,23 @@ public final class OutlookAttributes {
         this.allowMailAlert = allowMailAlert;
         this.authType = authType;
         this.routingUrl = routingUrl.replace(LOCAL_EXTN_URL, LOCAL_EXTN_REPLACE_URL);
+        this.monitoredFolders = monitoredFolders != null ? new ArrayList<>(monitoredFolders) : new ArrayList<>();
     }
 
     public static OutlookAttributes create(JsonObject authPayload, String baseurl) {
         String authType = authPayload.get("authType").getAsString();
+        List<String> monitoredFolders = new ArrayList<>();
+        if (authPayload.has(MONITORED_FOLDERS) && authPayload.get(MONITORED_FOLDERS).isJsonArray()) {
+            authPayload.get(MONITORED_FOLDERS).getAsJsonArray().forEach(element -> monitoredFolders.add(element.getAsString()));
+        }
+
         if (Constants.PUBLIC.equals(authType)) {
             return new OutlookAttributes(null, null, null, authPayload.get(EMAIL).getAsString(),
-                    authPayload.get(ALLOW_MAIL_ALERT).getAsBoolean(), authType, baseurl);
+                    authPayload.get(ALLOW_MAIL_ALERT).getAsBoolean(), authType, baseurl, monitoredFolders);
         } else if (Constants.PRIVATE.equals(authType)) {
             return new OutlookAttributes(authPayload.get(CLIENT_ID).getAsString(), authPayload.get(CLIENT_SECRET).getAsString(),
                     authPayload.get(TENANT_ID).getAsString(), authPayload.get(EMAIL).getAsString(), authPayload.get(ALLOW_MAIL_ALERT).getAsBoolean(),
-                    authType, baseurl);
+                    authType, baseurl, monitoredFolders);
         } else {
             throw new IllegalArgumentException(UNSUPPORTED_AUTH);
         }
@@ -131,6 +142,10 @@ public final class OutlookAttributes {
         return authType;
     }
 
+    public List<String> getMonitoredFolders() {
+        return new ArrayList<>(monitoredFolders);
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> attributesMap = new HashMap<>();
         addAttributeIfNotNull(attributesMap, CLIENT_ID, getClientId());
@@ -139,6 +154,7 @@ public final class OutlookAttributes {
         addAttributeIfNotNull(attributesMap, ALLOW_MAIL_ALERT, isAllowMailAlert());
         addAttributeIfNotNull(attributesMap, EMAIL, getEmail());
         addAttributeIfNotNull(attributesMap, AUTH_TYPE, getAuthType());
+        addAttributeIfNotNull(attributesMap, MONITORED_FOLDERS, getMonitoredFolders());
         return attributesMap;
     }
 

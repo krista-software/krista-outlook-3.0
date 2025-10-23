@@ -9,6 +9,8 @@ import app.krista.extensions.essentials.collaboration.outlook3.OutlookAttributes
 import app.krista.extensions.essentials.collaboration.outlook3.catalog.entities.ExtensionResponseMeta;
 import app.krista.extensions.essentials.collaboration.outlook3.health.HealthCheck;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.SaveConfigurationImpl;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
+import app.krista.extensions.essentials.collaboration.outlook3.impl.stores.OutlookAttributeStore;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +54,12 @@ public class SetupAreaTest {
     @Mock
     private RoutingInfo routingInfo;
 
+    @Mock
+    private OutlookAttributeStore outlookAttributeStore;
+
+    @Mock
+    private GraphServiceClientProviderFactory providerFactory;
+
     private SetupArea setupArea;
 
     @BeforeEach
@@ -62,7 +70,7 @@ public class SetupAreaTest {
                 .thenReturn(TEST_ROUTING_URL);
 
         // Initialize SetupArea with mocked dependencies
-        setupArea = new SetupArea(healthCheck, saveConfigurationImpl, invoker);
+        setupArea = new SetupArea(healthCheck, saveConfigurationImpl, invoker, outlookAttributeStore, providerFactory);
     }
 
     // ========== Health Check Tests ==========
@@ -531,13 +539,15 @@ public class SetupAreaTest {
         SaveConfigurationImpl mockSaveConfig = mock(SaveConfigurationImpl.class);
         Invoker mockInvoker = mock(Invoker.class);
         RoutingInfo mockRoutingInfo = mock(RoutingInfo.class);
+        OutlookAttributeStore mockAttributeStore = mock(OutlookAttributeStore.class);
+        GraphServiceClientProviderFactory mockProviderFactory = mock(GraphServiceClientProviderFactory.class);
 
         when(mockInvoker.getRoutingInfo()).thenReturn(mockRoutingInfo);
         when(mockRoutingInfo.getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE))
                 .thenReturn(TEST_ROUTING_URL);
 
         // Act
-        SetupArea testSetupArea = new SetupArea(mockHealthCheck, mockSaveConfig, mockInvoker);
+        SetupArea testSetupArea = new SetupArea(mockHealthCheck, mockSaveConfig, mockInvoker, mockAttributeStore, mockProviderFactory);
 
         // Assert
         assertNotNull(testSetupArea);
@@ -552,13 +562,15 @@ public class SetupAreaTest {
         SaveConfigurationImpl mockSaveConfig = mock(SaveConfigurationImpl.class);
         Invoker mockInvoker = mock(Invoker.class);
         RoutingInfo mockRoutingInfo = mock(RoutingInfo.class);
+        OutlookAttributeStore mockAttributeStore = mock(OutlookAttributeStore.class);
+        GraphServiceClientProviderFactory mockProviderFactory = mock(GraphServiceClientProviderFactory.class);
 
         when(mockInvoker.getRoutingInfo()).thenReturn(mockRoutingInfo);
         when(mockRoutingInfo.getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE))
                 .thenReturn(null);
 
         // Act
-        SetupArea testSetupArea = new SetupArea(mockHealthCheck, mockSaveConfig, mockInvoker);
+        SetupArea testSetupArea = new SetupArea(mockHealthCheck, mockSaveConfig, mockInvoker, mockAttributeStore, mockProviderFactory);
 
         // Assert
         assertNotNull(testSetupArea);

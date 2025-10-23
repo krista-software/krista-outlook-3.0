@@ -1,6 +1,76 @@
 # Release Notes
 
-## Version 3.0.17 - Current Release
+## Version 3.0.18 - Current Release (Feature: Enhanced Folder Monitoring)
+
+- **Developer**: Krista Development Team
+- **Krista Service APIs (Java)**: 1.0.115+
+- **Global Catalog Version**: GC-2025.10.3+
+- **Release Date**: TBD
+- **Branch**: feature/outlook-3.0-Mail-Alert
+
+### New Features
+
+#### Enhanced Folder Monitoring and Email Change Notifications
+
+Added 5 new catalog requests for advanced folder-based email workflow automation:
+
+**New Catalog Requests:**
+
+1. **Set Monitored Folders** - Configure which folders to monitor for notifications
+2. **Get Monitored Folders** - Retrieve current monitoring configuration
+3. **List All Folders** - Discover all available folders in mailbox
+4. **Enable Folder Monitoring** - Create Microsoft Graph subscription (3-day validity)
+5. **Receive notification of Email Change** - Event triggered when emails arrive or move to monitored folders
+
+**Setup Sequence:**
+```
+1. Save Outlook Private Configuration
+2. List All Folders (discover available folders)
+3. Set Monitored Folders (configure specific folders)
+4. Enable Folder Monitoring (create subscription)
+5. Receive notification of Email Change (automatic event)
+```
+
+**Key Features:**
+- Monitor specific folders or all folders
+- Detect both new emails and moved emails
+- Support for nested folders (e.g., "Inbox/Projects")
+- Rich event metadata (subject, body, sender, recipients, attachments)
+- Folder-based workflow routing
+
+**Use Cases:**
+- Customer support automation
+- Sales lead processing
+- Document workflow automation
+- Priority escalation
+- Compliance monitoring
+
+### Technical Improvements
+
+- New event type: `emailChangeNotification`
+- Subscription with automatic retry (up to 3 attempts)
+- New REST endpoints: `/rest/outlook/folderMonitoringNotification` and `/rest/outlook/folderLifecycleNotification`
+- Enhanced OutlookAttributes with monitored folders list
+- Support for both "created" and "updated" change types
+
+### Documentation
+
+- 5 new comprehensive documentation pages
+- Prerequisites section with setup sequence
+- Usage examples and troubleshooting guides
+- Updated sidebar navigation
+
+### Backward Compatibility
+
+**100% Backward Compatible** - Original "Mail Received Alert" functionality unchanged. New features are opt-in only.
+
+### Breaking Changes
+
+**None**
+
+---
+
+## Version 3.0.17 - Previous Release
 
 - **Developer**: Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.115
@@ -143,8 +213,10 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                             |
 |------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.16** | Current Release  | Added Retry Mechanism Flag for all catalog requests                                                                                      |
-| **3.0.15** | Previous Release | Fetch Inbox Async was not returning any emails so we have made some logger changes due to excessive logging , Enhanced API documentation |
-| **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                                       |
+| **3.0.18** | Current Release  | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                          |
+| **3.0.17** | Previous Release | Added Allow Retry parameter for validation error handling                                                                               |
+| **3.0.16** | October 2025     | Added Retry Mechanism Flag for all catalog requests                                                                                     |
+| **3.0.15** | Previous Release | Fetch Inbox Async bug fix, Enhanced API documentation                                                                                   |
+| **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                                      |
 
 Stay updated with the latest features and improvements by subscribing to our release notifications! 

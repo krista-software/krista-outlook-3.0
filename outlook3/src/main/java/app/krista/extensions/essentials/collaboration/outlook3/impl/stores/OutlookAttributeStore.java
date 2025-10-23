@@ -9,8 +9,8 @@ import app.krista.extensions.util.KeyValueStore;
 import org.jvnet.hk2.annotations.Service;
 
 import javax.inject.Inject;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
@@ -49,14 +49,23 @@ public class OutlookAttributeStore {
             String authType = attributes.get(AUTH_TYPE).toString();
             String baseUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
 
+            // Extract monitored folders if present
+            List<String> monitoredFolders = new ArrayList<>();
+            if (attributes.containsKey(MONITORED_FOLDERS) && attributes.get(MONITORED_FOLDERS) instanceof List) {
+                monitoredFolders = ((List<?>) attributes.get(MONITORED_FOLDERS))
+                        .stream()
+                        .map(Object::toString)
+                        .collect(Collectors.toList());
+            }
+
             if (Constants.PUBLIC.equals(authType)) {
                 return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
                         null, (String) attributes.get(EMAIL), (boolean) attributes.get(ALLOW_MAIL_ALERT), authType,
-                        baseUrl);
+                        baseUrl, monitoredFolders);
             } else {
                 return new OutlookAttributes((String) attributes.get(CLIENT_ID), (String) attributes.get(CLIENT_SECRET),
                         (String) attributes.get(Constants.TENANT_ID), (String) attributes.get(EMAIL),
-                        (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl);
+                        (boolean) attributes.get(ALLOW_MAIL_ALERT), authType, baseUrl, monitoredFolders);
             }
         }
     }

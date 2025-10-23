@@ -38,11 +38,16 @@
     * [Fetch Inbox Async](pages/FetchInboxAsync.md)
     * [Get Result](pages/GetResult.md)
     * [Send Alert Using Notification Delta](pages/SendAlertUsingNotificationDelta.md)
+    * [Receive notification of Email Change](pages/ReceiveNotificationOfEmailChange.md)
     * [Check If Triggered Mail Ids Exist](pages/CheckIfTriggeredMailIdsExist.md)
 
 * **Setup & Configuration**
     * [Save Outlook Public Configuration](pages/SaveOutlookPublicConfiguration.md)
     * [Save Outlook Private Configuration](pages/SaveOutlookPrivateConfiguration.md)
+    * [Set Monitored Folders](pages/SetMonitoredFolders.md)
+    * [Get Monitored Folders](pages/GetMonitoredFolders.md)
+    * [List All Folders](pages/ListAllFolders.md)
+    * [Enable Folder Monitoring](pages/EnableFolderMonitoring.md)
     * [Health Check](pages/HealthCheck.md)
     * [Test Connection](pages/TestConnection.md)
 

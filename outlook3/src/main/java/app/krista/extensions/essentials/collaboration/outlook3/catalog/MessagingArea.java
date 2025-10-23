@@ -1454,6 +1454,80 @@ public class MessagingArea {
         }
     }
 
+
+
+    @CatalogRequest(
+            id = "localDomainRequest_e9e1ac90-799e-4f66-bbee-2f39abb1c184",
+            name = "Receive notification of Email Change",
+            description = "Allows krista to be notified of email changes specifically for the purpose of identifying when an email has been moved into a specific folder",
+            area = "Messaging",
+            type = CatalogRequest.Type.WAIT_FOR_EVENT)
+    @Field.Text(name = "Notification Id", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Subscription Id", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Change Type", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Folder ID", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Text(name = "Subject", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field(name = "Body", type = "Paragraph", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")}, options = {})
+    @Field(name = "From", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field(name = "CC", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field(name = "BCC", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field(name = "To", type = "Email", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    @Field.Boolean(name = "Attachments", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")}, options = {})
+    public ExtensionResponse receiveNotificationOfEmailChange(
+            @Field(name = "eventName", type = "Text") String eventName,
+            @Field(name = "eventData", type = "FreeForm") FreeForm eventData) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            if (eventName.equalsIgnoreCase(Constants.EMAIL_CHANGE_NOTIFICATION)) {
+                String messageId = (String) eventData.get(Constants.MESSAGE_ID);
+                String folderName = (String) eventData.get(Constants.FOLDER_NAME);
+                String changeType = (String) eventData.get(Constants.CHANGE_TYPE);
+
+                LOGGER.info("Processing Receive notification of Email Change - MessageId: {}, Folder: {}, ChangeType: {}",
+                        messageId, folderName, changeType);
+
+                // Extract hasAttachments flag from eventData
+                String hasAttachmentsStr = (String) eventData.get(Constants.ATTACHMENTS);
+                boolean hasAttachments = "true".equalsIgnoreCase(hasAttachmentsStr);
+
+                // Extract all fields from eventData
+                Map<String, Object> responseMap = new HashMap<>();
+                responseMap.put("Notification Id", eventData.get(Constants.NOTIFICATION_ID));
+                responseMap.put("Subscription Id", eventData.get(Constants.SUBSCRIPTION_ID));
+                responseMap.put("Change Type", eventData.get(Constants.CHANGE_TYPE));
+                responseMap.put("Folder ID", eventData.get(Constants.FOLDER_ID));
+                responseMap.put("Subject", eventData.get(Constants.SUBJECT));
+                responseMap.put("Body", eventData.get(Constants.BODY));
+                responseMap.put("From", eventData.get(Constants.FROM));
+                responseMap.put("To", eventData.get(Constants.TO));
+                responseMap.put("CC", eventData.get(Constants.CC));
+                responseMap.put("BCC", eventData.get(Constants.BCC));
+                responseMap.put("Attachments", hasAttachments);  // Boolean flag indicating if email has attachments
+
+                return ExtensionResponseFactory.create(responseMap);
+            } else {
+                LOGGER.error("Invalid event name for Receive notification of Email Change: {}", eventName);
+                telemetryHelper.recordValidationError("outlook3.recieveNotificationOfEmailChange", startTime, "Invalid event name", safeTagMap(
+                        "event_name", eventName
+                ));
+                throw new IllegalStateException("Invalid event name. Expected: " + Constants.EMAIL_CHANGE_NOTIFICATION);
+            }
+        } catch (MustAuthorizeException cause) {
+            LOGGER.error("Authorization error in Receive notification of Email Change: {}", cause.getMessage());
+            telemetryHelper.recordValidationError("outlook3.recieveNotificationOfEmailChange", startTime, cause.getMessage(), safeTagMap(
+                    "event_name", eventName
+            ));
+            return handleAuthorizationException(cause, requestContext.invokeAsUser());
+        } catch (Exception cause) {
+            LOGGER.error("Error occurred while processing Receive notification of Email Change: {}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.recieveNotificationOfEmailChange", startTime, cause, safeTagMap("event_name", eventName));
+            throw new IllegalStateException("Error occurred while processing Receive notification of Email Change");
+        }     }
+
+
+
+
     @CatalogRequest(
             id = "localDomainRequest_90b24da6-d02f-4fcb-9632-ef8e6ae1550a",
             name = "Fetch Latest Mail",
