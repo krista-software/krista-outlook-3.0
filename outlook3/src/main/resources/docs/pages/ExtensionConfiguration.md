@@ -271,6 +271,27 @@ Before configuring the extension, ensure you have completed the Microsoft Entra 
 3. Check Microsoft Graph service status
 4. Retry after a few minutes
 
+#### File Attachment JSON Array Error
+
+**Symptoms**: Error message "Not a JSON Array" when sending emails with single file attachments
+**Causes**:
+
+- Single files are passed directly instead of being wrapped in an array
+- Backend expects file attachments as JSON arrays (list format)
+- Issue occurs in workflows with "Inform a Person" steps
+
+**Solutions**:
+
+1. Always wrap single files in an array before sending:
+   ```javascript
+   var file = vars.get("current File Attachment");
+   var files = [];
+   files.push(file);
+   files; // Use this array instead of the single file
+   ```
+2. Use array format for all attachments, even single files
+3. Review workflow steps that handle file attachments
+
 ### Getting Help
 
 If you continue to experience issues:

@@ -371,6 +371,34 @@ Result: Customers receive timely and professional communications
 3. Ensure file formats are supported
 4. Try sending without attachments first
 
+### Single File Attachment Error
+
+**Symptoms**: Error message "Not a JSON Array" when sending single file attachments
+**Cause**: Single files are treated as JSON objects instead of JSON arrays during processing
+**Error Example**:
+```
+Not a JSON Array: {"length":540639,"fileName":"image001.png","extension":"png","mediaId":"media_ws_0df93984-4680-464e-a619-e80c544e5fc6"}
+```
+
+**Solution**: Always wrap single files in an array before sending
+
+**Workaround Code**:
+```javascript
+// For single file attachments, wrap in array
+var file = vars.get("current File Attachment");
+var files = [];
+files.push(file);
+files; // Use this array instead of the single file
+```
+
+**Why This Happens**:
+- The backend expects file attachments as a JSON array (list format)
+- When a single file is passed directly, it's interpreted as a JSON object
+- This causes parsing errors during attachment processing
+- The issue can also occur when using "Inform a Person" steps in workflows
+
+**Best Practice**: Always use array format for attachments, even for single files
+
 ### Formatting Problems
 
 **Cause**: HTML content or encoding issues
