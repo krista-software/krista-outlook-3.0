@@ -271,26 +271,47 @@ Before configuring the extension, ensure you have completed the Microsoft Entra 
 3. Check Microsoft Graph service status
 4. Retry after a few minutes
 
-#### File Attachment JSON Array Error
+#### File Iteration Best Practices
 
-**Symptoms**: Error message "Not a JSON Array" when sending emails with single file attachments
-**Causes**:
+**Q: How should I handle file iteration when working with Outlook attachments?**
 
-- Single files are passed directly instead of being wrapped in an array
-- Backend expects file attachments as JSON arrays (list format)
-- Issue occurs in workflows with "Inform a Person" steps
+A: When you iterate over files in Outlook and send them in a loop as file attachments, they are treated as files. To make iteration simpler and process one file at a time, use this approach:
 
-**Solutions**:
+```javascript
+// When iterating over files, get one file at a time
+var file = vars.get("current File Attachment");
+var files = [];
+files.push(file);
+files; // This makes iteration simpler by handling one file at a time
+```
 
-1. Always wrap single files in an array before sending:
-   ```javascript
-   var file = vars.get("current File Attachment");
-   var files = [];
-   files.push(file);
-   files; // Use this array instead of the single file
-   ```
-2. Use array format for all attachments, even single files
-3. Review workflow steps that handle file attachments
+**Q: Why does this approach make file iteration simpler?**
+
+A: This workaround allows you to:
+- Process files one at a time during iteration
+- Maintain consistent handling whether you have single or multiple files
+- Simplify the iteration logic in your workflows
+- Ensure each file is properly formatted for processing
+
+**Q: When should I use this file iteration technique?**
+
+A: Use this approach when:
+- Iterating over files in Outlook and sending them in loops
+- Processing file attachments one by one in workflows
+- Building file lists in "Manage Info" steps
+- Working with "Inform a Person" steps that handle attachments
+
+**Q: How does this help with workflow processing?**
+
+A: By treating each file consistently during iteration, you can:
+- Simplify your loop logic
+- Handle single and multiple file scenarios uniformly
+- Reduce complexity in file processing workflows
+- Ensure reliable file handling across different workflow steps
+
+**Q: Can I use this for external system integration?**
+
+A: Yes, this approach works well when sending files to external systems (like Jira) because it maintains consistent file formatting throughout the iteration process, making integration more reliable.
 
 ### Getting Help
 

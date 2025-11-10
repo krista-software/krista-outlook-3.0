@@ -302,24 +302,6 @@ Result: All stakeholders stay informed of project status
 3. Ensure file formats are supported
 4. Try replying without attachments first
 
-### Single File Attachment Error
-
-**Symptoms**: Error message "Not a JSON Array" when replying with single file attachments
-**Cause**: Single files are treated as JSON objects instead of JSON arrays during processing
-
-**Solution**: Always wrap single files in an array before sending
-
-**Workaround Code**:
-```javascript
-// For single file attachments, wrap in array
-var file = vars.get("current File Attachment");
-var files = [];
-files.push(file);
-files; // Use this array instead of the single file
-```
-
-**Best Practice**: Always use array format for attachments, even for single files
-
 ### Permission Errors
 
 **Cause**: Insufficient reply permissions
