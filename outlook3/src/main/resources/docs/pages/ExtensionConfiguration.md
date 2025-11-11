@@ -273,28 +273,30 @@ Before configuring the extension, ensure you have completed the Microsoft Entra 
 
 #### File Handling Best Practices
 
-**Q: How to handle files when receiving them from catalog request responses?**
+#### File Handling Best Practices
 
-A: When receiving files from catalog request responses, proper handling is essential to ensure consistent processing across workflow steps and external system integrations.
+**Q: How to handle attachments when receiving them from catalog request responses?**
 
-**When this issue occurs:**
+**A:** When receiving attachments from catalog request responses, proper handling is essential to ensure consistent processing across workflow steps and external system integrations.
 
-During file iteration in Outlook workflows, files are naturally treated as a list when processed in loops. However, when sending a single file to external systems (such as Jira), the backend expects files to be in list format regardless of quantity.
+During file iteration in Krista workflows, attachments are naturally treated as a list when processed in loops. However, when iterating over attachments, each attachment is treated as a single file object, while the Krista framework expects a file list object instead of a single file.
 
-If a single file is passed directly without list wrapping, it gets processed as a JsonObject instead of a JsonArray, causing processing errors.
+To overcome this, we can handle it using the code below.
 
-This commonly occurs in these scenarios:
-- Processing files from catalog request responses
-- Iterating over Outlook files and sending them in loops
+This issue commonly occurs in the following scenarios:
+
+- Processing attachments from catalog request responses
+- Iterating over Outlook attachments and sending them in loops
 - Using "Inform a Person" steps with file attachments
 - Integrating with external systems (like Jira)
 
 **The Solution:**
 
-This is a platform-level issue affecting file processing across workflow steps. To resolve it, always wrap single files in a list format before processing.
+This is a platform-level issue affecting attachment processing across workflow steps. To resolve it, always wrap single files in a list format before processing.
 
 **Implementation:**
-Place this JavaScript code in your **Manage Info step** or before **Person Make Request** steps:
+
+Place this JavaScript code in your Manage Info step:
 
 ```javascript
 var file = vars.get("current File Attachment");
@@ -303,8 +305,12 @@ files.push(file);
 files;
 ```
 
+--- 
+![File Iteration Conversation](../_media/file_iteration_conversation_img.png)
+
 **Result:**
-This approach ensures both single and multiple file attachments work consistently across all workflow steps and external system integrations. When files are wrapped in list format, they process correctly whether you're handling one file or multiple files.
+
+This approach ensures both single and multiple file attachments work consistently across all workflow steps and external system integrations. When files are wrapped in a list format, they process correctly whether you're handling one file or multiple files.
 
 ### Getting Help
 
