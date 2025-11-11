@@ -273,8 +273,6 @@ Before configuring the extension, ensure you have completed the Microsoft Entra 
 
 #### File Handling Best Practices
 
-#### File Handling Best Practices
-
 **Q: How to handle attachments when receiving them from catalog request responses?**
 
 **A:** When receiving attachments from catalog request responses, proper handling is essential to ensure consistent processing across workflow steps and external system integrations.
