@@ -281,17 +281,6 @@ During file iteration in Krista workflows, attachments are naturally treated as 
 
 To overcome this, we can handle it using the code below.
 
-This issue commonly occurs in the following scenarios:
-
-- Processing attachments from catalog request responses
-- Iterating over Outlook attachments and sending them in loops
-- Using "Inform a Person" steps with file attachments
-- Integrating with external systems (like Jira)
-
-**The Solution:**
-
-This is a platform-level issue affecting attachment processing across workflow steps. To resolve it, always wrap single files in a list format before processing.
-
 **Implementation:**
 
 Place this JavaScript code in your Manage Info step:
@@ -305,6 +294,18 @@ files;
 
 --- 
 ![File Iteration Conversation](../_media/file_iteration_conversation_img.png)
+
+---
+This issue commonly occurs in the following scenarios:
+
+- Processing attachments from catalog request responses
+- Iterating over Outlook attachments and sending them in loops
+- Using "Inform a Person" steps with file attachments
+- Integrating with external systems (like Jira)
+
+**The Solution:**
+
+This is a platform-level issue affecting attachment processing across workflow steps. To resolve it, always wrap single files in a list format before processing.
 
 **Result:**
 
