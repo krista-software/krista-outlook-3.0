@@ -271,47 +271,40 @@ Before configuring the extension, ensure you have completed the Microsoft Entra 
 3. Check Microsoft Graph service status
 4. Retry after a few minutes
 
-#### File Iteration Best Practices
+#### File Handling Best Practices
 
-**Q: How should I handle file iteration when working with Outlook attachments?**
+**Q: How to handle files when receiving them from catalog request responses?**
 
-A: When you iterate over files in Outlook and send them in a loop as file attachments, they are treated as files. To make iteration simpler and process one file at a time, use this approach:
+A: When receiving files from catalog request responses, proper handling is essential to ensure consistent processing across workflow steps and external system integrations.
+
+**When this issue occurs:**
+
+During file iteration in Outlook workflows, files are naturally treated as a list when processed in loops. However, when sending a single file to external systems (such as Jira), the backend expects files to be in list format regardless of quantity.
+
+If a single file is passed directly without list wrapping, it gets processed as a JsonObject instead of a JsonArray, causing processing errors.
+
+This commonly occurs in these scenarios:
+- Processing files from catalog request responses
+- Iterating over Outlook files and sending them in loops
+- Using "Inform a Person" steps with file attachments
+- Integrating with external systems (like Jira)
+
+**The Solution:**
+
+This is a platform-level issue affecting file processing across workflow steps. To resolve it, always wrap single files in a list format before processing.
+
+**Implementation:**
+Place this JavaScript code in your **Manage Info step** or before **Person Make Request** steps:
 
 ```javascript
-// When iterating over files, get one file at a time
 var file = vars.get("current File Attachment");
 var files = [];
 files.push(file);
-files; // This makes iteration simpler by handling one file at a time
+files;
 ```
 
-**Q: Why does this approach make file iteration simpler?**
-
-A: This workaround allows you to:
-- Process files one at a time during iteration
-- Maintain consistent handling whether you have single or multiple files
-- Simplify the iteration logic in your workflows
-- Ensure each file is properly formatted for processing
-
-**Q: When should I use this file iteration technique?**
-
-A: Use this approach when:
-- Iterating over files in Outlook and sending them in loops
-- Processing file attachments one by one in workflows
-- Building file lists in "Manage Info" steps
-- Working with "Inform a Person" steps that handle attachments
-
-**Q: How does this help with workflow processing?**
-
-A: By treating each file consistently during iteration, you can:
-- Simplify your loop logic
-- Handle single and multiple file scenarios uniformly
-- Reduce complexity in file processing workflows
-- Ensure reliable file handling across different workflow steps
-
-**Q: Can I use this for external system integration?**
-
-A: Yes, this approach works well when sending files to external systems (like Jira) because it maintains consistent file formatting throughout the iteration process, making integration more reliable.
+**Result:**
+This approach ensures both single and multiple file attachments work consistently across all workflow steps and external system integrations. When files are wrapped in list format, they process correctly whether you're handling one file or multiple files.
 
 ### Getting Help
 
