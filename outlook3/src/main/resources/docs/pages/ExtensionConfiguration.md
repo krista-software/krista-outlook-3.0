@@ -271,6 +271,40 @@ Before configuring the extension, ensure you have completed the Microsoft Entra 
 3. Check Microsoft Graph service status
 4. Retry after a few minutes
 
+#### File Handling Best Practices
+
+**Q: How to handle attachments when receiving them from catalog request responses?**
+
+**A:** When receiving attachments from catalog request responses, proper handling is essential to ensure consistent processing across workflow steps and external system integrations.
+
+During file iteration in Krista workflows, attachments are naturally treated as a list when processed in loops. However, when iterating over attachments, each attachment is treated as a single file object, while the Krista framework expects a file list object instead of a single file.
+
+To overcome this, we can handle it using the code below.
+
+**Implementation:**
+
+Place this JavaScript code in your Manage Info step:
+
+```javascript
+var file = vars.get("current File Attachment");
+var files = [];
+files.push(file);
+files;
+```
+
+--- 
+![File Iteration Conversation](../_media/file_iteration_conversation_img.png)
+
+---
+This issue commonly occurs in the following scenarios:
+
+- Processing attachments from catalog request responses
+- Iterating over Outlook attachments and sending them in loops
+- Using "Inform a Person" steps with file attachments
+- Integrating with external systems (like Jira)
+
+This approach ensures both single and multiple file attachments work consistently across all workflow steps and external system integrations. When files are wrapped in a list format, they process correctly whether you're handling one file or multiple files.
+
 ### Getting Help
 
 If you continue to experience issues:

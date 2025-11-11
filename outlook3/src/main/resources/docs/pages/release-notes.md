@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 3.0.18 - Current Release (Feature: Enhanced Folder Monitoring)
+## Version 3.0.19 - Current Release (Feature: Enhanced Folder Monitoring)
 
 - **Developer**: Krista Development Team
 - **Krista Service APIs (Java)**: 1.0.115+
