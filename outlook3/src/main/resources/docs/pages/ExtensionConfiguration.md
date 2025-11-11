@@ -303,12 +303,6 @@ This issue commonly occurs in the following scenarios:
 - Using "Inform a Person" steps with file attachments
 - Integrating with external systems (like Jira)
 
-**The Solution:**
-
-This is a platform-level issue affecting attachment processing across workflow steps. To resolve it, always wrap single files in a list format before processing.
-
-**Result:**
-
 This approach ensures both single and multiple file attachments work consistently across all workflow steps and external system integrations. When files are wrapped in a list format, they process correctly whether you're handling one file or multiple files.
 
 ### Getting Help
