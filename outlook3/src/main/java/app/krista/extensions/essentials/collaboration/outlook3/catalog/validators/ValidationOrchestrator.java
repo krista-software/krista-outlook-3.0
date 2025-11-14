@@ -9,6 +9,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Orchestrator service that coordinates validation across multiple validator types.
+ *
+ * <p>This service maintains a registry of all validators and provides a unified interface
+ * for validating multiple resources in a single operation. It automatically initializes
+ * validators for all supported resource types (message IDs, folder names, email addresses,
+ * categories, pagination parameters, etc.) and delegates validation to the appropriate
+ * validator based on the resource type.</p>
+ *
+ * <p>The orchestrator returns detailed validation results including error messages,
+ * confirmation messages, and field metadata for each failed validation, enabling
+ * interactive validation flows with user feedback.</p>
+ */
 @Service
 public class ValidationOrchestrator {
 
@@ -26,6 +39,13 @@ public class ValidationOrchestrator {
         validators.put(Validator.ValidationResource.PAGE_SIZE, new PageSizeValidator());
     }
 
+    /**
+     * Immutable data class representing the result of a validation operation.
+     *
+     * <p>This class encapsulates all information needed to handle a validation failure,
+     * including error messages, confirmation messages, and field metadata for re-prompting
+     * the user or displaying validation feedback.</p>
+     */
     public static class ValidationResult {
         private final String confirmStepMessage;
         private final String fetchFieldName;
@@ -65,6 +85,21 @@ public class ValidationOrchestrator {
 
     private final Map<Validator.ValidationResource, Validator> validators = new HashMap<>();
 
+    /**
+     * Validates multiple resources and returns detailed results for any validation failures.
+     *
+     * <p>This method iterates through all provided resources, delegates validation to the
+     * appropriate validator for each resource type, and collects validation results for
+     * any resources that fail validation. Resources that pass validation are not included
+     * in the results.</p>
+     *
+     * <p>The validation context (all resources) is passed to each validator, allowing
+     * validators to perform cross-field validation if needed.</p>
+     *
+     * @param resources a map of validation resources to their values to be validated
+     * @return a list of ValidationResult objects for resources that failed validation;
+     *         empty list if all validations pass
+     */
     public List<ValidationResult> validate(Map<Validator.ValidationResource, String> resources) {
         List<ValidationResult> results = new ArrayList<>();
         for (Map.Entry<Validator.ValidationResource, String> entry : resources.entrySet()) {
