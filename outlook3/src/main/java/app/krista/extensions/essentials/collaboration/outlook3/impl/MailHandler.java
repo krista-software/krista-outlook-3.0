@@ -22,6 +22,15 @@ import java.util.stream.Collectors;
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil.getAttachmentsByParsingIntoJsonMapper;
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil.getCommaSeparatedEmail;
 
+/**
+ * Service class responsible for handling email-related operations including conversion between
+ * Microsoft Graph Email objects and Krista MailDetails entities, file attachment processing,
+ * and integration with Krista's media storage system.
+ *
+ * <p>This handler manages the transformation of email data from Microsoft Graph API format
+ * to Krista's internal format, handles file uploads with fallback mechanisms, and processes
+ * both file and item attachments.</p>
+ */
 @Service
 public class MailHandler {
 
@@ -40,6 +49,18 @@ public class MailHandler {
         this.authorizationContext = authContext;
     }
 
+    /**
+     * Converts a Microsoft Graph Email object to a Krista MailDetails entity.
+     *
+     * <p>This method extracts all relevant email properties including sender, recipients,
+     * subject, content, attachments, and metadata. It handles both file and item attachments,
+     * converting them to Krista's internal format. Draft emails without sender information
+     * are handled gracefully by setting the from field to null.</p>
+     *
+     * @param email the Microsoft Graph Email object to convert; if null, returns null
+     * @param useEmail flag indicating whether to use email-specific attachment processing
+     * @return a MailDetails object containing all email information, or null if input email is null
+     */
     public MailDetails fromEmail(Email email, Boolean useEmail) {
         if (email == null) {
             return null;
@@ -70,6 +91,19 @@ public class MailHandler {
         return mailDetails;
     }
 
+    /**
+     * Converts a Java File object to a Krista File entity with automatic fallback mechanism.
+     *
+     * <p>This method attempts to upload the file using the standard upload mechanism first.
+     * If that fails (e.g., due to file size limitations), it automatically falls back to
+     * zip compression upload. This ensures maximum compatibility with various file sizes
+     * and formats.</p>
+     *
+     * @param file the Java File object to convert to Krista format
+     * @return a Krista File entity representing the uploaded file
+     * @throws RuntimeException if both regular and zip upload attempts fail, with a user-friendly
+     *         error message indicating possible causes (file too large, corrupted, or unsupported format)
+     */
     public File toKristaFiles(java.io.File file) {
         long fileSize = file.length();
         LOGGER.debug("Converting file to Krista format: fileName={}, size={} bytes", file.getName(), fileSize);
@@ -89,6 +123,19 @@ public class MailHandler {
         }
     }
 
+    /**
+     * Converts a list of Krista File entities to Microsoft Graph Attachment objects.
+     *
+     * <p>This method processes each file by reading its content, determining its MIME type,
+     * and creating FileAttachment objects suitable for Microsoft Graph API. The files are
+     * first parsed through a JSON mapper to ensure proper format, then converted to
+     * Microsoft Graph's FileAttachment format with appropriate metadata.</p>
+     *
+     * @param attachments list of Krista File entities to convert to Microsoft Graph attachments
+     * @return list of Microsoft Graph Attachment objects ready for API submission
+     * @throws IllegalStateException if file processing fails during attachment creation,
+     *         wrapping the underlying IOException with a descriptive error message
+     */
     public List<com.microsoft.graph.models.Attachment> toAttachment(List<File> attachments) {
         List<com.microsoft.graph.models.Attachment> attachmentsList = new LinkedList<>();
         List<File> filesToAttach = getAttachmentsByParsingIntoJsonMapper(attachments);

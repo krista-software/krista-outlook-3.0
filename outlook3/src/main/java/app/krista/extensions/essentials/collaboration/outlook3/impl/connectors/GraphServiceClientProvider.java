@@ -30,6 +30,20 @@ import java.util.stream.Collectors;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
+/**
+ * Provider class responsible for creating and managing Microsoft Graph Service Client instances
+ * with OAuth 2.0 authentication and token refresh capabilities.
+ *
+ * <p>This class handles the complete lifecycle of Graph API authentication including:
+ * <ul>
+ *   <li>Acquiring and refreshing OAuth 2.0 access tokens using MSAL4J</li>
+ *   <li>Managing refresh token storage and retrieval</li>
+ *   <li>Supporting both private (single-tenant) and public (multi-tenant) authentication</li>
+ *   <li>Handling authentication errors with user-friendly messages and re-authentication flows</li>
+ *   <li>Managing delta tokens for change tracking in Microsoft Graph API</li>
+ * </ul>
+ * </p>
+ */
 public class GraphServiceClientProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphServiceClientProvider.class);
@@ -61,6 +75,19 @@ public class GraphServiceClientProvider {
         return attributes;
     }
 
+    /**
+     * Creates a Graph Service Client configured for a specific user context.
+     *
+     * <p>This method determines whether to use the setup email (admin context) or the
+     * authenticated user's account based on the provided parameters. It handles both
+     * explicit user specification and automatic context detection from the request.</p>
+     *
+     * @param useSetupEmail flag indicating whether to use the setup email (true) or user account (false);
+     *                      if null, automatically determines based on request context
+     * @param accountID the specific account ID to use; only applicable when useSetupEmail is false
+     * @return a configured GraphServiceClient instance for the specified user
+     * @throws IOException if client creation fails due to network or authentication issues
+     */
     public GraphServiceClient<Request> getGraphServiceClientForUser(Boolean useSetupEmail, String accountID) throws IOException {
         if (useSetupEmail != null) {
             return getGraphServiceClient(useSetupEmail, useSetupEmail ? null : accountID);
@@ -69,10 +96,31 @@ public class GraphServiceClientProvider {
         }
     }
 
+    /**
+     * Creates a Graph Service Client configured for administrative operations.
+     *
+     * <p>This method returns a client authenticated with the setup email credentials,
+     * providing administrative access to Microsoft Graph API resources.</p>
+     *
+     * @return a configured GraphServiceClient instance with administrative privileges
+     */
     public GraphServiceClient<Request> getGraphServiceClientForAdmin() {
         return getGraphServiceClient(true, null);
     }
 
+    /**
+     * Internal method to create a Graph Service Client with token refresh handling.
+     *
+     * <p>This method retrieves the refresh token from storage, validates its existence,
+     * and creates an authenticated Graph Service Client. If the refresh token is missing,
+     * it triggers the re-authentication flow.</p>
+     *
+     * @param useSetupEmail flag indicating whether to use setup email or user account
+     * @param accountID the specific account ID to use when not using setup email
+     * @return a configured GraphServiceClient instance
+     * @throws MustAuthorizeException if refresh token is missing or authentication fails
+     * @throws RuntimeException for other unexpected errors during client creation
+     */
     private GraphServiceClient<Request> getGraphServiceClient(boolean useSetupEmail, String accountID) {
         try {
             String userId = getUserId(useSetupEmail, accountID);
@@ -88,6 +136,24 @@ public class GraphServiceClientProvider {
         }
     }
 
+    /**
+     * Core method to acquire access token and create Graph Service Client using refresh token.
+     *
+     * <p>This method performs the following operations:
+     * <ul>
+     *   <li>Builds a confidential client application with appropriate authority (private/public)</li>
+     *   <li>Acquires a new access token using the refresh token via MSAL4J</li>
+     *   <li>Updates the stored refresh token with the newly issued one</li>
+     *   <li>Creates and returns an authenticated GraphServiceClient</li>
+     * </ul>
+     * Handles various authentication errors including token expiration, revocation, and network issues.</p>
+     *
+     * @param refreshTokenStoreKey the key used to store and retrieve the refresh token
+     * @param refreshToken the current refresh token to use for acquiring access token
+     * @return a configured GraphServiceClient instance with valid access token
+     * @throws MustAuthorizeException if authentication fails due to expired/invalid tokens or user account issues
+     * @throws IllegalArgumentException if authentication type is not recognized
+     */
     private GraphServiceClient<Request> getGraphServiceClient(String refreshTokenStoreKey, String refreshToken) {
         try {
             String[] scopes = Constants.REQUIRED_SCOPE.split(Constants.SCOPE_SEPARATOR);
@@ -122,6 +188,16 @@ public class GraphServiceClientProvider {
         }
     }
 
+    /**
+     * Extracts and updates the refresh token from MSAL4J token cache response.
+     *
+     * <p>This method parses the serialized token cache JSON, extracts the new refresh token,
+     * and updates it in the refresh token store. This ensures subsequent API calls can use
+     * the latest refresh token without requiring user re-authentication.</p>
+     *
+     * @param userId the user identifier used as the key for storing the refresh token
+     * @param jsonObject the serialized token cache JSON object from MSAL4J containing the new refresh token
+     */
     private void updateRefreshToken(String userId, JsonObject jsonObject) {
         JsonObject refreshToken = jsonObject.get("RefreshToken").getAsJsonObject();
         String firstKey = refreshToken.keySet().iterator().next();
@@ -132,11 +208,18 @@ public class GraphServiceClientProvider {
     }
 
     /**
-     * This request returns user request builder
+     * Creates a UserRequestBuilder for accessing Microsoft Graph user-specific endpoints.
      *
-     * @return userRequestBuilder
+     * <p>This method determines the appropriate user context (setup email vs. authenticated user)
+     * and returns a builder configured to access either the /me endpoint (for authenticated users)
+     * or the /users/{email} endpoint (for administrative operations).</p>
+     *
+     * @param useSetupEmail flag indicating whether to use setup email (true) or authenticated user (false);
+     *                      if null, automatically determines based on request context
+     * @param accountID the specific account ID to use; only applicable when useSetupEmail is false
+     * @return a UserRequestBuilder configured for the appropriate user context
+     * @throws RuntimeException if connection to Microsoft services fails, wrapping the underlying IOException
      */
-
     public UserRequestBuilder getUserRequestBuilder(Boolean useSetupEmail, String accountID) {
         try {
             if (useSetupEmail != null) {
@@ -153,6 +236,17 @@ public class GraphServiceClientProvider {
         }
     }
 
+    /**
+     * Creates a MustAuthorizeException to trigger user authentication or re-authentication flow.
+     *
+     * <p>This method constructs an exception with appropriate details including user ID and
+     * optional authentication context ID. The exception message varies based on whether this
+     * is an initial authentication or a re-authentication scenario.</p>
+     *
+     * @param userId the user identifier to include in the authorization details
+     * @param reAuthentication flag indicating if this is a re-authentication (true) or initial auth (false)
+     * @return a MustAuthorizeException configured with appropriate message and user details
+     */
     private MustAuthorizeException createMustAuthorizationException(String userId, boolean reAuthentication) {
         LOGGER.debug(reAuthentication ? Constants.GOT_ERROR_FOR_AUTHENTICATION_SO_SENDING_FOR_RE_AUTHENTICATION : Constants.GOT_ERROR_FOR_AUTHENTICATION_SO_SENDING_FOR_AUTHENTICATION);
         List<NamedValuedField> details = new ArrayList<>();
@@ -165,6 +259,22 @@ public class GraphServiceClientProvider {
         return new MustAuthorizeException(reAuthentication ? Constants.REFRESH_TOKEN_EXPIRED : Constants.AUTHORIZATION_PROMPT, details);
     }
 
+    /**
+     * Determines the user ID based on the operation context and provided parameters.
+     *
+     * <p>This method resolves the user identifier from different sources:
+     * <ul>
+     *   <li>Setup email when called from attribute validation</li>
+     *   <li>Provided account ID when explicitly specified</li>
+     *   <li>Authorized account from authorization context otherwise</li>
+     * </ul>
+     * </p>
+     *
+     * @param calledFromValidateAttributes flag indicating if called during attribute validation
+     * @param accountID the explicitly provided account ID, or null to use authorization context
+     * @return the resolved user identifier
+     * @throws IllegalStateException if user ID cannot be determined from any source
+     */
     private String getUserId(boolean calledFromValidateAttributes, String accountID) {
         String userId;
         if (calledFromValidateAttributes) {
@@ -178,6 +288,16 @@ public class GraphServiceClientProvider {
         return userId;
     }
 
+    /**
+     * Constructs the refresh token storage key from user ID and application configuration.
+     *
+     * <p>This method creates a composite key that uniquely identifies a refresh token by
+     * combining the user ID, client ID, and authentication type. Special handling is provided
+     * for workspace contacts which use the user ID directly as the key.</p>
+     *
+     * @param userId the user identifier
+     * @return a composite key in the format: userId_clientId_authType, or just userId for workspace contacts
+     */
     @NotNull
     private String getRefTokenStoreKey(String userId) {
         if (userId.startsWith(Constants.WS_CONTACT)) {
@@ -187,15 +307,38 @@ public class GraphServiceClientProvider {
         }
     }
 
+    /**
+     * Retrieves the stored delta link for Microsoft Graph API change tracking.
+     *
+     * <p>Delta links are used to track changes in Microsoft Graph resources efficiently
+     * by only retrieving items that have changed since the last query.</p>
+     *
+     * @return the stored delta link token, or null if not previously stored
+     */
     public String getDeltaLink() {
         Object deltaLink = refreshTokenStore.getDeltaLink(Constants.DELTA_TOKEN);
         return (String) deltaLink;
     }
 
+    /**
+     * Stores a delta link token for future change tracking queries.
+     *
+     * <p>This method persists the delta token received from Microsoft Graph API responses,
+     * enabling efficient incremental synchronization in subsequent requests.</p>
+     *
+     * @param deltaToken the delta link token to store for future use
+     */
     public void storeDeltaLink(String deltaToken) {
         refreshTokenStore.put(Constants.DELTA_TOKEN, deltaToken);
     }
 
+    /**
+     * Custom authentication provider implementation for Microsoft Graph Service Client.
+     *
+     * <p>This provider supplies the access token to Microsoft Graph API requests by implementing
+     * the IAuthenticationProvider interface. It validates the access token on construction and
+     * provides it asynchronously to the Graph SDK for request authentication.</p>
+     */
     public static class GraphServiceClientAuthenticationProvider implements IAuthenticationProvider {
 
         private final String accessToken;
@@ -207,6 +350,16 @@ public class GraphServiceClientProvider {
             this.accessToken = accessToken;
         }
 
+        /**
+         * Provides the access token asynchronously for Microsoft Graph API requests.
+         *
+         * <p>This method is called by the Microsoft Graph SDK for each API request to obtain
+         * the bearer token for authentication. The token is returned as a completed future
+         * since it's already available in memory.</p>
+         *
+         * @param requestUrl the URL of the request being authenticated (not used in this implementation)
+         * @return a CompletableFuture containing the access token
+         */
         @NotNull
         @Override
         public CompletableFuture<String> getAuthorizationTokenAsync(@NotNull URL requestUrl) {
@@ -214,6 +367,16 @@ public class GraphServiceClientProvider {
         }
     }
 
+    /**
+     * Creates a list of authorization details for MustAuthorizeException.
+     *
+     * <p>This method constructs the details payload that will be passed to the authorization
+     * flow, including the user ID and optional authentication context ID. These details help
+     * the authorization system identify which user and context require authentication.</p>
+     *
+     * @param userId the user identifier to include in the authorization details
+     * @return a list of NamedValuedField objects containing user ID and optional context ID
+     */
     private List<NamedValuedField> createAuthDetails(String userId) {
         List<NamedValuedField> details = new ArrayList<>();
         NamedValuedField userIdField = new NamedValuedField(USER_ID, TEXT, userId, new HashMap<>(), new HashMap<>());

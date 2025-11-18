@@ -17,15 +17,36 @@ import java.util.*;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
+/**
+ * Comprehensive utility class providing helper methods for entity data transformation,
+ * email formatting, HTML table generation, and file operations in the Outlook extension.
+ *
+ * <p>This class offers a wide range of static utility methods including:
+ * <ul>
+ *   <li>Entity data conversion and validation</li>
+ *   <li>HTML table generation from entity lists</li>
+ *   <li>Email address parsing and formatting</li>
+ *   <li>Message content formatting with thread history</li>
+ *   <li>File type detection and content reading</li>
+ *   <li>Date/time formatting and number formatting</li>
+ * </ul>
+ * All methods are static and the class cannot be instantiated.</p>
+ */
 public class EntityHelperUtil {
     private EntityHelperUtil() {
     }
 
     /**
-     * This function will convert {@link EntityValue} into {@link Map}
+     * Converts a list of EntityValue objects into a list of maps with formatted data.
      *
-     * @param entityValues input {@link List} of {@link EntityValue}
-     * @return {@link List} of {@link Map}
+     * <p>This method transforms entity values into a more accessible map format, applying
+     * special formatting for percentage fields and validating data for display. If an entity
+     * registry is provided, it uses entity definitions to apply field-specific transformations
+     * such as converting percentage values to human-readable format (e.g., 0.75 to "75 %").</p>
+     *
+     * @param entityValues the list of EntityValue objects to convert
+     * @param registry the entity registry for accessing entity definitions; can be null
+     * @return a list of maps where each map represents an entity's field data in display format
      */
     public static List<Map<String, Object>> getEntityDataAsList(List<EntityValue> entityValues, Entities registry) {
         List<Map<String, Object>> entityDataToMap = new ArrayList<>();
@@ -53,10 +74,15 @@ public class EntityHelperUtil {
 
 
     /**
-     * This function will get Entity Values map  in non-technical form
+     * Transforms entity field values into user-friendly, non-technical format.
      *
-     * @param entityMap {@link Map} of entity values
-     * @return {@link Map} of entity values in non-technical format
+     * <p>This method converts technical boolean values (true/false) into readable
+     * text ("Yes"/"No") while preserving all other values unchanged. The transformation
+     * maintains the original map's key-value structure in a LinkedHashMap to preserve
+     * insertion order.</p>
+     *
+     * @param entityMap the map of entity field names to their values
+     * @return a new map with boolean values converted to "Yes"/"No" and other values unchanged
      */
     public static Map<String, Object> getValidatedData(Map<String, Object> entityMap) {
         Map<String, Object> validatedEntityMap = new LinkedHashMap<>();
@@ -67,11 +93,11 @@ public class EntityHelperUtil {
     }
 
     /**
-     * This function finds input data is type of Date or Time
-     *
-     * @param longValue value to check Date or Time
-     * @param key       key used to define Date or Time
-     * @return {@link String} parsed with Date or Time if Found
+     * Intelligently formats a long value as a date or time string based on the field name.
+     **
+     * @param longValue the timestamp value in milliseconds to format
+     * @param key the field name used to determine if this is a date or time field
+     * @return a formatted date/time string if the key matches date/time patterns, otherwise the string value of longValue
      */
     public static String fetchDateTime(Object longValue, String key) {
         for (String dateKey : Constants.VALID_DATE_KEYS) {
@@ -88,12 +114,14 @@ public class EntityHelperUtil {
     }
 
     /**
-     * This Function appends message to Entity list content Into Table Format
+     * Generates HTML content combining a message with an entity data table.
      *
-     * @param message                    A message with is not part of Table
-     * @param entityList                 Data to be added into table
-     * @param removeEntityFieldFromTable this field contains fieldParameters which are excluded to be added into Table
-     * @return {@link String} complete HTML format Rich Text String
+     * @param message the message text to display above the table; newlines are converted to HTML breaks
+     * @param entityList the list of entity values to display in table format
+     * @param removeEntityFieldFromTable list of field names to exclude from the table; can be null
+     * @param registry the entity registry for accessing entity definitions; can be null
+     * @return a complete HTML string with styled message and entity data table
+     * @throws IllegalArgumentException if entityList is null or empty
      */
     public static String getMessageContent(String message, List<EntityValue> entityList, List<String> removeEntityFieldFromTable, Entities registry) {
         StringBuilder htmlContent = new StringBuilder();
@@ -157,6 +185,15 @@ public class EntityHelperUtil {
         htmlContent.append(Constants.CLOSE_TR_TAG);
     }
 
+    /**
+     * Converts a list of EmailAddress objects into a comma-separated string of email addresses.
+     *
+     * <p>This method extracts the mail address from each EmailAddress object and joins them
+     * with commas. If the input list is null or empty, returns an empty string.</p>
+     *
+     * @param emails the list of EmailAddress objects to convert
+     * @return a comma-separated string of email addresses, or empty string if input is null/empty
+     */
     public static String getCommaSeparatedEmail(List<EmailAddress> emails) {
         if (emails == null || emails.isEmpty()) {
             return Constants.EMPTY_STRING;
@@ -169,6 +206,16 @@ public class EntityHelperUtil {
         return emailString.toString();
     }
 
+    /**
+     * Re-parses a list of File objects through Gson to ensure proper type conversion.
+     *
+     * <p>This method works around Gson type conversion issues by serializing the file list
+     * to JSON and then deserializing it back to a properly typed ArrayList of File objects.
+     * This ensures that all file objects have the correct runtime type expected by the system.</p>
+     *
+     * @param attachments the list of File objects to re-parse
+     * @return a properly typed ArrayList of File objects, or empty list if input is null/empty
+     */
     public static List<File> getAttachmentsByParsingIntoJsonMapper(List<File> attachments) {
         if (attachments == null || attachments.isEmpty()) {
             return List.of();
@@ -181,11 +228,29 @@ public class EntityHelperUtil {
         return attachments;
     }
 
+    /**
+     * Determines the MIME type of a file based on its filename.
+     *
+     * <p>This method uses URLConnection's content type guessing mechanism to determine
+     * the file's MIME type from its extension. If the type cannot be determined,
+     * defaults to "application/x-binary".</p>
+     *
+     * @param file the file whose MIME type should be determined
+     * @return the MIME type string, or "application/x-binary" if type cannot be determined
+     */
     public static String getFileType(java.io.File file) {
         String contentType = URLConnection.guessContentTypeFromName(file.getName());
         return contentType != null ? contentType : Constants.APPLICATION_X_BINARY;
     }
 
+    /**
+     * Reads the entire content of a file into a byte array.
+     *
+     * @param ioFile the file to read
+     * @return a byte array containing the complete file content
+     * @throws IllegalArgumentException if the file cannot be read or is empty
+     * @throws IllegalStateException if an error occurs during file reading, wrapping the underlying exception
+     */
     public static byte[] readContentOfTheFile(java.io.File ioFile) {
         byte[] bFile = new byte[(int) ioFile.length()];
         try (FileInputStream fileInputStream = new FileInputStream(ioFile)) {
@@ -202,6 +267,12 @@ public class EntityHelperUtil {
         }
     }
 
+    /**
+     * Parses a comma-separated string of email addresses into a list of EmailAddress objects.
+     *
+     * @param emailAddressesString a comma-separated string of email addresses
+     * @return a list of EmailAddress objects for all valid emails, or empty list if input is null/blank
+     */
     public static List<EmailAddress> toEmailAddresses(String emailAddressesString) {
         if (emailAddressesString == null || emailAddressesString.isBlank()) {
             return List.of();
@@ -215,6 +286,13 @@ public class EntityHelperUtil {
         return emailAddresses;
     }
 
+    /**
+     * Formats a message by converting newlines to HTML breaks for HTML body type.
+     *
+     * @param message the message content to format
+     * @param bodyType the body type ("HTML" or other); determines formatting behavior
+     * @return the formatted message with newlines converted to breaks if HTML, otherwise unchanged
+     */
     public static String formattedMessage(String message, String bodyType) {
         if (Constants.HTML.equals(bodyType) && message != null) {
             if (message.contains("<") && message.contains(">")) {
@@ -231,10 +309,10 @@ public class EntityHelperUtil {
     }
 
     /**
-     * This function removes zeros from number when number contains Only zeros after decimal
+     * Removes trailing zeros from the decimal portion of a number.
      *
-     * @param number any double value to parse
-     * @return the string representation of the number without trailing zeros after the decimal
+     * @param number the double value to format
+     * @return a string representation of the number without trailing zeros after the decimal point
      */
     public static String removeTrailingZeros(double number) {
         String stringValue = String.valueOf(number);
@@ -250,6 +328,24 @@ public class EntityHelperUtil {
         return stringValue;
     }
 
+    /**
+     * Formats a reply/forward message by combining new content with original email thread history.
+     *
+     * <p>This method creates a properly formatted email message that includes:
+     * <ul>
+     *   <li>The new message content (extracted from any existing thread history)</li>
+     *   <li>A separator and "Original Message" marker</li>
+     *   <li>The original email's metadata (from, to, date, subject)</li>
+     *   <li>The original email's content</li>
+     * </ul>
+     * The formatting adapts to the body type (HTML or plain text).</p>
+     *
+     * @param email the original Email object containing sender, recipients, and content
+     * @param message the new message content (may include existing thread history to be cleaned)
+     * @param bodyType the body type ("HTML" or text) determining formatting style
+     * @param originalDate the formatted date string of the original email
+     * @return a formatted message combining new content with original email thread history
+     */
     public static String formatMessageWithThread(Email email, String message, String bodyType, String originalDate) {
         // Extract only the new message content, removing any existing thread history
         String newMessageOnly = extractNewMessageContent(message, bodyType);

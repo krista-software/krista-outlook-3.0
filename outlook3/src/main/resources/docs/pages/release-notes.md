@@ -1,10 +1,10 @@
 # Release Notes
 
-## Version 3.0.19 - Current Release (Feature: Enhanced Folder Monitoring)
+## Version 3.0.20 - Current Release (Feature: Enhanced Folder Monitoring)
 
 - **Developer**: Krista Development Team
 - **Krista Service APIs (Java)**: 1.0.115+
-- **Global Catalog Version**: GC-2025.10.3+
+- **Global Catalog Version**: GC-2025.11.3
 - **Release Date**: TBD
 - **Branch**: feature/outlook-3.0-Mail-Alert
 

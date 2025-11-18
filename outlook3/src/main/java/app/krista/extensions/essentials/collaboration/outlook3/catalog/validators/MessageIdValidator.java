@@ -10,6 +10,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+/**
+ * Validator for email message IDs in the Outlook extension.
+ *
+ * <p>This validator verifies that a message ID corresponds to an actual email message
+ * accessible through the user's Outlook account. It performs a live lookup via the
+ * Microsoft Graph API to confirm the message exists and is accessible to the user.</p>
+ *
+ * <p>The validator handles authentication errors by re-throwing MustAuthorizeException
+ * to trigger re-authentication flows, and treats other exceptions (such as network errors
+ * or invalid message IDs) as validation failures.</p>
+ */
 public class MessageIdValidator implements Validator {
 
     private final Account account;
@@ -20,6 +31,22 @@ public class MessageIdValidator implements Validator {
         this.account = account;
     }
 
+    /**
+     * Validates a message ID by attempting to retrieve the corresponding email from Outlook.
+     *
+     * <p>This method performs a live lookup via Microsoft Graph API to verify that:
+     * <ul>
+     *   <li>The message ID is valid and properly formatted</li>
+     *   <li>The message exists in the user's mailbox</li>
+     *   <li>The user has permission to access the message</li>
+     * </ul>
+     * </p>
+     *
+     * @param resourceId the message ID to validate
+     * @param context additional validation context (not used by this validator)
+     * @return true if the message exists and is accessible, false otherwise
+     * @throws MustAuthorizeException if authentication fails, requiring user re-authorization
+     */
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
         try {
@@ -46,12 +73,12 @@ public class MessageIdValidator implements Validator {
 
     @Override
     public String getFetchStepMessage() {
-        return "Please enter valid Message ID.";
+        return "Please enter a valid Message ID.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("We couldn't find an email with the Message ID: %s. Please check and enter a valid Message ID.", resourceId);
+        return String.format("Message not found with ID: %s. Please verify the Message ID and try again.", resourceId);
     }
 
     @Override
