@@ -5,11 +5,31 @@ import app.krista.extensions.essentials.collaboration.outlook3.catalog.validator
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utility class for preparing validation resource maps used in input validation workflows.
+ *
+ * <p>This class provides static helper methods to construct validation maps containing
+ * parameters that need to be validated, such as labels, page numbers, and page sizes.
+ * These maps are used by validators to perform input validation and generate appropriate
+ * error messages.</p>
+ */
 public class ValidationResourceUtil {
 
     private ValidationResourceUtil() {
     }
 
+    /**
+     * Prepares a validation map for label-based operations with optional pagination parameters.
+     *
+     * <p>This method creates a map containing the label and any non-null pagination parameters
+     * (page number and page size) that need to be validated. The map is used by validators to
+     * check if the provided values meet the required constraints.</p>
+     *
+     * @param label the label value to validate
+     * @param pageNumber the page number for pagination; included in map only if not null
+     * @param pageSize the page size for pagination; included in map only if not null
+     * @return a map containing validation resources with their corresponding values
+     */
     public static Map<Validator.ValidationResource, String> prepareValidateLabelMap(String label, Double pageNumber, Double pageSize) {
         Map<Validator.ValidationResource, String> map = new HashMap<>();
         map.put(Validator.ValidationResource.LABEL, label);
@@ -26,6 +46,22 @@ public class ValidationResourceUtil {
         return input != null;
     }
 
+    /**
+     * Prepares a validation map for inbox fetch operations with pagination parameters.
+     *
+     * <p>This method creates a map containing only the pagination parameters that are INVALID
+     * and need validation. Unlike prepareValidateLabelMap, this method only includes parameters
+     * that fall outside their valid ranges:
+     * <ul>
+     *   <li>Page number: included if less than 1</li>
+     *   <li>Page size: included if less than 1 or greater than 15</li>
+     * </ul>
+     * This approach allows validators to focus only on invalid values.</p>
+     *
+     * @param pageNumber the page number for pagination; included only if less than 1
+     * @param pageSize the page size for pagination; included only if outside range [1, 15]
+     * @return a map containing only invalid validation resources with their corresponding values
+     */
     public static Map<Validator.ValidationResource, String> prepareValidateFetchInboxMap(Double pageNumber, Double pageSize) {
         Map<Validator.ValidationResource, String> map = new HashMap<>();
 

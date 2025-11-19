@@ -6,9 +6,23 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityH
 
 import java.util.Map;
 
+/**
+ * Validator for page size parameters in pagination operations.
+ *
+ * <p>This validator ensures that page size values are numeric and fall within the valid
+ * range of 1 to 15 (inclusive). Page sizes outside this range are rejected to prevent
+ * performance issues and comply with Microsoft Graph API pagination limits.</p>
+ */
 public class PageSizeValidator implements Validator {
 
 
+    /**
+     * Validates that the page size is a valid number within the range [1, 15].
+     *
+     * @param resourceId the page size value to validate (as string)
+     * @param context additional validation context (not used by this validator)
+     * @return true if the page size is a valid number between 1 and 15 (inclusive), false otherwise
+     */
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
         try {

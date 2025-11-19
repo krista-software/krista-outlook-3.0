@@ -122,7 +122,7 @@ Once configured, you can immediately leverage 18+ specialized catalog requests f
 ### Version Information
 - **Extension Version**: 3.5.1
 - **Krista Service APIs Java**: 1.0.101
-- **Global Catalog Version**: 1.0.48
+- **Global Catalog Version**: GC.2025.11.3
 - **Appliance Release Version**: 3.5.1
 
 ### API Information

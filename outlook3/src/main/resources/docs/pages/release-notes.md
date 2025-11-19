@@ -1,41 +1,10 @@
 # Release Notes
 
-## Version 3.0.20 - Current Release (Resilience & Mail Alert Improvements)
-
-- **Developer**: Vaibhav Choudhary
-- **Krista Service APIs (Java)**: 1.0.118
-- **Global Catalog Version**: GC-2025.11.4
-- **Release Date**: November 2025
-
-### New Features & Improvements
-
-- **Mail Received Alert reliability**
-  - Extended attachment upload fallback to ZIP conversion on any media validation failure (for example, "Invalid image") so Mail Received Alert flows continue even when attachments fail standard processing.
-  - Preserved existing behavior while adding concise logging around attachment handling.
-
-- **Subscription renewal retry for folder monitoring**
-  - Added 3-attempt retry with exponential backoff when renewing Microsoft Graph subscriptions.
-  - Ensures temporary Graph or network issues do not immediately break folder monitoring subscription renewals.
-
-- **Paginated email fetch retry**
-  - Added 3-attempt retry with exponential backoff around Microsoft Graph paginated email retrieval in `Folder.getEmails(...)`.
-  - Keeps existing paging and response behavior unchanged while improving resilience to transient Graph errors.
-
-### Backward Compatibility
-
-**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only adds resilience and bug fixes on top of 3.0.19.
-
-### Breaking Changes
-
-**None**
-
----
-
-## Version 3.0.19 - Previous Release (Feature: Enhanced Folder Monitoring)
+## Version 3.0.20 - Current Release (Feature: Enhanced Folder Monitoring)
 
 - **Developer**: Krista Development Team
 - **Krista Service APIs (Java)**: 1.0.115+
-- **Global Catalog Version**: GC-2025.10.3+
+- **Global Catalog Version**: GC-2025.11.3
 - **Release Date**: TBD
 - **Branch**: feature/outlook-3.0-Mail-Alert
 
@@ -244,11 +213,10 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                             |
 |------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.20** | November 2025    | Resilience & Mail Alert improvements (attachment ZIP fallback, subscription renewal retry, paginated email retry)                      |
-| **3.0.19** | Previous Release | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                          |
+| **3.0.18** | Current Release  | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                          |
 | **3.0.17** | Previous Release | Added Allow Retry parameter for validation error handling                                                                               |
 | **3.0.16** | October 2025     | Added Retry Mechanism Flag for all catalog requests                                                                                     |
 | **3.0.15** | Previous Release | Fetch Inbox Async bug fix, Enhanced API documentation                                                                                   |
 | **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                                      |
 
-Stay updated with the latest features and improvements by subscribing to our release notifications!
+Stay updated with the latest features and improvements by subscribing to our release notifications! 
