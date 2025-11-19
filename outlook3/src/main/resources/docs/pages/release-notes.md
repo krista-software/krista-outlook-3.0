@@ -1,5 +1,36 @@
 # Release Notes
 
+## Version 3.0.21 - Current Release (Resilience & Mail Alert Improvements)
+
+- **Developer**: Vaibhav Choudhary
+- **Krista Service APIs (Java)**: 1.0.118
+- **Global Catalog Version**: GC-2025.11.4
+- **Release Date**: November 2025
+
+### New Features & Improvements
+
+- **Mail Received Alert reliability**
+    - Extended attachment upload fallback to ZIP conversion on any media validation failure (for example, "Invalid image") so Mail Received Alert flows continue even when attachments fail standard processing.
+    - Preserved existing behavior while adding concise logging around attachment handling.
+
+- **Subscription renewal retry for folder monitoring**
+    - Added 3-attempt retry with exponential backoff when renewing Microsoft Graph subscriptions.
+    - Ensures temporary Graph or network issues do not immediately break folder monitoring subscription renewals.
+
+- **Paginated email fetch retry**
+    - Added 3-attempt retry with exponential backoff around Microsoft Graph paginated email retrieval in `Folder.getEmails(...)`.
+    - Keeps existing paging and response behavior unchanged while improving resilience to transient Graph errors.
+
+### Backward Compatibility
+
+**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only adds resilience and bug fixes on top of 3.0.20.
+
+### Breaking Changes
+
+**None**
+
+---
+
 ## Version 3.0.20 - Current Release (Feature: Enhanced Folder Monitoring)
 
 - **Developer**: Krista Development Team
