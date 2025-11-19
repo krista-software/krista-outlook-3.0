@@ -188,35 +188,64 @@ public class MailSubscription {
     public static boolean renewSubscription(GraphServiceClientProvider provider, String subscriptionId) {
         LOGGER.info("Starting subscription renewal for ID: {}", subscriptionId);
 
-        try {
-            // Calculate new expiration datetime
-            OffsetDateTime newExpirationDate = getExpirationDateTime();
-            LOGGER.debug("Calculated new expiration date: {}", newExpirationDate);
+        final int maxRetries = 3;
 
-            // Prepare subscription object with new expiration time
-            Subscription subscription = new Subscription();
-            subscription.expirationDateTime = newExpirationDate;
-            LOGGER.debug("Created Subscription object with updated expiration");
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                Subscription renewedSubscription = renewSubscriptionOnce(provider, subscriptionId, attempt, maxRetries);
 
-            // Initiate Graph API call to patch the subscription
-            LOGGER.info("Sending patch request to Microsoft Graph for subscription ID: {}", subscriptionId);
-            Subscription renewSubscription = provider.getGraphServiceClientForAdmin()
-                    .subscriptions(subscriptionId)
-                    .buildRequest()
-                    .patch(subscription);
+                LOGGER.info("Subscription renewed successfully. ID: {}", renewedSubscription.id);
+                LOGGER.debug("Renewed subscription details: Expiration: {}, Resource: {}, ChangeType: {}",
+                        renewedSubscription.expirationDateTime,
+                        renewedSubscription.resource,
+                        renewedSubscription.changeType);
 
-            // Log response details
-            LOGGER.info("Subscription renewed successfully. ID: {}", renewSubscription.id);
-            LOGGER.debug("Renewed subscription details: Expiration: {}, Resource: {}, ChangeType: {}",
-                    renewSubscription.expirationDateTime,
-                    renewSubscription.resource,
-                    renewSubscription.changeType);
+                return true;
+            } catch (ClientException | ParseException cause) {
+                String errorMessage = cause.getMessage();
+                LOGGER.error("Failed to renew subscription ID: {} on attempt {}/{}. Error: {}", subscriptionId, attempt, maxRetries, errorMessage, cause);
 
-            return true;
-        } catch (ClientException | ParseException cause) {
-            LOGGER.error("Failed to renew subscription ID: {}. Error: {}", subscriptionId, cause.getMessage(), cause);
-            return false;
+                if (attempt == maxRetries) {
+                    LOGGER.error("All {} renewal attempts failed for subscription ID: {}", maxRetries, subscriptionId);
+                    return false;
+                }
+
+                try {
+                    int waitTime = (int) (Math.pow(2, attempt) * 1000L);
+                    LOGGER.info("Waiting for {} ms before retry attempt {}", waitTime, attempt + 1);
+                    Thread.sleep(waitTime);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.error("Subscription renewal retry interrupted for subscription ID: {}", subscriptionId, ie);
+                    return false;
+                }
+            }
         }
+
+        return false; // Should never reach here, but just in case
+    }
+
+    private static Subscription renewSubscriptionOnce(GraphServiceClientProvider provider,
+                                                      String subscriptionId,
+                                                      int attempt,
+                                                      int maxRetries) throws ClientException, ParseException {
+        // Calculate new expiration datetime
+        OffsetDateTime newExpirationDate = getExpirationDateTime();
+        LOGGER.debug("Calculated new expiration date: {}", newExpirationDate);
+
+        // Prepare subscription object with new expiration time
+        Subscription subscription = new Subscription();
+        subscription.expirationDateTime = newExpirationDate;
+        LOGGER.debug("Created Subscription object with updated expiration");
+
+        // Initiate Graph API call to patch the subscription
+        LOGGER.info("Sending patch request to Microsoft Graph for subscription ID: {}, attempt {}/{}",
+                subscriptionId, attempt, maxRetries);
+
+        return provider.getGraphServiceClientForAdmin()
+                .subscriptions(subscriptionId)
+                .buildRequest()
+                .patch(subscription);
     }
 
     /**

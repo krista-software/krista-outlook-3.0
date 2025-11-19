@@ -7,6 +7,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validat
 import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
+import com.microsoft.graph.core.ClientException;
 import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.MailFolderMoveParameterSet;
 import com.microsoft.graph.models.Message;
@@ -164,42 +165,70 @@ public class FolderImpl implements Folder {
 
     @Override
     public List<Email> getEmails(Double pageNumber, Double pageSize) {
-        int skip = (validatePageNumber(pageNumber) - 1) * validatePageSize(pageSize), top = validatePageSize(pageSize);
-        try {
-            MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
-                    .messages()
-                    .buildRequest(
-                            new HeaderOption(Constants.PREFER, BODY_CONTENT_TYPE_HTML),
-                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
-                    )
-                    .top(top).skip(skip).get();
-            return (messages == null || messages.getCurrentPage() == null) ? List.of()
-                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(getProvider(), m)).collect(Collectors.toList());
-        } catch (Exception cause) {
-            LOGGER.error("Error retrieving paginated emails: {}", cause.getMessage(), cause);
-            return List.of();
-        }
+        int top = validatePageSize(pageSize);
+        int skip = (validatePageNumber(pageNumber) - 1) * top;
+        return getEmailsWithRetry(skip, top, BODY_CONTENT_TYPE_HTML);
     }
-
 
     @Override
     public List<Email> getEmails(Double pageNumber, Double pageSize, Map<String, Object> pref) {
-        int top = validatePageSize(pageSize), skip = (validatePageNumber(pageNumber) - 1) * top;
-        String preference = String.valueOf(pref.getOrDefault("Mail Body", "Html")).equalsIgnoreCase(TEXT) ? BODY_CONTENT_TYPE_TEXT : BODY_CONTENT_TYPE_HTML;
-        try {
-            MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
-                    .messages()
-                    .buildRequest(
-                            new HeaderOption(Constants.PREFER, preference),
-                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
-                    )
-                    .top(top).skip(skip).get();
-            return (messages == null || messages.getCurrentPage() == null) ? List.of()
-                    : messages.getCurrentPage().stream().map(m -> new EmailImpl(getProvider(), m)).collect(Collectors.toList());
-        } catch (Exception cause) {
-            LOGGER.error("Error fetching paginated emails: {}", cause.getMessage(), cause);
-            return List.of();
+        int top = validatePageSize(pageSize);
+        int skip = (validatePageNumber(pageNumber) - 1) * top;
+        String preference = String.valueOf(pref.getOrDefault("Mail Body", "Html")).equalsIgnoreCase(TEXT)
+                ? BODY_CONTENT_TYPE_TEXT
+                : BODY_CONTENT_TYPE_HTML;
+        return getEmailsWithRetry(skip, top, preference);
+    }
+
+    private List<Email> getEmailsWithRetry(int skip, int top, String preferHeader) {
+        final int maxRetries = 3;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return fetchEmailsPage(skip, top, preferHeader);
+            } catch (ClientException cause) {
+                String errorMessage = cause.getMessage();
+                LOGGER.error("Error retrieving paginated emails on attempt {}/{}: {}", attempt, maxRetries, errorMessage, cause);
+
+                if (attempt == maxRetries) {
+                    LOGGER.error("All {} attempts failed while retrieving paginated emails.", maxRetries);
+                    return List.of();
+                }
+
+                try {
+                    int waitTime = (int) (Math.pow(2, attempt) * 1000L);
+                    LOGGER.info("Waiting for {} ms before retrying paginated email fetch", waitTime);
+                    Thread.sleep(waitTime);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.error("Retry interrupted while fetching paginated emails", ie);
+                    return List.of();
+                }
+            } catch (Exception unexpected) {
+                LOGGER.error("Unexpected error retrieving paginated emails: {}", unexpected.getMessage(), unexpected);
+                return List.of();
+            }
         }
+
+        return List.of();
+    }
+
+    private List<Email> fetchEmailsPage(int skip, int top, String preferHeader) {
+        MessageCollectionPage messages = Objects.requireNonNull(getFolderRequestBuilder(null))
+                .messages()
+                .buildRequest(
+                        new HeaderOption(Constants.PREFER, preferHeader),
+                        new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                )
+                .top(top)
+                .skip(skip)
+                .get();
+
+        return (messages == null || messages.getCurrentPage() == null)
+                ? List.of()
+                : messages.getCurrentPage().stream()
+                .map(m -> new EmailImpl(getProvider(), m))
+                .collect(Collectors.toList());
     }
 
     @Override
