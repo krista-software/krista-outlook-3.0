@@ -138,7 +138,7 @@ public class MessagingAreaTest {
     public void testFetchAllLabels() {
         List<String> labels = Arrays.asList("Archive", "Conversation History", "Deleted Items", "Drafts", "Inbox", "Junk Email", "Outbox", "Sent Items");
         doReturn(labels).when(account).getFolderNames();
-        ExtensionResponse response1 = messagingArea.fetchAllLabels(null);
+        ExtensionResponse response1 = messagingArea.fetchAllLabels();
         List<String> allLabels = (List<String>) response1.getResponseValue().get("Labels");
         assertTrue(allLabels.contains("Archive"));
     }

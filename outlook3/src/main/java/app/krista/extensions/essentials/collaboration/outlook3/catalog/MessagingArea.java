@@ -93,9 +93,7 @@ public class MessagingArea {
             area = "Messaging",
             type = CatalogRequest.Type.QUERY_SYSTEM)
     @Field.Desc(name = "Labels", type = "[ Text ]", required = false)
-    public ExtensionResponse fetchAllLabels(
-            @Field.Boolean(name = "Allow Retry", required = false,
-                    attributes = {@Attribute(name = "visualWidth", value = "S")}) Boolean allowRetry) {
+    public ExtensionResponse fetchAllLabels() {
         long startTime = System.currentTimeMillis();
         try {
             telemetryHelper.incrementCount("outlook3.fetchAllLabels");
