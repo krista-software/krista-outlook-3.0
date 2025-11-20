@@ -1414,7 +1414,7 @@ public class MessagingArea {
                 String messageId = (String) eventData.get(Constants.MESSAGE_ID);
                 LOGGER.info("Processing Mail for Message Id :  {}", messageId);
 
-                MailDetails mailDetails = mailHandler.fromEmail(account.getEmail(messageId), null);
+                MailDetails mailDetails = mailHandler.fromEmail(account.getEmailWithRetry(messageId), null);
 
                 if (mailDetails != null) {
                     LOGGER.info("Allow Alert Mail Triggered : ID {}", mailDetails.messageID);
@@ -1451,7 +1451,6 @@ public class MessagingArea {
             throw new IllegalStateException("Error occurred while Mail Received Alert");
         }
     }
-
 
 
     @CatalogRequest(
@@ -1521,9 +1520,8 @@ public class MessagingArea {
             LOGGER.error("Error occurred while processing Receive notification of Email Change: {}", cause.getMessage());
             telemetryHelper.recordError("outlook3.recieveNotificationOfEmailChange", startTime, cause, safeTagMap("event_name", eventName));
             throw new IllegalStateException("Error occurred while processing Receive notification of Email Change");
-        }     }
-
-
+        }
+    }
 
 
     @CatalogRequest(

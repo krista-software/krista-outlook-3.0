@@ -196,6 +196,35 @@ public class AccountImpl implements Account {
     }
 
     @Override
+    public Email getEmailWithRetry(String emailId) {
+        LOGGER.info("Getting email with ID: {} with retry mechanism", emailId);
+        int maxAttempts = 5;
+        long delayMillis = 1000L;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            Email email = getEmail(emailId);
+            if (email != null) {
+                if (attempt > 1) {
+                    LOGGER.info("Email with ID: {} retrieved successfully on attempt {}", emailId, attempt);
+                }
+                return email;
+            }
+
+            LOGGER.info("Email with ID: {} not available yet, attempt {}/{}. Retrying after {} ms", emailId, attempt, maxAttempts, delayMillis);
+            try {
+                Thread.sleep(delayMillis);
+            } catch (InterruptedException interruptedException) {
+                LOGGER.warn("Thread interrupted while waiting to retry getEmail for ID: {}", emailId, interruptedException);
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        LOGGER.error("Email with ID: {} could not be retrieved after {} attempts", emailId, maxAttempts);
+        return null;
+    }
+
+    @Override
     public List<Email> searchEmails(String searchString) {
         String sanitized = searchString.replaceAll("([\"\\\\])", "\\\\$1");
         try {

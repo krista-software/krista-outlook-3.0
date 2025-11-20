@@ -69,6 +69,15 @@ public interface Account {
     Email getEmail(String emailId);
 
     /**
+     * Returns {@link Email} object with retry mechanism to handle eventual consistency scenarios.
+     * Intended for webhook/delta flows where the message may not be immediately available.
+     *
+     * @param emailId id of the email
+     * @return {@link Email} object or null if not found after retries
+     */
+    Email getEmailWithRetry(String emailId);
+
+    /**
      * Returns {@link List<Email>} of outlook from the search string provided.
      *
      * @param searchString String to search email from outlook
