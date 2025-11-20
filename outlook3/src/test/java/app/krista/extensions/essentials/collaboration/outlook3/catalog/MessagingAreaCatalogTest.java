@@ -120,7 +120,7 @@ public class MessagingAreaCatalogTest {
         when(account.getFolderNames()).thenReturn(expectedLabels);
 
         // Act
-        ExtensionResponse response = messagingArea.fetchAllLabels(null);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);
@@ -145,7 +145,7 @@ public class MessagingAreaCatalogTest {
         when(account.getFolderNames()).thenReturn(emptyLabels);
 
         // Act
-        ExtensionResponse response = messagingArea.fetchAllLabels(false);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);
@@ -167,7 +167,7 @@ public class MessagingAreaCatalogTest {
         when(requestContext.invokeAsUser()).thenReturn(true);
 
         // Act & Assert
-        assertThrows(MustAuthorizeException.class, () -> messagingArea.fetchAllLabels(true));
+        assertThrows(MustAuthorizeException.class, () -> messagingArea.fetchAllLabels());
 
         verify(telemetryHelper, times(1)).recordValidationError(
                 eq("outlook3.fetchAllLabels"), anyLong(), anyString(), anyMap());
@@ -182,7 +182,7 @@ public class MessagingAreaCatalogTest {
         when(requestContext.invokeAsUser()).thenReturn(false);
 
         // Act
-        ExtensionResponse response = messagingArea.fetchAllLabels(false);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);
@@ -198,7 +198,7 @@ public class MessagingAreaCatalogTest {
         when(account.getFolderNames()).thenThrow(new RuntimeException("System error"));
 
         // Act
-        ExtensionResponse response = messagingArea.fetchAllLabels(null);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);

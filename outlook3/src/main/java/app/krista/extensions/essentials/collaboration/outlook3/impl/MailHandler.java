@@ -109,13 +109,13 @@ public class MailHandler {
         LOGGER.debug("Converting file to Krista format: fileName={}, size={} bytes", file.getName(), fileSize);
         try {
             return kristaMediaClient.toKristaFile(file);
-        } catch (IOException cause) {
+        } catch (Exception cause) {
             LOGGER.debug("Regular upload failed, trying zip upload: fileName={}, size={}, error={}",
                     file.getName(), fileSize, cause.getMessage());
 
             try {
                 return kristaMediaClient.toKristaZipFile(file);
-            } catch (IOException zipCause) {
+            } catch (Exception zipCause) {
                 LOGGER.error("Both regular and zip upload failed: fileName={}, size={}, regularError={}, zipError={}",
                         file.getName(), fileSize, cause.getMessage(), zipCause.getMessage(), zipCause);
                 throw new RuntimeException("We couldn't upload the file '" + file.getName() + "'. The file may be too large, corrupted, or in an unsupported format. Please verify the file and try again.", zipCause);

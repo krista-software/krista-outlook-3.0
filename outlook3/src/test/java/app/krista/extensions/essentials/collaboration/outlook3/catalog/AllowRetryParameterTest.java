@@ -184,7 +184,7 @@ public class AllowRetryParameterTest {
         when(account.getFolderNames()).thenReturn(List.of("Label1", "Label2", "Label3"));
 
         // Act - Should compile and run without errors
-        ExtensionResponse response = messagingArea.fetchAllLabels(null);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);
@@ -198,7 +198,7 @@ public class AllowRetryParameterTest {
         when(account.getFolderNames()).thenReturn(List.of("Label1", "Label2", "Label3"));
 
         // Act - Should compile and run without errors
-        ExtensionResponse response = messagingArea.fetchAllLabels(true);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);

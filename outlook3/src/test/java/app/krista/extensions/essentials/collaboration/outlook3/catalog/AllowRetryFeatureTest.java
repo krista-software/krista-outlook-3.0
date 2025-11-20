@@ -329,7 +329,7 @@ public class AllowRetryFeatureTest {
         when(account.getFolderNames()).thenReturn(mockLabels);
 
         // Act
-        ExtensionResponse response = messagingArea.fetchAllLabels(null);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);
@@ -348,7 +348,7 @@ public class AllowRetryFeatureTest {
         when(account.getFolderNames()).thenReturn(mockLabels);
 
         // Act
-        ExtensionResponse response = messagingArea.fetchAllLabels(true);
+        ExtensionResponse response = messagingArea.fetchAllLabels();
 
         // Assert
         assertNotNull(response);
