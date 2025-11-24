@@ -13,15 +13,38 @@ import java.util.stream.Collectors;
 
 public class TOEmaiIValidator implements Validator {
 
-    private static final List<EmailAddress> emailAddresses = new ArrayList<>();
+    private final List<EmailAddress> invalidEmailAddresses = new ArrayList<>();
 
     @Override
     public Boolean validate(String resourceId, Map<ValidationResource, String> context) {
-        try {
-            return toEmailAddresses(resourceId).isEmpty();
-        } catch (RuntimeException cause) {
+        invalidEmailAddresses.clear();
+
+        if (resourceId == null || resourceId.isBlank()) {
             return false;
         }
+
+        List<String> allAddresses = new ArrayList<>();
+        for (String emailAddressString : resourceId.split(Constants.COMMA)) {
+            String trimmed = emailAddressString.trim();
+            if (!trimmed.isEmpty()) {
+                allAddresses.add(trimmed);
+            }
+        }
+
+        if (allAddresses.isEmpty()) {
+            return false;
+        }
+
+        long validCount = 0;
+        for (String address : allAddresses) {
+            if (Validators.isEmailValid(address)) {
+                validCount++;
+            } else {
+                invalidEmailAddresses.add(new EmailAddress(Constants.EMPTY_STRING, address));
+            }
+        }
+
+        return validCount > 0;
     }
 
     @Override
@@ -36,38 +59,26 @@ public class TOEmaiIValidator implements Validator {
 
     @Override
     public String getFetchStepMessage() {
-        return "Please enter valid Email Address.";
+        return "Please enter at least one valid Email Address for 'To' field.";
     }
 
     @Override
     public String getConfirmationStepMessage(String resourceId, Map<ValidationResource, String> context) {
-        return String.format("The provided Email Address : %s does not exist.", toStringMailIds());
+        return String.format("The provided 'To' Email Address(es) are invalid: %s", toStringMailIds());
     }
 
     @Override
     public String getErrMessage(String resourceId) {
-        toEmailAddresses(resourceId);
-        return String.format("Invalid 'To' Email Ids: %s", toStringMailIds());
+        if (resourceId == null || resourceId.isBlank() || resourceId.trim().isEmpty()) {
+            return "'To' field is required and must contain at least one valid email address.";
+        }
+        return String.format("Invalid 'To' Email Address(es): %s. At least one valid email is required.", toStringMailIds());
     }
 
-
-    private static List<EmailAddress> toEmailAddresses(String emailAddressesString) {
-        if (emailAddressesString == null || emailAddressesString.isBlank()) {
-            return List.of();
-        }
-        for (String emailAddressString : emailAddressesString.split(Constants.COMMA)) {
-            if (Validators.isStringNullOrBlank(emailAddressString) || !Validators.isEmailValid(emailAddressString)) {
-                emailAddresses.add(new EmailAddress(Constants.EMPTY_STRING, emailAddressString));
-            }
-        }
-        return emailAddresses;
-    }
-
-    private static String toStringMailIds() {
-        String mailIds = TOEmaiIValidator.emailAddresses.stream()
+    private String toStringMailIds() {
+        String mailIds = invalidEmailAddresses.stream()
                 .map(EmailAddress::getMailAddress)
                 .collect(Collectors.joining(", "));
-        TOEmaiIValidator.emailAddresses.clear();
-        return mailIds;
+        return mailIds.isEmpty() ? "(empty or whitespace only)" : mailIds;
     }
 }
