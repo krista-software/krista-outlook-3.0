@@ -69,7 +69,7 @@ public class TOEmaiIValidator implements Validator {
 
     @Override
     public String getErrMessage(String resourceId) {
-        if (resourceId == null || resourceId.isBlank() || resourceId.trim().isEmpty()) {
+        if (resourceId == null || resourceId.isBlank()) {
             return "'To' field is required and must contain at least one valid email address.";
         }
         return String.format("Invalid 'To' Email Address(es): %s. At least one valid email is required.", toStringMailIds());
