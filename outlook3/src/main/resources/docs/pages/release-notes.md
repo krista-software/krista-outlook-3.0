@@ -1,6 +1,32 @@
 # Release Notes
 
-## Version 3.0.21 - Current Release (Resilience & Mail Alert Improvements)
+## Version 3.0.22 - Current Release (Email Validation Fix)
+
+- **Developer**: Vaibhav Choudhary
+- **Krista Service APIs (Java)**: 1.0.118
+- **Global Catalog Version**: GC-2025.11.5
+- **Release Date**: November 2025
+
+### Bug Fixes
+
+- **Send Mail 'To' field validation**
+    - Fixed critical validation bug where invalid 'To' field inputs (such as " , " or ",,") were not caught during early validation.
+    - Previously, these invalid inputs would pass validation and fail later at the Microsoft Graph API with "ErrorInvalidRecipients".
+    - Now properly validates that at least one valid email address exists in the 'To' field before proceeding with the send operation.
+    - Provides clear error messages when 'To' field is empty, contains only whitespace/commas, or has no valid email addresses.
+    - Prevents unnecessary API calls and provides immediate feedback to users.
+
+### Backward Compatibility
+
+**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only fixes validation logic for the 'To' field in Send Mail operations.
+
+### Breaking Changes
+
+**None**
+
+---
+
+## Version 3.0.21 - (Resilience & Mail Alert Improvements)
 
 - **Developer**: Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.118
