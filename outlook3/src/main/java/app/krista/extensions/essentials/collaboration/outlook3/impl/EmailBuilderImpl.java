@@ -5,12 +5,14 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.G
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailAddress;
 import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
+import com.microsoft.graph.core.ClientException;
 import com.microsoft.graph.models.*;
 import com.microsoft.graph.requests.AttachmentCollectionPage;
 import com.microsoft.graph.requests.UserRequestBuilder;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class EmailBuilderImpl implements EmailBuilder {
     private final Message message;
@@ -77,7 +79,40 @@ public class EmailBuilderImpl implements EmailBuilder {
 
     @Override
     public void send() {
-        getUserRequestBuilder().sendMail(UserSendMailParameterSet.newBuilder().withMessage(message).withSaveToSentItems(true).build()).buildRequest().post();
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                sendMailRequest();
+                return;
+            } catch (ClientException ex) {
+                if (!isRetryable(ex) || attempt == 3) throw ex;
+                sleep(2000L << (attempt - 1));
+            }
+        }
+    }
+
+    private void sendMailRequest() {
+        getUserRequestBuilder()
+                .sendMail(UserSendMailParameterSet.newBuilder()
+                        .withMessage(message)
+                        .withSaveToSentItems(true)
+                        .build())
+                .buildRequest()
+                .post();
+    }
+
+    private boolean isRetryable(ClientException ex) {
+        return ex instanceof com.microsoft.graph.http.GraphServiceException &&
+                IntStream.of(502, 503, 504).anyMatch(code ->
+                        code == ((com.microsoft.graph.http.GraphServiceException) ex).getResponseCode());
+    }
+
+    private void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
