@@ -1,6 +1,52 @@
 # Release Notes
 
-## Version 3.0.22 - Current Release (Email Validation Fix)
+## Version 3.0.23 - Current Release (Send Mail Retry Enhancement)
+
+- **Developer**: Vaibhav Choudhary
+- **Krista Service APIs (Java)**: 1.0.118
+- **Global Catalog Version**: GC-2025.11.5
+- **Release Date**: November 2025
+
+### Bug Fixes
+
+- **Send Mail 503 Queue Full Error Handling**
+    - **Root Cause**: Microsoft Graph API returns HTTP 503 "Service Unavailable" with message "Application Request Queue Full" when their email infrastructure is temporarily overloaded
+    - **Issue**: Send Mail operations were failing when Microsoft's server-side request queue was at capacity, even though the request was valid
+    - **Solution**: Implemented automatic retry mechanism with exponential backoff for HTTP 503 errors
+    - **Retry Strategy**:
+        - Maximum 3 retry attempts
+        - Exponential backoff delays: 2 seconds, 4 seconds, 8 seconds
+        - Only retries on HTTP 503 "Queue Full" errors
+        - Preserves original error for other failure types
+    - **Impact**: Send Mail operations now automatically succeed when Microsoft's queue capacity becomes available, eliminating transient failures due to Microsoft infrastructure overload
+    - **Affected Methods**:
+        - Send Mail
+        - Send Mail With Table
+        - Reply To Mail
+        - Reply To All
+        - Reply To Mail With CC And BCC
+        - Reply To All With CC And BCC
+        - Forward Mail
+
+### Technical Improvements
+
+- Added resilient retry logic specifically for Microsoft Graph API 503 errors
+- Implemented exponential backoff to avoid overwhelming Microsoft's infrastructure
+- Enhanced error logging to distinguish between transient queue issues and permanent failures
+- Improved telemetry tracking for retry attempts and success rates
+- Maintained backward compatibility - retry is transparent to existing workflows
+
+### Backward Compatibility
+
+**100% Backward Compatible** – All existing catalog requests work exactly as before; retry mechanism is automatic and transparent to users.
+
+### Breaking Changes
+
+**None**
+
+---
+
+## Version 3.0.22 - Previous Release (Email Validation Fix)
 
 - **Developer**: Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.118
@@ -270,7 +316,10 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                             |
 |------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.18** | Current Release  | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                          |
+| **3.0.23** | Current Release  | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API          |
+| **3.0.22** | November 2025    | Email Validation Fix - Enhanced 'To' field validation in Send Mail operations                                                           |
+| **3.0.21** | November 2025    | Resilience & Mail Alert Improvements - Retry mechanisms for subscriptions and email fetch                                               |
+| **3.0.20** | November 2025    | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                          |
 | **3.0.17** | Previous Release | Added Allow Retry parameter for validation error handling                                                                               |
 | **3.0.16** | October 2025     | Added Retry Mechanism Flag for all catalog requests                                                                                     |
 | **3.0.15** | Previous Release | Fetch Inbox Async bug fix, Enhanced API documentation                                                                                   |
