@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
+
 public class EmailImpl implements Email {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailImpl.class);
@@ -506,5 +508,36 @@ public class EmailImpl implements Email {
         return null;
     }
 
+    /**
+     * Retrieves the sensitivity level of the email message.
+     */
+    @Override
+    public String getSensitivity() {
+        var props = (message.singleValueExtendedProperties != null) ? message.singleValueExtendedProperties.getCurrentPage() : null;
+        if (props == null) {
+            LOGGER.info("No sensitivity property found, defaulting to Normal");
+            return NORMAL;
+        }
+        return props.stream()
+                .peek(p -> LOGGER.info("Extended Property - ID: {}, Value: {}", p.id, p.value))
+                .filter(p -> p.id != null && p.id.toLowerCase().contains("0x36"))  // Sensitivity field
+                .findFirst()
+                .map(p -> mapSensitivity(p.value))
+                .orElseGet(() -> {
+                    LOGGER.info("No sensitivity property found, defaulting to Normal");
+                    return NORMAL;
+                });
+    }
 
+    /**
+     * Maps the MAPI sensitivity integer value to a human-readable string representation.
+     */
+    private String mapSensitivity(String val) {
+        return switch (val) {
+            case "1" -> PERSONAL;
+            case "2" -> PRIVATE;
+            case "3" -> CONFIDENTIAL;
+            default -> NORMAL;   // val = "0" or unknown
+        };
+    }
 }

@@ -221,6 +221,10 @@ public class Constants {
 
     public static final String ERROR_INVALID_CLIENT_ID = "AADSTS700016";
     public static final String ERROR_INVALID_TENANT_ID = "AADSTS900023";
+    public static final String SENSITIVITY_PROP_FILTER = "singleValueExtendedProperties($filter=id eq 'Integer 0x0036')";
+    public static final String PERSONAL = "Personal";
+    public static final String CONFIDENTIAL = "Confidential";
+    public static final String NORMAL = "Normal";
 
     public static final List<AuthErrorRule> AUTH_ERROR_RULES = List.of(
             new AuthErrorRule(List.of(PASSWORD_CHANGED_CODE, KEYWORD_PASSWORD_CHANGED), PASSWORD_CHANGED_ERROR, true),

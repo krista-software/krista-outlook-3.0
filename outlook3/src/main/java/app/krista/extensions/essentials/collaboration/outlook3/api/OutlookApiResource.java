@@ -352,7 +352,8 @@ public final class OutlookApiResource {
                         .messages(messageId)
                         .buildRequest(
                                 new HeaderOption(Constants.PREFER, Constants.BODY_CONTENT_TYPE_HTML),
-                                new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS + ",parentFolderId")
+                                new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS + ",parentFolderId"),
+                                new QueryOption("$expand", SENSITIVITY_PROP_FILTER)
                         )
                         .get();
             } catch (GraphServiceException gse) {

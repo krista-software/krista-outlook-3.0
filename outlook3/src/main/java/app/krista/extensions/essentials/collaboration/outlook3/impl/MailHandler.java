@@ -57,7 +57,7 @@ public class MailHandler {
      * converting them to Krista's internal format. Draft emails without sender information
      * are handled gracefully by setting the from field to null.</p>
      *
-     * @param email the Microsoft Graph Email object to convert; if null, returns null
+     * @param email    the Microsoft Graph Email object to convert; if null, returns null
      * @param useEmail flag indicating whether to use email-specific attachment processing
      * @return a MailDetails object containing all email information, or null if input email is null
      */
@@ -87,6 +87,7 @@ public class MailHandler {
         mailDetails.categories = email.getCategories();
         mailDetails.conversationID = email.getConversationId();
         mailDetails.uniqueBody = email.getUniqueBody();
+        mailDetails.sensitivity = email.getSensitivity();
 
         return mailDetails;
     }
@@ -102,7 +103,7 @@ public class MailHandler {
      * @param file the Java File object to convert to Krista format
      * @return a Krista File entity representing the uploaded file
      * @throws RuntimeException if both regular and zip upload attempts fail, with a user-friendly
-     *         error message indicating possible causes (file too large, corrupted, or unsupported format)
+     *                          error message indicating possible causes (file too large, corrupted, or unsupported format)
      */
     public File toKristaFiles(java.io.File file) {
         long fileSize = file.length();
@@ -134,7 +135,7 @@ public class MailHandler {
      * @param attachments list of Krista File entities to convert to Microsoft Graph attachments
      * @return list of Microsoft Graph Attachment objects ready for API submission
      * @throws IllegalStateException if file processing fails during attachment creation,
-     *         wrapping the underlying IOException with a descriptive error message
+     *                               wrapping the underlying IOException with a descriptive error message
      */
     public List<com.microsoft.graph.models.Attachment> toAttachment(List<File> attachments) {
         List<com.microsoft.graph.models.Attachment> attachmentsList = new LinkedList<>();

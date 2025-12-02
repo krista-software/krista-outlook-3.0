@@ -65,6 +65,9 @@ public class MailDetails {
     @Field(name = "Unique Body", type = "RichText", required = false, attributes = {@Attribute(name = "visualWidth", value = "L")})
     public String uniqueBody;
 
+    @Field.Text(name = "Sensitivity", required = false, attributes = {@Attribute(name = "visualWidth", value = "S")})
+    public String sensitivity;
+
     @Override
     public String toString() {
         return new StringBuilder("MailDetails{")
@@ -79,6 +82,7 @@ public class MailDetails {
                 .append("isRead=").append(isRead).append(", ")
                 .append("categories=").append(categories)
                 .append("Conversation ID=").append(conversationID)
+                .append("sensitivity='").append(sensitivity).append("'")
                 .append('}')
                 .toString();
     }

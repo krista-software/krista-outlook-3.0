@@ -218,7 +218,8 @@ public class FolderImpl implements Folder {
                 .messages()
                 .buildRequest(
                         new HeaderOption(Constants.PREFER, preferHeader),
-                        new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                        new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS),
+                        new QueryOption("$expand", SENSITIVITY_PROP_FILTER)
                 )
                 .top(top)
                 .skip(skip)
