@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 3.0.24
+
+**Release Date**: December 2025
+
+### Version Information
+
+| Component                  | Version       |
+|----------------------------|---------------|
+| Extension Version          | 3.0.24        |
+| Developer                  | Simran Sethi  |
+| Krista Service APIs (Java) | 1.0.118       |
+| Global Catalog Version     | GC-2025.12.01 |
+
+---
+
+### What's New
+
+* [KE-2766] - MS Outlook - Need support for mail sensitivity
+    - Added `Sensitivity` field to Mail Details entity to support filtering emails based on their sensitivity level (
+      Normal, Personal, Private, Confidential), allowing partners to exclude personal or private emails from automated
+      processing
+
 ## Version 3.0.23 - Current Release (Send Mail Retry Enhancement)
 
 - **Developer**: Vaibhav Choudhary
@@ -10,15 +32,18 @@
 ### Bug Fixes
 
 - **Send Mail 503 Queue Full Error Handling**
-    - **Root Cause**: Microsoft Graph API returns HTTP 503 "Service Unavailable" with message "Application Request Queue Full" when their email infrastructure is temporarily overloaded
-    - **Issue**: Send Mail operations were failing when Microsoft's server-side request queue was at capacity, even though the request was valid
+    - **Root Cause**: Microsoft Graph API returns HTTP 503 "Service Unavailable" with message "Application Request Queue
+      Full" when their email infrastructure is temporarily overloaded
+    - **Issue**: Send Mail operations were failing when Microsoft's server-side request queue was at capacity, even
+      though the request was valid
     - **Solution**: Implemented automatic retry mechanism with exponential backoff for HTTP 503 errors
     - **Retry Strategy**:
         - Maximum 3 retry attempts
         - Exponential backoff delays: 2 seconds, 4 seconds, 8 seconds
         - Only retries on HTTP 503 "Queue Full" errors
         - Preserves original error for other failure types
-    - **Impact**: Send Mail operations now automatically succeed when Microsoft's queue capacity becomes available, eliminating transient failures due to Microsoft infrastructure overload
+    - **Impact**: Send Mail operations now automatically succeed when Microsoft's queue capacity becomes available,
+      eliminating transient failures due to Microsoft infrastructure overload
     - **Affected Methods**:
         - Send Mail
         - Send Mail With Table
@@ -38,7 +63,8 @@
 
 ### Backward Compatibility
 
-**100% Backward Compatible** – All existing catalog requests work exactly as before; retry mechanism is automatic and transparent to users.
+**100% Backward Compatible** – All existing catalog requests work exactly as before; retry mechanism is automatic and
+transparent to users.
 
 ### Breaking Changes
 
@@ -56,15 +82,20 @@
 ### Bug Fixes
 
 - **Send Mail 'To' field validation**
-    - Fixed critical validation bug where invalid 'To' field inputs (such as " , " or ",,") were not caught during early validation.
-    - Previously, these invalid inputs would pass validation and fail later at the Microsoft Graph API with "ErrorInvalidRecipients".
-    - Now properly validates that at least one valid email address exists in the 'To' field before proceeding with the send operation.
-    - Provides clear error messages when 'To' field is empty, contains only whitespace/commas, or has no valid email addresses.
+    - Fixed critical validation bug where invalid 'To' field inputs (such as " , " or ",,") were not caught during early
+      validation.
+    - Previously, these invalid inputs would pass validation and fail later at the Microsoft Graph API with "
+      ErrorInvalidRecipients".
+    - Now properly validates that at least one valid email address exists in the 'To' field before proceeding with the
+      send operation.
+    - Provides clear error messages when 'To' field is empty, contains only whitespace/commas, or has no valid email
+      addresses.
     - Prevents unnecessary API calls and provides immediate feedback to users.
 
 ### Backward Compatibility
 
-**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only fixes validation logic for the 'To' field in Send Mail operations.
+**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only fixes
+validation logic for the 'To' field in Send Mail operations.
 
 ### Breaking Changes
 
@@ -82,7 +113,8 @@
 ### New Features & Improvements
 
 - **Mail Received Alert reliability**
-    - Extended attachment upload fallback to ZIP conversion on any media validation failure (for example, "Invalid image") so Mail Received Alert flows continue even when attachments fail standard processing.
+    - Extended attachment upload fallback to ZIP conversion on any media validation failure (for example, "Invalid
+      image") so Mail Received Alert flows continue even when attachments fail standard processing.
     - Preserved existing behavior while adding concise logging around attachment handling.
 
 - **Subscription renewal retry for folder monitoring**
@@ -90,12 +122,14 @@
     - Ensures temporary Graph or network issues do not immediately break folder monitoring subscription renewals.
 
 - **Paginated email fetch retry**
-    - Added 3-attempt retry with exponential backoff around Microsoft Graph paginated email retrieval in `Folder.getEmails(...)`.
+    - Added 3-attempt retry with exponential backoff around Microsoft Graph paginated email retrieval in
+      `Folder.getEmails(...)`.
     - Keeps existing paging and response behavior unchanged while improving resilience to transient Graph errors.
 
 ### Backward Compatibility
 
-**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only adds resilience and bug fixes on top of 3.0.20.
+**100% Backward Compatible** – All existing catalog requests and behaviors remain unchanged; this release only adds
+resilience and bug fixes on top of 3.0.20.
 
 ### Breaking Changes
 
@@ -126,6 +160,7 @@ Added 5 new catalog requests for advanced folder-based email workflow automation
 5. **Receive notification of Email Change** - Event triggered when emails arrive or move to monitored folders
 
 **Setup Sequence:**
+
 ```
 1. Save Outlook Private Configuration
 2. List All Folders (discover available folders)
@@ -135,6 +170,7 @@ Added 5 new catalog requests for advanced folder-based email workflow automation
 ```
 
 **Key Features:**
+
 - Monitor specific folders or all folders
 - Detect both new emails and moved emails
 - Support for nested folders (e.g., "Inbox/Projects")
@@ -142,6 +178,7 @@ Added 5 new catalog requests for advanced folder-based email workflow automation
 - Folder-based workflow routing
 
 **Use Cases:**
+
 - Customer support automation
 - Sales lead processing
 - Document workflow automation
@@ -184,25 +221,34 @@ Added 5 new catalog requests for advanced folder-based email workflow automation
 
 #### Allow Retry Parameter
 
-Added optional **Allow Retry** boolean parameter to 19 catalog request methods, providing fine-grained control over validation error handling:
+Added optional **Allow Retry** boolean parameter to 19 catalog request methods, providing fine-grained control over
+validation error handling:
 
 **Methods Updated:**
-- **Messaging Operations**: Send Mail, Send Mail With Table, Reply To Mail, Reply To All, Reply To Mail With CC And BCC, Reply To All With CC And BCC, Forward Mail, Move Message, Mark Message
-- **Fetch Operations**: Fetch Inbox, Fetch Inbox With Preferences, Fetch Sent, Fetch Mail By Message ID, Fetch Mail Details By Query, Fetch Mails By Label
+
+- **Messaging Operations**: Send Mail, Send Mail With Table, Reply To Mail, Reply To All, Reply To Mail With CC And BCC,
+  Reply To All With CC And BCC, Forward Mail, Move Message, Mark Message
+- **Fetch Operations**: Fetch Inbox, Fetch Inbox With Preferences, Fetch Sent, Fetch Mail By Message ID, Fetch Mail
+  Details By Query, Fetch Mails By Label
 - **Category Operations**: Add Category To Message, Remove Category From Message, Mark Message Category And Status
 - **Label Operations**: Fetch All Labels (parameter added for API consistency)
 
 **Behavior:**
-- **When `Allow Retry = true`**: Validation errors trigger an interactive SubCatalog flow, prompting users to correct invalid inputs
+
+- **When `Allow Retry = true`**: Validation errors trigger an interactive SubCatalog flow, prompting users to correct
+  invalid inputs
 - **When `Allow Retry = false` or `null` (default)**: Validation errors return immediately without user interaction
 - **Backward Compatible**: Default behavior unchanged - existing implementations continue to work without modification
 
 **Use Cases:**
+
 - **Interactive Workflows**: Set to `true` for user-facing applications where users can correct errors in real-time
-- **Automated Processes**: Set to `false` for batch processing and automated workflows that handle errors programmatically
+- **Automated Processes**: Set to `false` for batch processing and automated workflows that handle errors
+  programmatically
 - **Flexible Error Handling**: Choose the appropriate error handling strategy based on workflow requirements
 
 **Benefits:**
+
 - **User Experience**: Improved UX for interactive workflows with guided error correction
 - **Automation Friendly**: Faster error handling for automated processes without unnecessary prompts
 - **Developer Control**: Fine-grained control over error handling behavior per request
@@ -231,7 +277,8 @@ Added optional **Allow Retry** boolean parameter to 19 catalog request methods, 
 
 ### Breaking Changes
 
-**None** - This release is fully backward compatible. The Allow Retry parameter is optional and defaults to `false`, maintaining existing behavior.
+**None** - This release is fully backward compatible. The Allow Retry parameter is optional and defaults to `false`,
+maintaining existing behavior.
 
 ### Migration Guide
 
@@ -242,6 +289,7 @@ No migration required. To use the new Allow Retry feature:
 3. Set to `false` or omit for automated workflows (default behavior)
 
 **Example:**
+
 ```
 // Interactive workflow - allow user to retry on errors
 Move Message(messageId, folderName, allowRetry: true)
@@ -255,9 +303,11 @@ Move Message(messageId, folderName, allowRetry: false)
 ## Version 3.0.15 - Previous Release
 
 ### Improvements
+
 - Enhanced API documentation
 
 ### Bug Fixes
+
 - Fetch Inbox Async was not returning any emails so we have made some logger changes due to excessive logging
 
 ---
@@ -314,15 +364,15 @@ Move Message(messageId, folderName, allowRetry: false)
 
 ## Version History Summary
 
-| Version    | Release Date     | Key Features                                                                                                                             |
-|------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.23** | Current Release  | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API          |
-| **3.0.22** | November 2025    | Email Validation Fix - Enhanced 'To' field validation in Send Mail operations                                                           |
-| **3.0.21** | November 2025    | Resilience & Mail Alert Improvements - Retry mechanisms for subscriptions and email fetch                                               |
-| **3.0.20** | November 2025    | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                          |
-| **3.0.17** | Previous Release | Added Allow Retry parameter for validation error handling                                                                               |
-| **3.0.16** | October 2025     | Added Retry Mechanism Flag for all catalog requests                                                                                     |
-| **3.0.15** | Previous Release | Fetch Inbox Async bug fix, Enhanced API documentation                                                                                   |
-| **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                                      |
+| Version    | Release Date     | Key Features                                                                                                                   |
+|------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **3.0.23** | Current Release  | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API |
+| **3.0.22** | November 2025    | Email Validation Fix - Enhanced 'To' field validation in Send Mail operations                                                  |
+| **3.0.21** | November 2025    | Resilience & Mail Alert Improvements - Retry mechanisms for subscriptions and email fetch                                      |
+| **3.0.20** | November 2025    | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                 |
+| **3.0.17** | Previous Release | Added Allow Retry parameter for validation error handling                                                                      |
+| **3.0.16** | October 2025     | Added Retry Mechanism Flag for all catalog requests                                                                            |
+| **3.0.15** | Previous Release | Fetch Inbox Async bug fix, Enhanced API documentation                                                                          |
+| **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                             |
 
 Stay updated with the latest features and improvements by subscribing to our release notifications! 

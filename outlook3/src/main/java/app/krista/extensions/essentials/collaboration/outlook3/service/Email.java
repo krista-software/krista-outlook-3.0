@@ -137,7 +137,7 @@ public interface Email {
      * @param ccRecipients  list of cc email addresses
      * @param bccRecipients list of bcc email addresses
      * @param replyTo       reply to email address
-     * @param bodyType     type of the email body (e.g., "Text" or "HTML")
+     * @param bodyType      type of the email body (e.g., "Text" or "HTML")
      * @return {@link Email} object of outlook
      */
     Email replyToAll(String message, List<com.microsoft.graph.models.Attachment> attachments, List<EmailAddress> toRecipients, List<EmailAddress> ccRecipients,
@@ -215,5 +215,14 @@ public interface Email {
      * @return the unique body as HTML or plain text
      */
     String getUniqueBody();
+
+    /**
+     * Returns the sensitivity level of the email.
+     * Possible values are: Normal, Personal, Private, Confidential.
+     * This allows filtering emails based on their sensitivity setting.
+     *
+     * @return the sensitivity level as a string, or null if not set
+     */
+    String getSensitivity();
 
 }

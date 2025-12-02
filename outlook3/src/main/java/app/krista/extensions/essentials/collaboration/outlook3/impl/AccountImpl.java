@@ -4,7 +4,10 @@ import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.G
 import app.krista.extensions.essentials.collaboration.outlook3.impl.connectors.GraphServiceClientProviderFactory;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.util.Validators;
-import app.krista.extensions.essentials.collaboration.outlook3.service.*;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Account;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
+import app.krista.extensions.essentials.collaboration.outlook3.service.EmailBuilder;
+import app.krista.extensions.essentials.collaboration.outlook3.service.Folder;
 import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.Message;
@@ -23,10 +26,14 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.BODY_CONTENT_TYPE_HTML;
+import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.SENSITIVITY_PROP_FILTER;
 
 @Service
 @ContractsProvided(Account.class)
@@ -185,7 +192,8 @@ public class AccountImpl implements Account {
                     .messages(emailId)
                     .buildRequest(
                             new HeaderOption(Constants.PREFER, BODY_CONTENT_TYPE_HTML),
-                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS)
+                            new QueryOption(Constants.SELECT_QUERY, Constants.MAIL_SELECT_FIELDS),
+                            new QueryOption("$expand", SENSITIVITY_PROP_FILTER)
                     )
                     .get();
             return new EmailImpl(getProvider(), message);
