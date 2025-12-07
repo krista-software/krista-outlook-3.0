@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 3.0.24
+## Version 3.0.25
 
 **Release Date**: December 2025
 
