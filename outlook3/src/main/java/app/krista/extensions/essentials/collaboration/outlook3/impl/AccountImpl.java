@@ -50,10 +50,7 @@ public class AccountImpl implements Account {
     }
 
     public GraphServiceClientProvider getProvider() {
-        if (provider == null) {
-            this.provider = providerFactory.create();
-        }
-        return provider;
+        return providerFactory.create();
     }
 
     public AccountImpl(GraphServiceClientProvider provider) {
