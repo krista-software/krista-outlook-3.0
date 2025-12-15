@@ -164,7 +164,6 @@ The extension requires the following Microsoft Graph API scopes:
 >
 > **Common Misconfiguration:**
 > - Including `Mail.ReadWrite` as an **Application** permission instead of **Delegated** permission
-> - Adding `User.Read` permission (not required for mail operations)
 > - Missing `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, or `MailboxSettings.ReadWrite` scopes
 >
 > **Result of Misconfiguration:**
@@ -173,7 +172,6 @@ The extension requires the following Microsoft Graph API scopes:
 > **Correct Configuration:**
 > - All seven scopes above must be added as **Delegated** permissions
 > - Remove `Mail.ReadWrite` if listed as **Application** permission
-> - Remove `User.Read` if not needed for other purposes
 > - Grant admin consent for all delegated permissions
 >
 > See [Creating Outlook App](pages/CreatingOutlookApp.md) for detailed setup instructions.
@@ -437,7 +435,6 @@ The extension automatically handles:
 
 2. **Remove Conflicting Scopes**:
    - Remove `Mail.ReadWrite` if it appears as **Application** permission type
-   - Remove `User.Read` if not required for other purposes
    - Keep only the delegated permissions listed above
 
 3. **Grant Admin Consent**:

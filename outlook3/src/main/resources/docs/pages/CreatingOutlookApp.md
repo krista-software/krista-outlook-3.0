@@ -118,16 +118,14 @@ Before starting, ensure you have:
    >
    > **Scopes NOT Required (and should be removed):**
    > - `Mail.ReadWrite` (Application permission type) - Only needed for app-only authentication
-   > - `User.Read` - Not required for mail operations
    >
    > **Why This Matters:**
    > Without the correct delegated scopes (`Mail.Send.Shared`, `Mail.ReadWrite.Shared`, `MailboxSettings.ReadWrite`, and `openid`), only Global Administrators will be able to log in successfully. Standard users will encounter authentication failures when attempting to use the extension.
    >
    > **Action Required:**
-   > 1. Add all four required scopes listed above if not already present
+   > 1. Add all seven required scopes listed above if not already present
    > 2. Remove `Mail.ReadWrite` (Application) permission if present
-   > 3. Remove `User.Read` permission if not needed for other purposes
-   > 4. Grant admin consent after making these changes
+   > 3. Grant admin consent after making these changes
 
 4. **Grant Admin Consent**
     - After adding permissions, click **Grant admin consent for [Your Organization]**
@@ -327,8 +325,7 @@ Before starting, ensure you have:
 
 2. **Remove Unnecessary Scopes**:
    - Remove `Mail.ReadWrite` if it's listed as **Application** permission type
-   - Remove `User.Read` if not required for other purposes
-   - These scopes can interfere with delegated authentication flow
+   - This scope can interfere with delegated authentication flow
 
 3. **Grant Admin Consent**:
    - After adding/removing scopes, click **Grant admin consent for [Your Organization]**
