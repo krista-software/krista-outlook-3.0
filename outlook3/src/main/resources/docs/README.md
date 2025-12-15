@@ -128,7 +128,7 @@ Once configured, you can immediately leverage 18+ specialized catalog requests f
 ### API Information
 - **Microsoft Graph API**: v1.0
 - **OAuth 2.0**: Microsoft Azure AD implementation
-- **Supported Scopes**: Mail.ReadWrite, Mail.Send, offline_access
+- **Supported Scopes**: openid, offline_access, Mail.ReadWrite, Mail.Send, Mail.ReadWrite.Shared, Mail.Send.Shared, MailboxSettings.ReadWrite
 
 ### Authentication Modes
 - **Public Authentication**: Simplified setup for testing and development

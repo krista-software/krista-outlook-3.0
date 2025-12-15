@@ -93,11 +93,39 @@ Before starting, ensure you have:
 
 3. **Select Required Permissions**
    Add the following permissions:
+    - **openid**: Sign users in and read basic profile
+    - **offline_access**: Maintain access to data you have given it access to
     - **Mail.ReadWrite**: Read and write access to user mail
     - **Mail.Send**: Send mail as a user
-    - **offline_access**: Maintain access to data you have given it access to
+    - **Mail.ReadWrite.Shared**: Read and write access to user and shared mail
+    - **Mail.Send.Shared**: Send mail on behalf of others (shared mailboxes)
+    - **MailboxSettings.ReadWrite**: Read and write user mailbox settings
 
    ![Select Permissions](../_media/CreatingOutlookApp_select_permissions.png)
+
+   > **📝 Important Note: Scope Configuration for Private Authentication**
+   >
+   > When using **Private Authentication** (delegated authentication flow), ensure you configure the correct scopes to allow standard users to sign in without requiring Global Administrator privileges.
+   >
+   > **Required Scopes for Standard User Login:**
+   > - `openid` - Required for user sign-in
+   > - `offline_access` - Required for refresh token functionality
+   > - `Mail.Send` - Send mail as the authenticated user
+   > - `Mail.ReadWrite` - Read and write user's mail
+   > - `Mail.Send.Shared` - Send mail from shared mailboxes
+   > - `Mail.ReadWrite.Shared` - Read and write shared mailboxes
+   > - `MailboxSettings.ReadWrite` - Manage mailbox settings
+   >
+   > **Scopes NOT Required (and should be removed):**
+   > - `Mail.ReadWrite` (Application permission type) - Only needed for app-only authentication
+   >
+   > **Why This Matters:**
+   > Without the correct delegated scopes (`Mail.Send.Shared`, `Mail.ReadWrite.Shared`, `MailboxSettings.ReadWrite`, and `openid`), only Global Administrators will be able to log in successfully. Standard users will encounter authentication failures when attempting to use the extension.
+   >
+   > **Action Required:**
+   > 1. Add all seven required scopes listed above if not already present
+   > 2. Remove `Mail.ReadWrite` (Application) permission if present
+   > 3. Grant admin consent after making these changes
 
 4. **Grant Admin Consent**
     - After adding permissions, click **Grant admin consent for [Your Organization]**
@@ -170,9 +198,13 @@ Before starting, ensure you have:
     - Application name is descriptive and recognizable
 
 2. **Verify API Permissions**
+    - openid permission granted
+    - offline_access permission granted
     - Mail.ReadWrite permission granted
     - Mail.Send permission granted
-    - offline_access permission granted
+    - Mail.ReadWrite.Shared permission granted
+    - Mail.Send.Shared permission granted
+    - MailboxSettings.ReadWrite permission granted
     - Admin consent granted for all permissions
 
 3. **Confirm Authentication Settings**
@@ -266,6 +298,46 @@ Before starting, ensure you have:
 2. Check if client secret has expired
 3. Generate new client secret if needed
 4. Ensure no extra spaces or characters
+
+#### Standard Users Cannot Login (Only Admins Can Login)
+
+**Issue**: Only Global Administrators can successfully authenticate; standard users receive authentication errors
+**Root Cause**: Missing or incorrect scope configuration in Azure AD application
+
+**Symptoms**:
+- Standard users fail to authenticate
+- Global Administrators can login successfully
+- Error messages related to insufficient permissions
+- Authentication flow completes but access is denied
+
+**Solution**:
+
+1. **Verify Required Delegated Scopes Are Present**:
+   - Navigate to **API permissions** in your Azure AD application
+   - Ensure the following **delegated** permissions are added:
+     - `openid`
+     - `offline_access`
+     - `Mail.Send`
+     - `Mail.ReadWrite`
+     - `Mail.Send.Shared`
+     - `Mail.ReadWrite.Shared`
+     - `MailboxSettings.ReadWrite`
+
+2. **Remove Unnecessary Scopes**:
+   - Remove `Mail.ReadWrite` if it's listed as **Application** permission type
+   - This scope can interfere with delegated authentication flow
+
+3. **Grant Admin Consent**:
+   - After adding/removing scopes, click **Grant admin consent for [Your Organization]**
+   - Verify all permissions show "Granted for [Your Organization]"
+
+4. **Test with Standard User**:
+   - Have a non-admin user attempt to authenticate
+   - Verify successful login and token acquisition
+   - Check that all mail operations work correctly
+
+**Why This Happens**:
+The extension uses delegated authentication (acting on behalf of the signed-in user). Without the correct delegated scopes, especially `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, `MailboxSettings.ReadWrite`, and `openid`, the Azure AD application restricts access to only users with elevated privileges (Global Administrators). Adding these scopes allows standard users to authenticate and use the extension.
 
 ### Getting Help
 

@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 3.0.25
+## Version 3.0.26 - Current Release
 
 **Release Date**: December 2025
 
@@ -8,12 +8,61 @@
 
 | Component                  | Version       |
 |----------------------------|---------------|
-| Extension Version          | 3.0.24        |
-| Developer                  | Simran Sethi  |
+| Extension Version          | 3.0.26        |
+| Developer                  | Krista Team   |
 | Krista Service APIs (Java) | 1.0.118       |
 | Global Catalog Version     | GC-2025.12.01 |
 
 ---
+
+### What's New
+
+#### Documentation Updates
+
+* **OAuth Scope Documentation Enhancement**
+    - Added complete documentation for all 7 required OAuth scopes
+    - Added `openid` scope documentation for user authentication
+    - Added `Mail.Send.Shared` scope for shared mailbox send operations
+    - Added `Mail.ReadWrite.Shared` scope for shared mailbox access
+    - Added `MailboxSettings.ReadWrite` scope for mailbox configuration
+    - Updated [Creating Outlook App](CreatingOutlookApp.md) guide with all required permissions
+    - Updated [Authentication](Authentication.md) guide with detailed scope descriptions
+    - Enhanced verification checklist to include all 7 permissions
+
+#### Required OAuth Scopes
+
+The extension now documents all required Microsoft Graph API scopes:
+
+1. **openid** - Sign in users and read basic profile
+2. **offline_access** - Maintain access to data when user is offline
+3. **Mail.ReadWrite** - Read and write access to user mail
+4. **Mail.Send** - Send mail as a user
+5. **Mail.ReadWrite.Shared** - Read and write user and shared mail
+6. **Mail.Send.Shared** - Send mail on behalf of others (shared mailboxes)
+7. **MailboxSettings.ReadWrite** - Read and write user mailbox settings
+
+### Backward Compatibility
+
+**100% Backward Compatible** - No code changes, documentation updates only.
+
+### Breaking Changes
+
+**None**
+
+---
+
+## Version 3.0.25 - Previous Release
+
+**Release Date**: December 2025
+
+### Version Information
+
+| Component                  | Version       |
+|----------------------------|---------------|
+| Extension Version          | 3.0.25        |
+| Developer                  | Simran Sethi  |
+| Krista Service APIs (Java) | 1.0.118       |
+| Global Catalog Version     | GC-2025.12.01 |
 
 ### What's New
 
@@ -22,7 +71,9 @@
       Normal, Personal, Private, Confidential), allowing partners to exclude personal or private emails from automated
       processing
 
-## Version 3.0.23 - Current Release (Send Mail Retry Enhancement)
+---
+
+## Version 3.0.23 - (Send Mail Retry Enhancement)
 
 - **Developer**: Vaibhav Choudhary
 - **Krista Service APIs (Java)**: 1.0.118
@@ -366,7 +417,9 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                   |
 |------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.23** | Current Release  | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API |
+| **3.0.26** | Current Release  | OAuth Scope Documentation - Complete documentation for all 7 required OAuth scopes including shared mailbox permissions       |
+| **3.0.25** | December 2025    | Mail Sensitivity Support - Added Sensitivity field to filter emails by sensitivity level                                       |
+| **3.0.23** | November 2025    | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API |
 | **3.0.22** | November 2025    | Email Validation Fix - Enhanced 'To' field validation in Send Mail operations                                                  |
 | **3.0.21** | November 2025    | Resilience & Mail Alert Improvements - Retry mechanisms for subscriptions and email fetch                                      |
 | **3.0.20** | November 2025    | Enhanced Folder Monitoring - 5 new catalog requests for folder-based email workflow automation                                 |

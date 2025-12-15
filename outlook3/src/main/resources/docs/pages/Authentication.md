@@ -148,13 +148,53 @@ client_id={your_client_id}
 
 The extension requires the following Microsoft Graph API scopes:
 
-| Scope            | Permission Type | Description                           | Usage                    |
-|------------------|-----------------|---------------------------------------|--------------------------|
-| `Mail.ReadWrite` | Delegated       | Read and write access to user mailbox | All email operations     |
-| `Mail.Send`      | Delegated       | Send emails on behalf of user         | Email sending operations |
-| `offline_access` | Delegated       | Maintain access when user is offline  | Token refresh            |
+| Scope                      | Permission Type | Description                                  | Usage                           |
+|----------------------------|-----------------|----------------------------------------------|---------------------------------|
+| `openid`                   | OpenID Connect  | Sign in users and read basic profile        | User authentication             |
+| `offline_access`           | Delegated       | Maintain access when user is offline         | Token refresh                   |
+| `Mail.ReadWrite`           | Delegated       | Read and write access to user mailbox        | All email operations            |
+| `Mail.Send`                | Delegated       | Send emails on behalf of user                | Email sending operations        |
+| `Mail.ReadWrite.Shared`    | Delegated       | Read and write user and shared mailboxes     | Shared mailbox operations       |
+| `Mail.Send.Shared`         | Delegated       | Send mail on behalf of others                | Send from shared mailboxes      |
+| `MailboxSettings.ReadWrite`| Delegated       | Read and write user mailbox settings         | Mailbox configuration           |
+
+> **⚠️ Critical: Scope Configuration for Standard User Access**
+>
+> When configuring your Azure AD application for **Private Authentication**, it is essential to include **all seven scopes** listed above as **delegated permissions**. Missing any of these scopes, particularly `openid`, `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, or `MailboxSettings.ReadWrite`, will prevent standard users from authenticating successfully.
+>
+> **Common Misconfiguration:**
+> - Including `Mail.ReadWrite` as an **Application** permission instead of **Delegated** permission
+> - Missing `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, or `MailboxSettings.ReadWrite` scopes
+>
+> **Result of Misconfiguration:**
+> Only Global Administrators will be able to authenticate. Standard users will encounter authentication failures.
+>
+> **Correct Configuration:**
+> - All seven scopes above must be added as **Delegated** permissions
+> - Remove `Mail.ReadWrite` if listed as **Application** permission
+> - Grant admin consent for all delegated permissions
+>
+> See [Creating Outlook App](pages/CreatingOutlookApp.md) for detailed setup instructions.
 
 ### Scope Details
+
+#### openid
+
+- **Purpose**: OpenID Connect authentication
+- **Capabilities**:
+    - Sign in users
+    - Obtain user identity information
+    - Get ID token for authentication
+- **Security**: Required for user authentication and identity verification
+
+#### offline_access
+
+- **Purpose**: Long-term access without user interaction
+- **Capabilities**:
+    - Refresh access tokens automatically
+    - Maintain access when user is not present
+    - Enable background processing
+- **Security**: Essential for automated workflows
 
 #### Mail.ReadWrite
 
@@ -176,14 +216,34 @@ The extension requires the following Microsoft Graph API scopes:
     - Send emails with attachments
 - **Security**: Allows sending emails on behalf of user
 
-#### offline_access
+#### Mail.ReadWrite.Shared
 
-- **Purpose**: Long-term access without user interaction
+- **Purpose**: Shared mailbox access
 - **Capabilities**:
-    - Refresh access tokens automatically
-    - Maintain access when user is not present
-    - Enable background processing
-- **Security**: Essential for automated workflows
+    - Read emails from shared mailboxes
+    - Write and manage emails in shared mailboxes
+    - Access shared folders and calendars
+    - Manage shared mailbox content
+- **Security**: Requires appropriate shared mailbox permissions
+
+#### Mail.Send.Shared
+
+- **Purpose**: Send from shared mailboxes
+- **Capabilities**:
+    - Send emails from shared mailboxes
+    - Send on behalf of other users
+    - Reply and forward from shared accounts
+- **Security**: Requires Send As or Send on Behalf permissions
+
+#### MailboxSettings.ReadWrite
+
+- **Purpose**: Mailbox configuration management
+- **Capabilities**:
+    - Read and modify automatic replies (Out of Office)
+    - Manage time zone settings
+    - Configure mailbox display settings
+    - Update user preferences
+- **Security**: Allows modification of mailbox settings
 
 ### Admin Consent
 
@@ -343,6 +403,54 @@ The extension automatically handles:
 2. Check user account status
 3. Verify account hasn't been disabled
 4. Update password if changed
+
+#### Standard Users Cannot Login (Only Admins Can)
+
+**Error**: Authentication succeeds for Global Administrators but fails for standard users
+**Causes**:
+
+- Missing required delegated scopes in Azure AD application
+- Incorrect permission types (Application vs Delegated)
+- Unnecessary scopes interfering with authentication flow
+
+**Symptoms**:
+
+- Global Administrators can authenticate successfully
+- Standard users receive authentication errors or access denied
+- Error messages about insufficient permissions
+- OAuth flow completes but token acquisition fails
+
+**Solutions**:
+
+1. **Verify All Required Delegated Scopes**:
+   - Navigate to your Azure AD application → API permissions
+   - Ensure these **delegated** permissions are present:
+     - `openid`
+     - `offline_access`
+     - `Mail.ReadWrite`
+     - `Mail.Send`
+     - `Mail.Send.Shared`
+     - `Mail.ReadWrite.Shared`
+     - `MailboxSettings.ReadWrite`
+
+2. **Remove Conflicting Scopes**:
+   - Remove `Mail.ReadWrite` if it appears as **Application** permission type
+   - Keep only the delegated permissions listed above
+
+3. **Grant Admin Consent**:
+   - Click "Grant admin consent for [Your Organization]"
+   - Verify all permissions show "Granted for [Your Organization]"
+   - Wait a few minutes for changes to propagate
+
+4. **Test with Standard User**:
+   - Have a non-admin user attempt authentication
+   - Verify successful login and token acquisition
+   - Test mail operations to confirm full functionality
+
+**Why This Happens**:
+The extension uses delegated authentication (acting on behalf of the signed-in user). Without the complete set of delegated scopes, especially `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, `MailboxSettings.ReadWrite`, and `openid`, Azure AD restricts access to only users with elevated privileges. Adding all required delegated scopes allows standard users to authenticate and use the extension.
+
+**Reference**: See [Creating Outlook App](pages/CreatingOutlookApp.md) for detailed scope configuration instructions.
 
 ### Diagnostic Steps
 
