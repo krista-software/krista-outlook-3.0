@@ -1,10 +1,26 @@
 plugins {
+    id "jacoco"
     id 'java'
     id "com.github.node-gradle.node" version "3.1.0"
     id 'maven-publish'
+    id("org.sonarqube") version "6.3.1.5724"
 }
 
 apply plugin: 'java-library'
+
+sonar {
+    properties {
+        property('sonar.projectName', 'SonarScanner for Krista Global Catalog (outlook-3.0 with Jacoco code coverage)')
+        property("sonar.projectKey", "sonar-scanner-outlook-3.0")
+        property("sonar.sources", "src/main/java")
+        property("sonar.tests", "src/test/java")
+        property("sonar.java.binaries", "build/classes/java/main")
+        property("sonar.java.test.binaries", "build/classes/java/test")
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml")
+        property("sonar.junit.reportPaths", "build/test-results/test")
+    }
+}
+
 group = 'app.krista.extensions.essentials.collaboration'
 
 /*
@@ -85,6 +101,7 @@ tasks.named('compileTestJava') {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport // Generate coverage report after tests run
 
     // Add these settings to help diagnose test issues
     testLogging {
@@ -392,4 +409,22 @@ tasks.named('jar') {
     // Keep other dependencies
     dependsOn tasks.named('generateReleaseProperties')
     dependsOn tasks.named('buildAndCopyUI')
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test // Tests are required to run before generating the report
+    reports {
+        xml.required = true // Required for SonarQube
+        html.required = true // Nice to have for local viewing
+        csv.required = false
+    }
+}
+
+// Make sonar task depend on jacocoTestReport
+tasks.named('sonar') {
+    dependsOn jacocoTestReport
 }
