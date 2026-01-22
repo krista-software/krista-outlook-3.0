@@ -2,7 +2,10 @@ package app.krista.extensions.essentials.collaboration.outlook3;
 
 import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.executor.Invoker;
-import app.krista.extension.impl.anno.*;
+import app.krista.extension.impl.anno.Extension;
+import app.krista.extension.impl.anno.InvokerRequest;
+import app.krista.extension.impl.anno.Java;
+import app.krista.extension.impl.anno.StaticResource;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
@@ -57,4 +60,12 @@ public class OutlookExtension {
         MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
     }
 
+    // This functionality is not yet ready for production deployment
+    /*
+    @InvokerRequest(InvokerRequest.Type.PREPARE_CHANGE_ROUTING_ID)
+    public void prepareChangeRoutingId(String newRoutingId)  {
+        MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
+        MailSubscription.createOrUpdateSubscription(routingUrl, providerFactory.create());
+    }
+    */
 }

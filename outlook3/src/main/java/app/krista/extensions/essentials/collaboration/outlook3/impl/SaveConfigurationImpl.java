@@ -22,13 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.*;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.Constants.*;
 
@@ -38,6 +34,7 @@ public class SaveConfigurationImpl {
     public static final Logger LOGGER = LoggerFactory.getLogger(SaveConfigurationImpl.class);
     private final GraphServiceClientProviderFactory providerFactory;
     private final OutlookAttributeStore outlookAttributeStore;
+    private final SubscriptionCleanupService subscriptionCleanupService;
     private final String baseRoutingUrl;
     private final String invokerId;
     private final TestConnectionServiceImpl testConnectionServiceImpl;
@@ -49,9 +46,11 @@ public class SaveConfigurationImpl {
     @Inject
     public SaveConfigurationImpl(GraphServiceClientProviderFactory providerFactory,
                                  OutlookAttributeStore outlookAttributeStore,
+                                 SubscriptionCleanupService subscriptionCleanupService,
                                  Invoker invoker, TestConnectionServiceImpl testConnectionServiceImpl, AuthorizationContext authorizationContext) {
         this.providerFactory = providerFactory;
         this.outlookAttributeStore = outlookAttributeStore;
+        this.subscriptionCleanupService = subscriptionCleanupService;
         this.baseRoutingUrl = invoker.getRoutingInfo().getRoutingURL(HttpProtocol.PROTOCOL_NAME, RoutingInfo.Type.APPLIANCE);
         this.invokerId = invoker.getInvokerId();
         this.testConnectionServiceImpl = testConnectionServiceImpl;
@@ -125,6 +124,9 @@ public class SaveConfigurationImpl {
             providerFactory.create(authContextId).getGraphServiceClientForAdmin()
                     .users(attributes.getEmail())
                     .mailFolders().buildRequest().get();
+            // Handle subscription cleanup for credential changes
+            subscriptionCleanupService.handleCredentialChange(attributes, baseRoutingUrl, invokerId);
+            // Save new credentials
             boolean isSaved = outlookAttributeStore.save(attributes, invokerId);
             return isSaved
                     ? Constants.GSON.toJson(new AuthenticationResponse(true, null, null))
