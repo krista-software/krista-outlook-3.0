@@ -2,7 +2,10 @@ package app.krista.extensions.essentials.collaboration.outlook3;
 
 import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.executor.Invoker;
-import app.krista.extension.impl.anno.*;
+import app.krista.extension.impl.anno.Extension;
+import app.krista.extension.impl.anno.InvokerRequest;
+import app.krista.extension.impl.anno.Java;
+import app.krista.extension.impl.anno.StaticResource;
 import app.krista.extension.request.RoutingInfo;
 import app.krista.extension.request.protos.http.HttpProtocol;
 import app.krista.extensions.essentials.collaboration.outlook3.impl.MailSubscription;
@@ -15,7 +18,7 @@ import javax.inject.Inject;
 import java.util.Map;
 
 @Java(version = Java.Version.JAVA_21)
-@Extension(version = "3.0.26", name = "Outlook")
+@Extension(version = "3.0.27", name = "Outlook")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
@@ -57,4 +60,12 @@ public class OutlookExtension {
         MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
     }
 
+    // This functionality is not yet ready for production deployment
+    /*
+    @InvokerRequest(InvokerRequest.Type.PREPARE_CHANGE_ROUTING_ID)
+    public void prepareChangeRoutingId(String newRoutingId)  {
+        MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
+        MailSubscription.createOrUpdateSubscription(routingUrl, providerFactory.create());
+    }
+    */
 }

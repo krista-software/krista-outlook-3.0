@@ -47,6 +47,7 @@ public class SaveConfigurationImplTest {
     // Use instance variables for mocks that are initialized in setup()
     private GraphServiceClientProviderFactory providerFactory;
     private OutlookAttributeStore outlookAttributeStore;
+    private SubscriptionCleanupService subscriptionCleanupService;
     private Invoker invoker;
     private TestConnectionServiceImpl testConnectionServiceImpl;
     private AuthorizationContext authorizationContext;
@@ -67,6 +68,7 @@ public class SaveConfigurationImplTest {
 
         providerFactory = mock(GraphServiceClientProviderFactory.class, stubOnlySettings);
         outlookAttributeStore = mock(OutlookAttributeStore.class, regularSettings); // Needs verification
+        subscriptionCleanupService = mock(SubscriptionCleanupService.class, regularSettings); // Needs verification
         invoker = mock(Invoker.class, stubOnlySettings);
         testConnectionServiceImpl = mock(TestConnectionServiceImpl.class, stubOnlySettings);
         authorizationContext = mock(AuthorizationContext.class, stubOnlySettings);
@@ -93,6 +95,7 @@ public class SaveConfigurationImplTest {
         saveConfiguration = new SaveConfigurationImpl(
                 providerFactory,
                 outlookAttributeStore,
+                subscriptionCleanupService,
                 invoker,
                 testConnectionServiceImpl,
                 authorizationContext
@@ -210,11 +213,104 @@ public class SaveConfigurationImplTest {
     public void testSaveCredentials_EmptyEmail() {
         JsonObject authPayload = createTestAuthPayload();
         authPayload.addProperty(EMAIL, "");
-        
+
         String result = saveConfiguration.saveCredentials(authPayload);
-        
+
         assertNotNull(result);
         assertTrue(result.contains("false"));
+    }
+
+    /**
+     * Test that when email changes, the subscription cleanup service is called.
+     * This is a critical test for the subscription cleanup bug fix.
+     */
+    @Test
+    public void testSaveCredentials_EmailChanged_CallsSubscriptionCleanupService() {
+        // Setup: Create new credentials with different email
+        String newEmail = "new@example.com";
+        JsonObject newAuthPayload = createTestAuthPayload();
+        newAuthPayload.addProperty(EMAIL, newEmail);
+
+        when(outlookAttributeStore.save(any(OutlookAttributes.class), eq(TEST_INVOKER_ID)))
+                .thenReturn(true);
+        setupGraphServiceClientMocks();
+
+        // Execute
+        String result = saveConfiguration.saveCredentials(newAuthPayload);
+
+        // Verify: New credentials saved successfully
+        assertNotNull(result);
+        assertTrue(result.contains("true"));
+
+        // Verify: Subscription cleanup service was called
+        verify(subscriptionCleanupService).handleCredentialChange(
+                any(OutlookAttributes.class),
+                eq(TEST_BASE_URL),
+                eq(TEST_INVOKER_ID)
+        );
+
+        // Verify: New credentials were saved
+        verify(outlookAttributeStore).save(any(OutlookAttributes.class), eq(TEST_INVOKER_ID));
+    }
+
+    /**
+     * Test that subscription cleanup service is always called regardless of email change.
+     * The service itself handles the logic of whether to delete old subscriptions.
+     */
+    @Test
+    public void testSaveCredentials_AlwaysCallsSubscriptionCleanupService() {
+        // Mock: Setup for credentials with same email
+        JsonObject authPayload = createTestAuthPayload();
+        when(outlookAttributeStore.save(any(OutlookAttributes.class), eq(TEST_INVOKER_ID)))
+                .thenReturn(true);
+        setupGraphServiceClientMocks();
+
+        // Execute
+        String result = saveConfiguration.saveCredentials(authPayload);
+
+        // Verify: New credentials saved successfully
+        assertNotNull(result);
+        assertTrue(result.contains("true"));
+
+        // Verify: Subscription cleanup service was called
+        verify(subscriptionCleanupService).handleCredentialChange(
+                any(OutlookAttributes.class),
+                eq(TEST_BASE_URL),
+                eq(TEST_INVOKER_ID)
+        );
+
+        // Verify: New credentials were saved
+        verify(outlookAttributeStore).save(any(OutlookAttributes.class), eq(TEST_INVOKER_ID));
+    }
+
+    /**
+     * Test that subscription cleanup service is called even for first time setup.
+     * The service handles the logic of detecting first-time setup.
+     */
+    @Test
+    public void testSaveCredentials_FirstTimeSetup_CallsSubscriptionCleanupService() {
+        // Mock: Setup for new credentials
+        JsonObject authPayload = createTestAuthPayload();
+        when(outlookAttributeStore.save(any(OutlookAttributes.class), eq(TEST_INVOKER_ID)))
+                .thenReturn(true);
+        setupGraphServiceClientMocks();
+
+        // Execute
+        String result = saveConfiguration.saveCredentials(authPayload);
+
+        // Verify: New credentials saved successfully
+        assertNotNull(result);
+        assertTrue(result.contains("true"));
+
+        // Verify: Subscription cleanup service was called
+        verify(subscriptionCleanupService).handleCredentialChange(
+                any(OutlookAttributes.class),
+                eq(TEST_BASE_URL),
+                eq(TEST_INVOKER_ID)
+        );
+
+        // Verify: New credentials were saved
+        verify(outlookAttributeStore).save(any(OutlookAttributes.class), eq(TEST_INVOKER_ID));
     }
 
     private JsonObject createTestAuthPayload() {

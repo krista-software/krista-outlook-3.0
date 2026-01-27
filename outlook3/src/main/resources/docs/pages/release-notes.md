@@ -1,6 +1,66 @@
 # Release Notes
 
-## Version 3.0.26 - Current Release
+## Version 3.0.27 - Current Release
+
+
+*Release Date**: December 2026
+
+### Version Information
+
+| Component                  | Version     |
+|----------------------------|-------------|
+| Extension Version          | 3.0.27      |
+| Developer                  | Krista Team |
+| Krista Service APIs (Java) | 1.0.120     |
+| Global Catalog Version     | GC-2026.1.4 |
+
+### What's New
+
+#### Subscription Cleanup Service
+
+* **Automatic Subscription Cleanup on Credential Changes**
+    - Implemented `SubscriptionCleanupService` to automatically delete orphaned Microsoft Graph subscriptions when users change their email address or update credentials
+    - Previously, changing email addresses left active subscriptions in Microsoft Graph that couldn't be managed or deleted, potentially causing notification delivery issues and hitting subscription limits
+    - New service detects email changes and automatically:
+        - Deletes old subscriptions associated with the previous email
+        - Creates new subscriptions for the updated email (if mail alerts are enabled)
+        - Handles cleanup errors gracefully without blocking credential updates
+    - Refactored `SaveConfigurationImpl` to use dedicated service layer for better separation of concerns
+    - Added comprehensive logging at appropriate levels (INFO, DEBUG, WARN, ERROR) for production monitoring
+
+#### Technical Improvements
+
+* **Service Architecture**
+    - New `SubscriptionCleanupService` with `@Service` annotation for dependency injection
+    - Centralized subscription management logic
+    - Proper error handling with try-catch blocks
+    - Cleanup operations continue even if deletion fails
+
+* **Logging Strategy**
+    - INFO: Important business operations (email changes, subscription creation/deletion)
+    - DEBUG: Detailed technical information (access tokens, auth context cleanup)
+    - WARN: Failed operations that don't stop execution
+    - ERROR: Exceptions with full stack traces
+
+### Impact
+
+**Bug Fix**: Prevents orphaned subscriptions in Microsoft Graph when users change their email address or update credentials. This resolves issues with:
+- Unmanageable subscriptions that couldn't be deleted
+- Potential notification delivery to wrong email addresses
+- Hitting Microsoft Graph subscription limits (max 1000 per app)
+- Confusion about active subscriptions in the system
+
+### Backward Compatibility
+
+**100% Backward Compatible** - Subscription cleanup is automatic and transparent. No changes required to existing workflows or configurations.
+
+### Breaking Changes
+
+**None**
+
+---
+
+## Version 3.0.26 - Previous Release
 
 **Release Date**: December 2025
 
@@ -417,7 +477,8 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                   |
 |------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.26** | Current Release  | OAuth Scope Documentation - Complete documentation for all 7 required OAuth scopes including shared mailbox permissions       |
+| **3.0.27** | Current Release  | Subscription Cleanup Service - Automatic deletion of orphaned Microsoft Graph subscriptions on credential changes, production-ready logging |
+| **3.0.26** | December 2025    | OAuth Scope Documentation - Complete documentation for all 7 required OAuth scopes including shared mailbox permissions       |
 | **3.0.25** | December 2025    | Mail Sensitivity Support - Added Sensitivity field to filter emails by sensitivity level                                       |
 | **3.0.23** | November 2025    | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API |
 | **3.0.22** | November 2025    | Email Validation Fix - Enhanced 'To' field validation in Send Mail operations                                                  |
