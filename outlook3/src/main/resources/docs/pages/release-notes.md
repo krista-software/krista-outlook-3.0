@@ -1,9 +1,60 @@
 # Release Notes
 
-## Version 3.0.27 - Current Release
+## Version 3.0.28 - Current Release
 
+**Release Date**: January 2026
 
-*Release Date**: December 2026
+### Version Information
+
+| Component                  | Version     |
+|----------------------------|-------------|
+| Extension Version          | 3.0.28      |
+| Developer                  | Krista Team |
+| Krista Service APIs (Java) | 1.0.120     |
+| Global Catalog Version     | GC-2026.1.4 |
+
+### What's New
+
+#### Delta Query Token Expiration - Automatic Recovery
+
+**Problem Solved**: Microsoft Graph delta tokens expire after 7-30 days of inactivity, causing HTTP 410 Gone errors that previously required manual intervention.
+
+**Solution**: Implemented automatic recovery mechanism that:
+- Detects HTTP 410 Gone errors and SyncStateNotFound messages
+- Automatically clears expired delta tokens
+- Performs full synchronization to catch up on missed changes
+- Stores new delta token for future incremental queries
+- Logs as WARNING (not ERROR) for appropriate alerting
+
+**Technical Details**:
+- **File**: `AccountImpl.java` (lines 314-331)
+- **Method**: `fetchNotificationDeltaQuery()`
+- **Error Handling**: Catches `GraphServiceException` with response code 410
+- **Recovery**: Automatic token cleanup and full sync restart
+- **Logging**: Uses `LOGGER.warn()` for token expiration events
+
+**Benefits**:
+- ✅ Self-healing - no manual intervention required
+- ✅ No data loss - full sync ensures all changes are captured
+- ✅ Reduced noise - warning instead of error, only happens once
+- ✅ Future-proof - handles token expiration whenever it occurs
+- ✅ Efficient - returns to incremental sync after recovery
+
+**Documentation**:
+- New comprehensive guide: `GetNotificationDelta.md` (292 lines)
+- Enhanced troubleshooting: `SendAlertUsingNotificationDelta.md`
+- Architecture documentation: `ARCHITECTURE.md` with error flow diagram
+- Implementation guide: `DELTA_TOKEN_ERROR_HANDLING.md`
+
+**Microsoft Reference**: Follows official Microsoft Graph delta query guidance for handling 410 Gone responses.
+
+**Impact**: Eliminates recurring error logs and manual token cleanup for delta query operations.
+
+---
+
+## Version 3.0.27 - Subscription Cleanup Service
+
+**Release Date**: December 2026
 
 ### Version Information
 
@@ -477,7 +528,8 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                   |
 |------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.27** | Current Release  | Subscription Cleanup Service - Automatic deletion of orphaned Microsoft Graph subscriptions on credential changes, production-ready logging |
+| **3.0.28** | Current Release  | Delta Query Token Expiration - Automatic recovery from HTTP 410 errors, self-healing token management, comprehensive documentation |
+| **3.0.27** | December 2026    | Subscription Cleanup Service - Automatic deletion of orphaned Microsoft Graph subscriptions on credential changes, production-ready logging |
 | **3.0.26** | December 2025    | OAuth Scope Documentation - Complete documentation for all 7 required OAuth scopes including shared mailbox permissions       |
 | **3.0.25** | December 2025    | Mail Sensitivity Support - Added Sensitivity field to filter emails by sensitivity level                                       |
 | **3.0.23** | November 2025    | Send Mail Retry Enhancement - Automatic retry with exponential backoff for HTTP 503 Queue Full errors from Microsoft Graph API |

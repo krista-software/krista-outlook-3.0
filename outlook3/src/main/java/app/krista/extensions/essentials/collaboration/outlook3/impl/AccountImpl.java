@@ -306,9 +306,29 @@ public class AccountImpl implements Account {
         LOGGER.info("Search for the existing delta link: {}", deltaLink);
         MessageDeltaCollectionPage deltaCollectionPage = null;
         UserRequestBuilder userRequestBuilder = getUserRequestBuilder(null, null);
+
         if (StringUtils.isNotEmpty(deltaLink)) {
-            LOGGER.info("Fetching delta link using last checkpoint : {}", deltaLink);
-            deltaCollectionPage = new MessageDeltaCollectionRequestBuilder(deltaLink, userRequestBuilder.getClient(), null).buildRequest().get();
+            try {
+                LOGGER.info("Fetching delta link using last checkpoint : {}", deltaLink);
+                deltaCollectionPage = new MessageDeltaCollectionRequestBuilder(deltaLink, userRequestBuilder.getClient(), null).buildRequest().get();
+            } catch (GraphServiceException gse) {
+                // Handle 410 Gone - delta token expired or sync state not found
+                if (gse.getResponseCode() == 410 ||
+                    (gse.getMessage() != null && gse.getMessage().contains("SyncStateNotFound"))) {
+                    LOGGER.warn("Delta token expired or sync state not found (HTTP 410). Error: {}. Clearing expired token and restarting delta query from scratch.", gse.getMessage());
+
+                    // Clear the expired delta token
+                    getProvider().storeDeltaLink(null);
+
+                    // Restart delta query from the beginning
+                    LOGGER.info("Restarting delta query without checkpoint.");
+                    deltaCollectionPage = userRequestBuilder.mailFolders("Inbox").messages().delta().buildRequest().get();
+                } else {
+                    // Re-throw other GraphServiceExceptions
+                    LOGGER.error("GraphServiceException while fetching delta: {}", gse.getMessage(), gse);
+                    throw gse;
+                }
+            }
         } else {
             LOGGER.info("Fetching delta link using start.");
             deltaCollectionPage = userRequestBuilder.mailFolders("Inbox").messages().delta().buildRequest().get();

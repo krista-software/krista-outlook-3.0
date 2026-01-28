@@ -187,7 +187,7 @@ graph TB
 - `/me/messages/{id}/move`: Move messages
 - `/me/messages?$search`: Search emails
 - `/me/subscriptions`: Webhook subscriptions
-- `/me/messages/delta`: Incremental sync
+- `/me/messages/delta`: Incremental sync with automatic token expiration handling
 
 ---
 
@@ -342,3 +342,61 @@ sequenceDiagram
     SubCatalog->>Telemetry: recordSuccess()
     SubCatalog-->>User: Success response
 ```
+
+---
+
+## Error Scenarios
+
+### Delta Query Token Expiration (HTTP 410)
+
+**Scenario**: Delta token expires after period of inactivity
+
+**Error Details**:
+- **HTTP Status**: 410 Gone
+- **Error Code**: SyncStateNotFound
+- **Error Message**: `The sync state generation is not found; generation=XXXX;[highest=YYYY]`
+
+**Automatic Recovery Flow**:
+
+```mermaid
+sequenceDiagram
+    participant Client as Catalog Request
+    participant Account as AccountImpl
+    participant Provider as GraphServiceClientProvider
+    participant Store as RefreshTokenStore
+    participant API as Microsoft Graph API
+
+    Client->>Account: fetchNotificationDeltaQuery()
+    Account->>Store: getDeltaLink()
+    Store-->>Account: Expired delta token
+    Account->>API: GET /messages/delta?$deltatoken=...
+    API-->>Account: 410 Gone (SyncStateNotFound)
+    Account->>Account: Catch GraphServiceException
+    Account->>Account: Check responseCode == 410
+    Account->>Account: Log WARNING (not ERROR)
+    Account->>Provider: storeDeltaLink(null)
+    Provider->>Store: Clear expired token
+    Account->>API: GET /messages/delta (no token)
+    API-->>Account: Full sync + new delta token
+    Account->>Provider: storeDeltaLink(newToken)
+    Provider->>Store: Store new token
+    Account-->>Client: List of message IDs
+```
+
+**Key Points**:
+- **Self-Healing**: Automatic recovery without manual intervention
+- **Transparent**: Logged as WARNING, not ERROR
+- **Efficient**: Returns to incremental sync after recovery
+- **No Data Loss**: Full sync ensures no missed changes
+
+**Token Expiration Causes**:
+- Inactivity for 7-30 days (typical for Outlook entities)
+- Server-side maintenance or migration
+- Cache eviction when newer tokens fill Microsoft's cache
+- Tenant changes that invalidate old sync states
+
+**Implementation**:
+- Location: `AccountImpl.fetchNotificationDeltaQuery()` (lines 314-331)
+- Error Detection: Catches `GraphServiceException` with response code 410
+- Recovery: Clears token, performs full sync, stores new token
+- Logging: Uses `LOGGER.warn()` for token expiration events
