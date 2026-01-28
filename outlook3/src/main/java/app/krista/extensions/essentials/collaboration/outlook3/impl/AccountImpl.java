@@ -388,7 +388,7 @@ public class AccountImpl implements Account {
      */
     private MessageDeltaCollectionPage handleDeltaQueryError(GraphServiceException gse, UserRequestBuilder requestBuilder) {
         if (isExpiredTokenError(gse)) {
-            LOGGER.warn("Delta token expired (HTTP 410). Error: {}. Clearing and restarting.", gse.getMessage());
+            LOGGER.info("Delta token expired (HTTP 410). Error: {}. Clearing and restarting.", gse.getMessage());
             getProvider().storeDeltaLink(null);
             return fetchFreshDelta(requestBuilder);
         } else {
