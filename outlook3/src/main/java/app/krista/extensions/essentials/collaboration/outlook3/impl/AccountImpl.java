@@ -298,59 +298,149 @@ public class AccountImpl implements Account {
         }
     }
 
+    /**
+     * Fetches notification delta query to retrieve new messages since the last checkpoint.
+     *
+     * <p>This method uses Microsoft Graph delta queries to efficiently retrieve only
+     * messages that have changed since the last query. Delta tokens are automatically
+     * managed and stored for incremental synchronization.</p>
+     *
+     * <p><b>Automatic Token Expiration Handling:</b><br>
+     * When a delta token expires (typically after 30 days of inactivity), Microsoft Graph
+     * returns HTTP 410 Gone with a "SyncStateNotFound" error. This method automatically
+     * detects this condition, clears the expired token, and restarts the delta query
+     * from scratch to obtain a fresh token.</p>
+     *
+     * <p><b>Message Filtering:</b><br>
+     * Only messages received in the last 24 hours and not sent by the configured
+     * email account are included in the results.</p>
+     *
+     * @return List of message IDs for new messages received since last query,
+     *         or empty list if no new messages are found
+     * @throws GraphServiceException if Microsoft Graph API call fails with an error
+     *         other than HTTP 410 Gone (token expiration is handled automatically)
+     * @see #filterMessages(Message, OffsetDateTime, List)
+     * @since 3.0.28
+     */
     @Override
     public List<String> fetchNotificationDeltaQuery() {
         OffsetDateTime startOfTodayUtc = OffsetDateTime.now(ZoneOffset.UTC).minusDays(1);
+        MessageDeltaCollectionPage deltaPage = fetchDeltaPage();
+        List<String> messageIds = collectMessageIds(deltaPage, startOfTodayUtc);
+        storeDeltaToken(deltaPage);
+        return messageIds;
+    }
 
+    /**
+     * Fetches the delta page from Microsoft Graph API.
+     * Attempts to use existing delta token if available, otherwise starts fresh query.
+     *
+     * @return MessageDeltaCollectionPage containing messages, or null if query fails
+     */
+    private MessageDeltaCollectionPage fetchDeltaPage() {
         String deltaLink = getProvider().getDeltaLink();
         LOGGER.info("Search for the existing delta link: {}", deltaLink);
-        MessageDeltaCollectionPage deltaCollectionPage = null;
-        UserRequestBuilder userRequestBuilder = getUserRequestBuilder(null, null);
+        UserRequestBuilder requestBuilder = getUserRequestBuilder(null, null);
 
-        if (StringUtils.isNotEmpty(deltaLink)) {
-            try {
-                LOGGER.info("Fetching delta link using last checkpoint : {}", deltaLink);
-                deltaCollectionPage = new MessageDeltaCollectionRequestBuilder(deltaLink, userRequestBuilder.getClient(), null).buildRequest().get();
-            } catch (GraphServiceException gse) {
-                // Handle 410 Gone - delta token expired or sync state not found
-                if (gse.getResponseCode() == 410 ||
-                    (gse.getMessage() != null && gse.getMessage().contains("SyncStateNotFound"))) {
-                    LOGGER.warn("Delta token expired or sync state not found (HTTP 410). Error: {}. Clearing expired token and restarting delta query from scratch.", gse.getMessage());
+        return StringUtils.isNotEmpty(deltaLink)
+            ? fetchWithDeltaToken(deltaLink, requestBuilder)
+            : fetchFreshDelta(requestBuilder);
+    }
 
-                    // Clear the expired delta token
-                    getProvider().storeDeltaLink(null);
-
-                    // Restart delta query from the beginning
-                    LOGGER.info("Restarting delta query without checkpoint.");
-                    deltaCollectionPage = userRequestBuilder.mailFolders("Inbox").messages().delta().buildRequest().get();
-                } else {
-                    // Re-throw other GraphServiceExceptions
-                    LOGGER.error("GraphServiceException while fetching delta: {}", gse.getMessage(), gse);
-                    throw gse;
-                }
-            }
-        } else {
-            LOGGER.info("Fetching delta link using start.");
-            deltaCollectionPage = userRequestBuilder.mailFolders("Inbox").messages().delta().buildRequest().get();
+    /**
+     * Fetches delta using an existing delta token.
+     * Handles token expiration (HTTP 410) by automatically restarting with fresh query.
+     *
+     * @param deltaLink the existing delta token
+     * @param requestBuilder the user request builder
+     * @return MessageDeltaCollectionPage containing messages
+     * @throws GraphServiceException if API call fails with non-410 error
+     */
+    private MessageDeltaCollectionPage fetchWithDeltaToken(String deltaLink, UserRequestBuilder requestBuilder) {
+        try {
+            LOGGER.info("Fetching delta link using last checkpoint: {}", deltaLink);
+            return new MessageDeltaCollectionRequestBuilder(deltaLink, requestBuilder.getClient(), null)
+                    .buildRequest().get();
+        } catch (GraphServiceException gse) {
+            return handleDeltaQueryError(gse, requestBuilder);
         }
+    }
 
+    /**
+     * Fetches a fresh delta query without using a checkpoint.
+     *
+     * @param requestBuilder the user request builder
+     * @return MessageDeltaCollectionPage containing messages
+     */
+    private MessageDeltaCollectionPage fetchFreshDelta(UserRequestBuilder requestBuilder) {
+        LOGGER.info("Fetching delta link using start.");
+        return requestBuilder.mailFolders("Inbox").messages().delta().buildRequest().get();
+    }
+
+    /**
+     * Handles errors that occur during delta query execution.
+     * Automatically recovers from expired token errors (HTTP 410) by clearing token and restarting.
+     *
+     * @param gse the GraphServiceException that occurred
+     * @param requestBuilder the user request builder
+     * @return MessageDeltaCollectionPage from fresh query if token expired
+     * @throws GraphServiceException if error is not token expiration
+     */
+    private MessageDeltaCollectionPage handleDeltaQueryError(GraphServiceException gse, UserRequestBuilder requestBuilder) {
+        if (isExpiredTokenError(gse)) {
+            LOGGER.warn("Delta token expired (HTTP 410). Error: {}. Clearing and restarting.", gse.getMessage());
+            getProvider().storeDeltaLink(null);
+            return fetchFreshDelta(requestBuilder);
+        } else {
+            LOGGER.error("GraphServiceException while fetching delta: {}", gse.getMessage(), gse);
+            throw gse;
+        }
+    }
+
+    /**
+     * Checks if the exception indicates an expired delta token.
+     *
+     * @param gse the GraphServiceException to check
+     * @return true if error is HTTP 410 or contains "SyncStateNotFound" message
+     */
+    private boolean isExpiredTokenError(GraphServiceException gse) {
+        return gse.getResponseCode() == 410 ||
+               (gse.getMessage() != null && gse.getMessage().contains("SyncStateNotFound"));
+    }
+
+    /**
+     * Collects message IDs from the delta page and all subsequent pages.
+     *
+     * @param deltaPage the initial delta page
+     * @param startOfTodayUtc the cutoff time for filtering messages
+     * @return List of message IDs that match the filter criteria
+     */
+    private List<String> collectMessageIds(MessageDeltaCollectionPage deltaPage, OffsetDateTime startOfTodayUtc) {
         LOGGER.info("Notification from current page being started.");
         List<String> messageIds = new ArrayList<>();
 
-        if (deltaCollectionPage == null) {
+        if (deltaPage == null) {
             return messageIds;
         }
-        for (Message message : deltaCollectionPage.getCurrentPage()) {
+
+        for (Message message : deltaPage.getCurrentPage()) {
             filterMessages(message, startOfTodayUtc, messageIds);
         }
 
-        deltaCollectionPage = getMessageDeltaCollectionFromNextPages(deltaLink, deltaCollectionPage, startOfTodayUtc, messageIds);
-
-        LOGGER.info("All the Notification being fetched Storing new delta link.");
-        if (deltaCollectionPage != null) {
-            getProvider().storeDeltaLink(deltaCollectionPage.deltaLink);
-        }
+        getMessageDeltaCollectionFromNextPages(deltaPage, startOfTodayUtc, messageIds);
         return messageIds;
+    }
+
+    /**
+     * Stores the delta token from the completed query for next incremental sync.
+     *
+     * @param deltaPage the final delta page containing the new delta token
+     */
+    private void storeDeltaToken(MessageDeltaCollectionPage deltaPage) {
+        if (deltaPage != null && deltaPage.deltaLink != null) {
+            LOGGER.info("Storing new delta link.");
+            getProvider().storeDeltaLink(deltaPage.deltaLink);
+        }
     }
 
     private void filterMessages(Message message, OffsetDateTime startOfTodayUtc, List<String> messageIds) {
@@ -383,19 +473,25 @@ public class AccountImpl implements Account {
         return recipient.emailAddress != null ? recipient.emailAddress.address : null;
     }
 
+    /**
+     * Processes all remaining pages in the delta query result.
+     *
+     * @param deltaCollectionPage the current delta page
+     * @param startOfTodayUtc the cutoff time for filtering messages
+     * @param messageIds the list to accumulate message IDs
+     * @return the final delta page (used to extract the new delta token)
+     */
     @Nullable
-    private MessageDeltaCollectionPage getMessageDeltaCollectionFromNextPages(String deltaLink, MessageDeltaCollectionPage deltaCollectionPage, OffsetDateTime startOfTodayUtc, List<String> messageIds) {
+    private MessageDeltaCollectionPage getMessageDeltaCollectionFromNextPages(MessageDeltaCollectionPage deltaCollectionPage, OffsetDateTime startOfTodayUtc, List<String> messageIds) {
         LOGGER.info("Notification being fetched from current page moving to next page.");
         while (deltaCollectionPage != null && deltaCollectionPage.getNextPage() != null) {
             deltaCollectionPage = deltaCollectionPage.getNextPage().buildRequest().get();
-            if (deltaLink != null) {
-                if (deltaCollectionPage != null) {
-                    for (Message message : deltaCollectionPage.getCurrentPage()) {
-                        filterMessages(message, startOfTodayUtc, messageIds);
-                    }
-                } else {
-                    break;
+            if (deltaCollectionPage != null) {
+                for (Message message : deltaCollectionPage.getCurrentPage()) {
+                    filterMessages(message, startOfTodayUtc, messageIds);
                 }
+            } else {
+                break;
             }
         }
         return deltaCollectionPage;
