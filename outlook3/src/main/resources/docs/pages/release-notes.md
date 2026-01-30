@@ -2,7 +2,7 @@
 
 ## Version 3.0.28 - Current Release
 
-*Release Date**: December 2026
+**Release Date**: January 2026
 
 ### Version Information
 
@@ -30,9 +30,44 @@
     - Graceful fallback to sequential processing on errors
     - 13 new unit tests, 100% code coverage
 
+#### Delta Query Token Expiration - Automatic Recovery
+
+**Problem Solved**: Microsoft Graph delta tokens expire after 7-30 days of inactivity, causing HTTP 410 Gone errors that previously required manual intervention.
+
+**Solution**: Implemented automatic recovery mechanism that:
+- Detects HTTP 410 Gone errors and SyncStateNotFound messages
+- Automatically clears expired delta tokens
+- Performs full synchronization to catch up on missed changes
+- Stores new delta token for future incremental queries
+- Logs as WARNING (not ERROR) for appropriate alerting
+
+**Technical Details**:
+- **File**: `AccountImpl.java` (lines 314-331)
+- **Method**: `fetchNotificationDeltaQuery()`
+- **Error Handling**: Catches `GraphServiceException` with response code 410
+- **Recovery**: Automatic token cleanup and full sync restart
+- **Logging**: Uses `LOGGER.warn()` for token expiration events
+
+**Benefits**:
+- ✅ Self-healing - no manual intervention required
+- ✅ No data loss - full sync ensures all changes are captured
+- ✅ Reduced noise - warning instead of error, only happens once
+- ✅ Future-proof - handles token expiration whenever it occurs
+- ✅ Efficient - returns to incremental sync after recovery
+
+**Documentation**:
+- New comprehensive guide: `GetNotificationDelta.md` (292 lines)
+- Enhanced troubleshooting: `SendAlertUsingNotificationDelta.md`
+- Architecture documentation: `ARCHITECTURE.md` with error flow diagram
+- Implementation guide: `DELTA_TOKEN_ERROR_HANDLING.md`
+
+**Microsoft Reference**: Follows official Microsoft Graph delta query guidance for handling 410 Gone responses.
+
+**Impact**: Eliminates recurring error logs and manual token cleanup for delta query operations.
+
 ### Backward Compatibility
 
-**100% Backward Compatible** - Automatic optimization, no changes required.
+**100% Backward Compatible** - Both features provide automatic optimization and self-healing. No changes required to existing workflows.
 
 ### Breaking Changes
 
@@ -40,9 +75,9 @@
 
 ---
 
-## Version 3.0.27 - Previous Release
+## Version 3.0.27 - Subscription Cleanup Service
 
-*Release Date**: December 2026
+**Release Date**: December 2026
 
 ### Version Information
 
@@ -516,7 +551,7 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                   |
 |------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.28** | Current Release  | Parallel Email Processing - 10x performance improvement with Java 21 Virtual Threads and Semaphore-based concurrency control (10 concurrent API calls), 33% memory reduction |
+| **3.0.28** | Current Release  | Parallel Email Processing (10x performance with Java 21 Virtual Threads, 33% memory reduction) + Delta Query Token Auto-Recovery (HTTP 410 error handling, self-healing) |
 | **3.0.27** | December 2026    | Subscription Cleanup Service - Automatic deletion of orphaned Microsoft Graph subscriptions on credential changes, production-ready logging |
 | **3.0.26** | December 2025    | OAuth Scope Documentation - Complete documentation for all 7 required OAuth scopes including shared mailbox permissions       |
 | **3.0.25** | December 2025    | Mail Sensitivity Support - Added Sensitivity field to filter emails by sensitivity level                                       |

@@ -293,13 +293,41 @@ Result: Proactive administrative oversight
 
 ### Delta Token Issues
 
-**Cause**: Token expiration or management problems
+**Cause**: Token expiration or management problems (HTTP 410 Gone error)
+
+**Common Error Messages**:
+- `SyncStateNotFound: The sync state generation is not found`
+- `HTTP 410 Gone`
+- `Error code: SyncStateNotFound`
+
 **Solution**:
 
-1. Check if delta token has expired
+1. **Check if delta token has expired** (HTTP 410 or SyncStateNotFound error)
 2. Implement proper token storage and retrieval
-3. Handle token refresh scenarios
-4. Monitor token lifecycle and expiration
+3. **Handle token refresh scenarios** - automatically clear expired token and restart delta query
+4. Monitor token lifecycle and expiration (typically 7-30 days for Outlook entities)
+
+**Technical Details**:
+- Microsoft Graph returns **HTTP 410 Gone** when delta token expires
+- Error message contains **"SyncStateNotFound"** with generation mismatch details
+- Application **automatically clears expired token** and performs full synchronization
+- New delta token is obtained and stored for future incremental syncs
+- This is normal behavior and handled gracefully by the system
+
+**Why Tokens Expire**:
+- Long periods of inactivity (7-30 days typically)
+- Server-side maintenance or migration
+- Cache eviction when newer tokens fill up Microsoft's internal cache
+- Tenant changes that invalidate old sync states
+
+**Automatic Recovery**:
+The system automatically handles token expiration:
+1. Detects HTTP 410 error or SyncStateNotFound message
+2. Logs a warning (not an error) about token expiration
+3. Clears the expired delta token from storage
+4. Performs a full synchronization to get current state
+5. Stores new delta token for future incremental queries
+6. Continues normal operation without manual intervention
 
 ### High Alert Volume
 
