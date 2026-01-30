@@ -49,7 +49,7 @@ public class MailHandler {
      * - Excessive memory usage from downloading large attachments
      * - Overwhelming the downstream services
      */
-    private static final Semaphore API_SEMAPHORE = new Semaphore(10);
+    private  final Semaphore API_SEMAPHORE = new Semaphore(10);
 
     private final KristaMediaClient kristaMediaClient;
 
