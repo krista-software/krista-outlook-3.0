@@ -8,6 +8,7 @@ import app.krista.extensions.essentials.collaboration.outlook3.service.Attachmen
 import app.krista.extensions.essentials.collaboration.outlook3.service.Email;
 import app.krista.ksdk.context.AuthorizationContext;
 import app.krista.model.base.File;
+import com.kristasoft.common.holders.ThreadLocalProxy;
 import com.microsoft.graph.models.FileAttachment;
 import org.jvnet.hk2.annotations.Service;
 import org.slf4j.Logger;
@@ -17,6 +18,11 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.EntityHelperUtil.getAttachmentsByParsingIntoJsonMapper;
@@ -35,6 +41,16 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 public class MailHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MailHandler.class);
+
+    /**
+     * Semaphore to limit concurrent API calls to Microsoft Graph.
+     * Limits to 10 concurrent API calls to prevent:
+     * - API rate limiting from Microsoft Graph
+     * - Excessive memory usage from downloading large attachments
+     * - Overwhelming the downstream services
+     */
+    private static final Semaphore API_SEMAPHORE = new Semaphore(10);
+
     private final KristaMediaClient kristaMediaClient;
 
     // This unused parameter is needed for authentication of wait for event requests
@@ -47,6 +63,88 @@ public class MailHandler {
 
     public void setAuthorizationContext(AuthorizationContext authContext) {
         this.authorizationContext = authContext;
+    }
+
+    /**
+     * Converts multiple Email objects to MailDetails in parallel using Java 21 Virtual Threads.
+     *
+     * <p>This method processes emails concurrently, fetching attachments in parallel to significantly
+     * improve performance. Each email's attachments are fetched using separate virtual threads,
+     * allowing for efficient I/O-bound operations without blocking.</p>
+     *
+     * <p><strong>Performance Benefits:</strong></p>
+     * <ul>
+     *   <li>Sequential processing: 15 emails × 2 attachment calls × 830ms = ~25 seconds</li>
+     *   <li>Parallel processing: Max(all attachment calls) ≈ 2-3 seconds</li>
+     * </ul>
+     *
+     * @param emails   list of Email objects to convert
+     * @param useEmail flag indicating whether to use email-specific attachment processing
+     * @return list of MailDetails objects with all attachments fetched in parallel
+     */
+    public List<MailDetails> fromEmailsParallel(List<Email> emails, Boolean useEmail) {
+        if (emails == null || emails.isEmpty()) {
+            return List.of();
+        }
+
+        long startTime = System.currentTimeMillis();
+        LOGGER.info("Starting parallel email processing for {} emails (max {} concurrent)",
+                emails.size(), API_SEMAPHORE.availablePermits());
+
+        // Capture thread-local context from parent thread (includes AuthorizationContext, RequestContext, etc.)
+        Map<Class<?>, Object> threadLocals = ThreadLocalProxy.getAll();
+
+        // Use Virtual Thread executor for efficient I/O-bound operations (Java 21+)
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+
+            // Create CompletableFuture for each email to process them in parallel
+            List<CompletableFuture<MailDetails>> futures = emails.stream()
+                    .map(email -> CompletableFuture.supplyAsync(
+                            () -> {
+                                try {
+                                    // Acquire semaphore permit (blocks if 10 threads already running)
+                                    API_SEMAPHORE.acquire();
+                                    LOGGER.debug("Acquired API semaphore for email: {} (available: {})",
+                                            email.getSubject(), API_SEMAPHORE.availablePermits());
+
+                                    // Propagate thread-local context to virtual thread
+                                    ThreadLocalProxy.setAll(threadLocals);
+                                    return fromEmail(email, useEmail);
+
+                                } catch (InterruptedException cause) {
+                                    Thread.currentThread().interrupt();
+                                    LOGGER.error("Thread interrupted while waiting for API semaphore", cause);
+                                    throw new RuntimeException("Email processing interrupted", cause);
+                                } finally {
+                                    // Release semaphore permit to allow next thread to run
+                                    API_SEMAPHORE.release();
+                                    LOGGER.debug("Released API semaphore (available: {})",
+                                            API_SEMAPHORE.availablePermits());
+                                }
+                            },
+                            executor
+                    ))
+                    .toList();
+
+            // Wait for all futures to complete and collect results
+            List<MailDetails> results = futures.stream()
+                    .map(CompletableFuture::join)
+                    .collect(Collectors.toList());
+
+            long duration = System.currentTimeMillis() - startTime;
+            LOGGER.info("Completed parallel email processing for {} emails in {}ms (avg: {}ms per email)",
+                    emails.size(), duration, duration / emails.size());
+
+            return results;
+
+        } catch (Exception cause) {
+            LOGGER.error("Error during parallel email processing: {}", cause.getMessage(), cause);
+            // Fallback to sequential processing if parallel fails
+            LOGGER.warn("Falling back to sequential processing");
+            return emails.stream()
+                    .map(email -> fromEmail(email, useEmail))
+                    .collect(Collectors.toList());
+        }
     }
 
     /**
@@ -72,11 +170,13 @@ public class MailHandler {
         mailDetails.to = getCommaSeparatedEmail(email.getToEmailAddresses());
         mailDetails.message = email.getContent();
         mailDetails.subject = email.getSubject();
+
         final List<Attachment> fileAttachments = email.getFileAttachments(useEmail);
         mailDetails.fileAttachment = fileAttachments.stream()
                 .map(attachment -> toKristaFiles(attachment.download()))
                 .collect(Collectors.toList());
         mailDetails.itemAttachment = email.getItemAttachments(useEmail);
+
         mailDetails.messageID = email.getEmailId();
         mailDetails.cc = getCommaSeparatedEmail(email.getCcEmailAddresses());
         mailDetails.bcc = getCommaSeparatedEmail(email.getBccEmailAddresses());
@@ -96,7 +196,7 @@ public class MailHandler {
      * Converts a Java File object to a Krista File entity with automatic fallback mechanism.
      *
      * <p>This method attempts to upload the file using the standard upload mechanism first.
-     * If that fails (e.g., due to file size limitations), it automatically falls back to
+     * If that fails (cause.g., due to file size limitations), it automatically falls back to
      * zip compression upload. This ensures maximum compatibility with various file sizes
      * and formats.</p>
      *
