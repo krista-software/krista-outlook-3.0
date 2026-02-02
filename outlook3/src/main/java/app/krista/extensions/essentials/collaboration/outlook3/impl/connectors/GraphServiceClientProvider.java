@@ -84,7 +84,7 @@ public class GraphServiceClientProvider {
      *
      * @param useSetupEmail flag indicating whether to use the setup email (true) or user account (false);
      *                      if null, automatically determines based on request context
-     * @param accountID the specific account ID to use; only applicable when useSetupEmail is false
+     * @param accountID     the specific account ID to use; only applicable when useSetupEmail is false
      * @return a configured GraphServiceClient instance for the specified user
      * @throws IOException if client creation fails due to network or authentication issues
      */
@@ -116,10 +116,10 @@ public class GraphServiceClientProvider {
      * it triggers the re-authentication flow.</p>
      *
      * @param useSetupEmail flag indicating whether to use setup email or user account
-     * @param accountID the specific account ID to use when not using setup email
+     * @param accountID     the specific account ID to use when not using setup email
      * @return a configured GraphServiceClient instance
      * @throws MustAuthorizeException if refresh token is missing or authentication fails
-     * @throws RuntimeException for other unexpected errors during client creation
+     * @throws RuntimeException       for other unexpected errors during client creation
      */
     private GraphServiceClient<Request> getGraphServiceClient(boolean useSetupEmail, String accountID) {
         try {
@@ -149,9 +149,9 @@ public class GraphServiceClientProvider {
      * Handles various authentication errors including token expiration, revocation, and network issues.</p>
      *
      * @param refreshTokenStoreKey the key used to store and retrieve the refresh token
-     * @param refreshToken the current refresh token to use for acquiring access token
+     * @param refreshToken         the current refresh token to use for acquiring access token
      * @return a configured GraphServiceClient instance with valid access token
-     * @throws MustAuthorizeException if authentication fails due to expired/invalid tokens or user account issues
+     * @throws MustAuthorizeException   if authentication fails due to expired/invalid tokens or user account issues
      * @throws IllegalArgumentException if authentication type is not recognized
      */
     private GraphServiceClient<Request> getGraphServiceClient(String refreshTokenStoreKey, String refreshToken) {
@@ -195,7 +195,7 @@ public class GraphServiceClientProvider {
      * and updates it in the refresh token store. This ensures subsequent API calls can use
      * the latest refresh token without requiring user re-authentication.</p>
      *
-     * @param userId the user identifier used as the key for storing the refresh token
+     * @param userId     the user identifier used as the key for storing the refresh token
      * @param jsonObject the serialized token cache JSON object from MSAL4J containing the new refresh token
      */
     private void updateRefreshToken(String userId, JsonObject jsonObject) {
@@ -216,7 +216,7 @@ public class GraphServiceClientProvider {
      *
      * @param useSetupEmail flag indicating whether to use setup email (true) or authenticated user (false);
      *                      if null, automatically determines based on request context
-     * @param accountID the specific account ID to use; only applicable when useSetupEmail is false
+     * @param accountID     the specific account ID to use; only applicable when useSetupEmail is false
      * @return a UserRequestBuilder configured for the appropriate user context
      * @throws RuntimeException if connection to Microsoft services fails, wrapping the underlying IOException
      */
@@ -243,7 +243,7 @@ public class GraphServiceClientProvider {
      * optional authentication context ID. The exception message varies based on whether this
      * is an initial authentication or a re-authentication scenario.</p>
      *
-     * @param userId the user identifier to include in the authorization details
+     * @param userId           the user identifier to include in the authorization details
      * @param reAuthentication flag indicating if this is a re-authentication (true) or initial auth (false)
      * @return a MustAuthorizeException configured with appropriate message and user details
      */
@@ -271,7 +271,7 @@ public class GraphServiceClientProvider {
      * </p>
      *
      * @param calledFromValidateAttributes flag indicating if called during attribute validation
-     * @param accountID the explicitly provided account ID, or null to use authorization context
+     * @param accountID                    the explicitly provided account ID, or null to use authorization context
      * @return the resolved user identifier
      * @throws IllegalStateException if user ID cannot be determined from any source
      */
@@ -316,8 +316,21 @@ public class GraphServiceClientProvider {
      * @return the stored delta link token, or null if not previously stored
      */
     public String getDeltaLink() {
-        Object deltaLink = refreshTokenStore.getDeltaLink(Constants.DELTA_TOKEN);
-        return (String) deltaLink;
+        try {
+            Object deltaLink = refreshTokenStore.getDeltaLink(Constants.DELTA_TOKEN);
+            if (deltaLink == null) {
+                LOGGER.info("Delta token not found in storage - will initiate fresh delta sync");
+                return null;
+            }
+            String deltaLinkStr = (String) deltaLink;
+            LOGGER.info("Delta token retrieved from storage successfully (length: {} chars)", deltaLinkStr.length());
+            LOGGER.debug("Delta token value: {}", deltaLinkStr);
+            return deltaLinkStr;
+        } catch (Exception e) {
+            LOGGER.error("Failed to retrieve delta token from storage: {}", e.getMessage(), e);
+            LOGGER.warn("Will proceed with fresh delta sync due to retrieval failure");
+            return null;
+        }
     }
 
     /**
@@ -326,10 +339,20 @@ public class GraphServiceClientProvider {
      * <p>This method persists the delta token received from Microsoft Graph API responses,
      * enabling efficient incremental synchronization in subsequent requests.</p>
      *
-     * @param deltaToken the delta link token to store for future use
+     * <p>If the deltaToken is null, the existing token is removed from storage. This is used
+     * when clearing expired tokens during HTTP 410 error recovery.</p>
+     *
+     * @param deltaToken the delta link token to store for future use, or null to remove the existing token
      */
     public void storeDeltaLink(String deltaToken) {
-        refreshTokenStore.put(Constants.DELTA_TOKEN, deltaToken);
+        if (deltaToken == null) {
+            LOGGER.info("Clearing delta token from storage (expired token cleanup or reset)");
+            refreshTokenStore.remove(Constants.DELTA_TOKEN);
+            LOGGER.info("Delta token successfully removed from storage");
+        } else {
+            refreshTokenStore.put(Constants.DELTA_TOKEN, deltaToken);
+            LOGGER.info("Delta token successfully stored - next sync will use incremental delta query");
+        }
     }
 
     /**

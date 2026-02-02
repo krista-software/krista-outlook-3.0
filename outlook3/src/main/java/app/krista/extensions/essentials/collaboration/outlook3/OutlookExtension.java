@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import java.util.Map;
 
 @Java(version = Java.Version.JAVA_21)
-@Extension(version = "3.0.28", name = "Outlook")
+@Extension(version = "3.0.29", name = "Outlook")
 @StaticResource(path = "docs", file = "docs")
 public class OutlookExtension {
 
@@ -65,7 +65,8 @@ public class OutlookExtension {
     @InvokerRequest(InvokerRequest.Type.PREPARE_CHANGE_ROUTING_ID)
     public void prepareChangeRoutingId(String newRoutingId)  {
         MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
-        MailSubscription.createOrUpdateSubscription(routingUrl, providerFactory.create());
+        Mail
+        Subscription.createOrUpdateSubscription(routingUrl, providerFactory.create());
     }
     */
 }
