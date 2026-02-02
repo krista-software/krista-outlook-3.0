@@ -65,8 +65,7 @@ public class OutlookExtension {
     @InvokerRequest(InvokerRequest.Type.PREPARE_CHANGE_ROUTING_ID)
     public void prepareChangeRoutingId(String newRoutingId)  {
         MailSubscription.deleteSubscription(routingUrl, providerFactory.create());
-        Mail
-        Subscription.createOrUpdateSubscription(routingUrl, providerFactory.create());
+        MailSubscription.createOrUpdateSubscription(routingUrl, providerFactory.create());
     }
     */
 }
