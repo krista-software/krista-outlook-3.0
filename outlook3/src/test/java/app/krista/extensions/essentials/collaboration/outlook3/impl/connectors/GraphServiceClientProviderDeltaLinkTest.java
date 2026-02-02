@@ -17,16 +17,25 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Comprehensive test suite for GraphServiceClientProvider.storeDeltaLink() method.
- * 
- * This test class achieves 100% code coverage for the storeDeltaLink method by testing:
+ * Comprehensive test suite for GraphServiceClientProvider delta link methods.
+ *
+ * This test class achieves 100% code coverage for both getDeltaLink() and storeDeltaLink() methods by testing:
+ *
+ * For storeDeltaLink():
  * 1. Storing a valid delta token (non-null path)
  * 2. Clearing delta token with null (null path)
  * 3. Verifying correct method calls on RefreshTokenStore
  * 4. Verifying logging behavior
  *
+ * For getDeltaLink():
+ * 1. Retrieving existing delta token (happy path)
+ * 2. Handling null/missing delta token
+ * 3. Exception handling and recovery
+ * 4. ClassCastException scenarios
+ * 5. Edge cases and error conditions
+ *
  */
-@DisplayName("GraphServiceClientProvider.storeDeltaLink() Tests")
+@DisplayName("GraphServiceClientProvider Delta Link Methods - Complete Coverage Tests")
 public class GraphServiceClientProviderDeltaLinkTest {
 
     // Constants for testing
