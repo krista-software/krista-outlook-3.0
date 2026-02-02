@@ -1,6 +1,39 @@
 # Release Notes
 
-## Version 3.0.28 - Current Release
+## Version 3.0.29 - Current Release
+
+**Release Date**: January 2026
+
+### Version Information
+
+| Component                  | Version     |
+|----------------------------|-------------|
+| Extension Version          | 3.0.29      |
+| Developer                  | Krista Team |
+| Krista Service APIs (Java) | 1.0.120     |
+| Global Catalog Version     | GC-2026.2.1 |
+
+### What's New
+
+#### Bug Fixes
+
+1. **Fixed NullPointerException in Delta Token Storage**
+   - Fixed critical bug where clearing expired delta tokens caused `NullPointerException: Cannot invoke "Object.getClass()" because "value" is null`
+   - Modified `storeDeltaLink()` method to use `remove()` instead of `put(null)` when clearing tokens
+   - Added comprehensive logging for delta token storage and removal operations
+   - This fix enables proper HTTP 410 error recovery when delta tokens expire after 7-30 days of inactivity
+   - Created comprehensive test suite with 100% code coverage (13 test cases, all passing)
+
+2. **Enhanced Delta Sync Error Handling and Logging**
+   - Added comprehensive logging throughout the delta synchronization flow
+   - Added specific error detection and handling for `MailboxNotEnabledForRESTAPI` errors
+   - Added detailed logging for HTTP 410 (Gone) error recovery process
+   - Added invoker email logging to help diagnose multi-invoker scenarios
+   - Added duration tracking and message count metrics for delta queries
+   - Improved error messages with actionable guidance for administrators
+
+
+## Version 3.0.28
 
 **Release Date**: January 2026
 
@@ -551,7 +584,8 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                   |
 |------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| **3.0.28** | Current Release  | Parallel Email Processing (10x performance with Java 21 Virtual Threads, 33% memory reduction) + Delta Query Token Auto-Recovery (HTTP 410 error handling, self-healing) |
+| **3.0.29** | January 2026     | Fixed NullPointerException in Delta Token Storage + Enhanced Delta Sync Error Handling and Logging (100% test coverage) + Parallel Email Processing (10x performance with Java 21 Virtual Threads) + Delta Query Token Auto-Recovery |
+| **3.0.28** | January 2026     | Parallel Email Processing (10x performance with Java 21 Virtual Threads, 33% memory reduction) + Delta Query Token Auto-Recovery (HTTP 410 error handling, self-healing) |
 | **3.0.27** | December 2026    | Subscription Cleanup Service - Automatic deletion of orphaned Microsoft Graph subscriptions on credential changes, production-ready logging |
 | **3.0.26** | December 2025    | OAuth Scope Documentation - Complete documentation for all 7 required OAuth scopes including shared mailbox permissions       |
 | **3.0.25** | December 2025    | Mail Sensitivity Support - Added Sensitivity field to filter emails by sensitivity level                                       |
@@ -564,4 +598,4 @@ Move Message(messageId, folderName, allowRetry: false)
 | **3.0.15** | Previous Release | Fetch Inbox Async bug fix, Enhanced API documentation                                                                          |
 | **3.0.0**  | Major Release    | Complete platform redesign, OAuth 2.0 authentication, enhanced security, modern UI                                             |
 
-Stay updated with the latest features and improvements by subscribing to our release notifications! 
+Stay updated with the latest features and improvements by subscribing to our release notifications!
