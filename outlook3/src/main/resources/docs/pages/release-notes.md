@@ -1,6 +1,33 @@
 # Release Notes
 
-## Version 3.0.29 - Current Release
+## Version 3.0.30 - Current Release
+
+**Release Date**: February 2026
+
+### Version Information
+
+| Component                  | Version     |
+|----------------------------|-------------|
+| Extension Version          | 3.0.30      |
+| Developer                  | Deepak Shingan |
+| Krista Service APIs (Java) | 1.0.120     |
+| Global Catalog Version     | GC-2026.2.2 |
+
+### Bug Fixes [KE-2869]
+
+#### Fixed Mail Received Alert Not Firing Consistently
+
+- **Problem**: The "Mail Received Alert" was not triggering consistently for incoming emails. Microsoft Graph webhook notifications were intermittently missed or duplicated.
+- **Root Cause**: The duplicate message detection used a non-thread-safe `LinkedHashSet` for tracking recently processed mail IDs. When multiple webhook notifications arrived concurrently on different HTTP threads, race conditions in the `contains()` / `add()` / `remove()` sequence caused:
+  - Missed inserts (message processed but not recorded, leading to duplicate processing)
+  - `ConcurrentModificationException` during iteration for oldest ID eviction
+  - Inconsistent state where messages were neither tracked nor triggered
+- **Fix**: Replaced the `LinkedHashSet` with a self-evicting `LinkedHashMap`-backed set using `Collections.newSetFromMap()`. The `LinkedHashMap.removeEldestEntry()` automatically evicts the oldest entries when capacity is exceeded, eliminating the manual iterator-based eviction. Added `synchronized` to the `isDuplicateMessageID()` method to guarantee thread-safe compound check-and-add operations.
+- **Impact**: Eliminates race conditions in duplicate detection, ensuring every unique email notification is reliably triggered exactly once.
+
+---
+
+## Version 3.0.29
 
 **Release Date**: January 2026
 

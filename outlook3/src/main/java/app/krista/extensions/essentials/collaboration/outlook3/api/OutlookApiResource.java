@@ -54,8 +54,15 @@ public final class OutlookApiResource {
 
     public static final String USER_AUTHENTICATED_SUCCESSFULLY_PLEASE_PROCEED_WITH_REQUEST = "User Authenticated Successfully. Please proceed with the request.";
     private static final Logger LOGGER = LoggerFactory.getLogger(OutlookApiResource.class);
-    private static final Set<String> triggeredMailIds = new LinkedHashSet<>();
     private static final int MESSAGE_ID_CAPACITY = 1000;
+    private static final Set<String> triggeredMailIds = Collections.newSetFromMap(new LinkedHashMap<>(MESSAGE_ID_CAPACITY + 100, 0.75f, false) {
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+
+            return size() > MESSAGE_ID_CAPACITY;
+        }
+    });
     private final OutlookAttributeStore outlookAttributeStore;
     private final RefreshTokenStore refreshTokenStore;
     private final GraphServiceClientProviderFactory providerFactory;
@@ -210,31 +217,16 @@ public final class OutlookApiResource {
     }
 
     /**
-     * This method finds duplicate messageId from recent 1000 mail received and add new messageId to set and Remove the oldest 100 mail IDs to make space for new ones.
+     * Thread-safe duplicate detection for mail message IDs.
+     * Uses a self-evicting LinkedHashMap-backed set that automatically removes
+     * the oldest entries when capacity is exceeded.
      *
-     * @param messageId This is messageID sent by GraphApi
-     * @return true if duplicate is found
+     * @param messageId the message ID sent by Microsoft Graph API
+     * @return true if the message ID was already processed (duplicate)
      */
-    private boolean isDuplicateMessageID(String messageId) {
+    private synchronized boolean isDuplicateMessageID(String messageId) {
 
-        if (!triggeredMailIds.contains(messageId)) {
-            if (triggeredMailIds.size() >= MESSAGE_ID_CAPACITY) {
-                removeOldestMessageIds((MESSAGE_ID_CAPACITY + 100) - triggeredMailIds.size());
-            }
-            triggeredMailIds.add(messageId);
-            return false;
-        }
-        return true;
-    }
-
-    private void removeOldestMessageIds(int messageIDCount) {
-        final Iterator<String> iterator = triggeredMailIds.iterator();
-        int i = 0;
-        while (iterator.hasNext() && i < messageIDCount) {
-            iterator.next();
-            iterator.remove();
-            i++;
-        }
+        return !triggeredMailIds.add(messageId);
     }
 
     @POST
@@ -633,7 +625,8 @@ public final class OutlookApiResource {
      * @param messageId The message ID to check
      * @return true if the message ID exists in the set
      */
-    public static boolean isMessageIdTriggered(String messageId) {
+    public static synchronized boolean isMessageIdTriggered(String messageId) {
+
         return triggeredMailIds.contains(messageId);
     }
 
