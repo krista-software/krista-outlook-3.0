@@ -183,6 +183,7 @@ public class AccountImpl implements Account {
 
     @Override
     public Email getEmail(String emailId) {
+
         LOGGER.info("Getting email with ID: {}", emailId);
         try {
             Message message = getUserRequestBuilder(null, null)
@@ -194,10 +195,49 @@ public class AccountImpl implements Account {
                     )
                     .get();
             return new EmailImpl(getProvider(), message);
+        } catch (GraphServiceException cause) {
+
+            if (isExpectedGraphError(cause.getMessage())) {
+                LOGGER.warn("Email not retrievable for ID {}: {}", emailId, extractGraphErrorSummary(cause.getMessage()));
+            } else {
+                LOGGER.error("Unexpected Graph API error getting email with ID {}: {}", emailId, cause.getMessage(), cause);
+            }
+            return null;
         } catch (Exception cause) {
+
             LOGGER.error("Error getting email with ID {}: {}", emailId, cause.getMessage(), cause);
             return null;
         }
+    }
+
+    private boolean isExpectedGraphError(String errorMessage) {
+
+        if (errorMessage == null) {
+            return false;
+        }
+
+        return errorMessage.contains("ErrorItemNotFound") ||
+                errorMessage.contains("ErrorInvalidOperation") ||
+                errorMessage.contains("ErrorInvalidIdMalformed");
+    }
+
+    private String extractGraphErrorSummary(String errorMessage) {
+
+        if (errorMessage == null) {
+            return "unknown";
+        }
+
+        if (errorMessage.contains("ErrorItemNotFound")) {
+            return "ErrorItemNotFound (email deleted or moved)";
+        }
+        if (errorMessage.contains("ErrorInvalidOperation")) {
+            return "ErrorInvalidOperation (conversation ID used as message ID)";
+        }
+        if (errorMessage.contains("ErrorInvalidIdMalformed")) {
+            return "ErrorInvalidIdMalformed (truncated or malformed message ID)";
+        }
+
+        return errorMessage.length() > 100 ? errorMessage.substring(0, 100) : errorMessage;
     }
 
     @Override
@@ -225,7 +265,7 @@ public class AccountImpl implements Account {
             }
         }
 
-        LOGGER.error("Email with ID: {} could not be retrieved after {} attempts", emailId, maxAttempts);
+        LOGGER.warn("Email with ID: {} could not be retrieved after {} attempts", emailId, maxAttempts);
         return null;
     }
 
