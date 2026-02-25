@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extension Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* =============================================================
+           RESET
+           ============================================================= */
+        *, *::before, *::after { box-sizing: border-box; }
+        html { height: 100%; font-size: 16px; }
+        body { margin: 0; height: 100%; }
+        h1, h2, h3, h4, h5, h6, p { margin: 0; font-size: inherit; font-weight: inherit; }
+        button { cursor: pointer; border: 0; padding: 0; background: transparent; font-family: inherit; }
+        img, svg { display: block; }
+        ul, ol { list-style: none; margin: 0; padding: 0; }
+        input, select { outline: none; border: 0; background: transparent; font-family: inherit; }
+
+        /* =============================================================
+           DESIGN TOKENS — Krista Design System
+           ============================================================= */
+        :root {
+            --krista-primary:         #0169be;
+            --krista-primary-hover:   #015ca7;
+            --krista-primary-light:   #eaf2fa;
+            --krista-purple-light:    #f1f1fe;
+            --krista-surface-white:   #ffffff;
+            --krista-surface-primary: #f9f9f9;
+            --krista-surface-grey:    #e4e4e4;
+            --krista-text-darker:     #0f0f0f;
+            --krista-text-primary:    #212121;
+            --krista-text-secondary:  #434343;
+            --krista-text-light:      #aaaaaa;
+            --krista-text-white:      #ffffff;
+            --krista-dark-bg:         #2d2d2d;
+            --krista-dark-surface:    #3a3a3a;
+            --krista-dark-border:     #4a4a4a;
+            --krista-dark-text:       #e0e0e0;
+            --color-healthy:          #1b7a3e;
+            --color-healthy-bg:       #d4f0df;
+            --color-warning:          #7a5a00;
+            --color-warning-bg:       #fff3cd;
+            --color-error:            #991b1b;
+            --color-error-bg:         #fee2e2;
+            --shadow-btn: 0 1px 3px 1px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.30);
+            --shadow-card: 0 1px 4px rgba(0,0,0,.08);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 16px;
+        }
+
+        /* =============================================================
+           TYPOGRAPHY — M3 Tokens
+           ============================================================= */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--krista-surface-primary);
+            color: var(--krista-text-primary);
+        }
+        .m3-headline-medium { font-size: 28px; font-weight: 400; line-height: 1.286; color: var(--krista-text-darker); }
+        .m3-title-small     { font-size: 14px; font-weight: 500; line-height: 1.429; color: var(--krista-text-secondary); }
+        .m3-body-medium     { font-size: 14px; font-weight: 400; line-height: 1.429; color: var(--krista-text-secondary); }
+        .m3-body-small      { font-size: 12px; font-weight: 400; line-height: 1.333; color: var(--krista-text-secondary); }
+        .m3-label-medium    { font-size: 12px; font-weight: 500; line-height: 1.333; color: var(--krista-primary); }
+
+        /* =============================================================
+           VIEWS — full-page swappable screens
+           ============================================================= */
+        .view { display: none; height: 100vh; padding: 32px; overflow: hidden; }
+        .view.active { display: flex; }
+        .layout { display: flex; align-items: stretch; gap: 9px; max-width: 1400px; margin: 0 auto; flex: 1; min-height: 0; }
+
+        /* =============================================================
+           SIDEBAR
+           ============================================================= */
+        .sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; align-self: flex-start; }
+
+        .sidebar-overview-btn {
+            display: flex; align-items: center; gap: 10px;
+            background-color: var(--krista-purple-light);
+            padding: 12px 15px 14px; width: 100%; text-align: left;
+            border: 1px solid var(--krista-primary-light);
+            border-top-left-radius: var(--radius-md);
+            border-top-right-radius: var(--radius-md);
+            transition: filter 0.15s;
+        }
+        .sidebar-overview-btn:hover { filter: brightness(0.97); }
+        .sidebar-overview-btn .m3-title-small { flex-grow: 1; }
+
+        .sidebar-card {
+            display: flex; flex-direction: column;
+            background-color: var(--krista-surface-white);
+            padding: 20px 15px 0;
+            border: 1px solid var(--krista-primary-light);
+            margin-top: -1px;
+        }
+        .sidebar-card--release { gap: 4px; padding-bottom: 15px; }
+        .sidebar-card--info    { gap: 8px; padding-bottom: 18px; }
+        .sidebar-card--health  {
+            gap: 8px; padding-bottom: 18px;
+            border-bottom-left-radius: var(--radius-md);
+            border-bottom-right-radius: var(--radius-md);
+        }
+
+        .card-section-title { text-align: left; }
+        .card-divider { height: 1px; background-color: var(--krista-surface-grey); flex-shrink: 0; margin-top: 3px; }
+        .card-body-text { text-align: left; color: var(--krista-text-secondary); }
+
+        .card-link-row {
+            display: flex; align-items: center; gap: 10px;
+            padding-top: 16px; text-align: left; transition: opacity 0.15s;
+        }
+        .card-link-row:hover { opacity: 0.8; }
+
+        .info-rows { display: flex; flex-direction: column; gap: 14px; }
+        .info-row  { display: flex; flex-direction: column; gap: 4px; }
+        .info-label {
+            font-size: 11px; font-weight: 400; line-height: 1.455;
+            color: var(--krista-text-light); text-align: left;
+        }
+        .info-value { text-align: left; }
+
+        .health-badge {
+            display: inline-block; padding: 2px 8px;
+            border-radius: 12px; font-size: 11px; font-weight: 500;
+        }
+        .health-badge--healthy { background-color: var(--color-healthy-bg); color: var(--color-healthy); }
+        .health-badge--degraded { background-color: var(--color-warning-bg); color: var(--color-warning); }
+        .health-badge--unhealthy { background-color: var(--color-error-bg); color: var(--color-error); }
+        .health-badge--unknown { background-color: #eee; color: #666; }
+
+        /* =============================================================
+           MAIN PANEL
+           ============================================================= */
+        .main-panel {
+            flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column;
+            margin: -1px 0;
+            background-color: var(--krista-surface-white);
+            border: 1px solid var(--krista-surface-grey);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .panel-toolbar {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            background-color: var(--krista-primary-light);
+            padding: 8px 16px 7px;
+            border-bottom: 1px solid var(--krista-surface-grey);
+            flex-shrink: 0;
+        }
+
+        .tab-toggle {
+            display: flex; align-items: center;
+            background-color: var(--krista-surface-primary);
+            border: 1px solid var(--krista-surface-primary);
+            border-radius: var(--radius-md);
+            padding: 2px; gap: 2px;
+        }
+        .tab-toggle__btn {
+            font-size: 14px; font-weight: 400; line-height: 1.429;
+            color: var(--krista-text-light);
+            padding: 6px 10px; border-radius: 6px;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .tab-toggle__btn--active {
+            background-color: var(--krista-surface-white);
+            box-shadow: var(--shadow-btn);
+            color: var(--krista-text-secondary);
+        }
+        .tab-toggle__btn:not(.tab-toggle__btn--active):hover { color: var(--krista-text-secondary); }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+        /* =============================================================
+           PANE: VIEW LOGS
+           ============================================================= */
+        .logs-toolbar {
+            display: flex; align-items: center; gap: 7px;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--krista-surface-grey);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .logs-toolbar__label { color: var(--krista-text-light); margin-right: 2px; }
+
+        .log-type-dropdown { position: relative; }
+        .log-type-dropdown__btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 10px;
+            border: 1px solid var(--krista-text-secondary);
+            border-radius: var(--radius-md);
+            background-color: var(--krista-surface-white);
+            transition: border-color 0.15s;
+        }
+        .log-type-dropdown__btn:hover { border-color: var(--krista-primary); }
+        .log-type-dropdown__btn .m3-body-medium { color: var(--krista-text-secondary); }
+
+        .log-type-dropdown__menu {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 120px;
+            background-color: var(--krista-surface-white);
+            border: 1px solid var(--krista-surface-grey);
+            border-radius: var(--radius-md); box-shadow: var(--shadow-card); z-index: 50;
+        }
+        .log-type-dropdown__menu.open { display: block; }
+        .log-type-dropdown__menu li {
+            padding: 8px 14px; font-size: 13px; color: var(--krista-text-secondary);
+            cursor: pointer; transition: background-color 0.12s;
+        }
+        .log-type-dropdown__menu li:hover { background-color: var(--krista-primary-light); }
+        .log-type-dropdown__menu li[aria-selected="true"] { color: var(--krista-primary); font-weight: 500; }
+
+        .logs-theme-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 33px; height: 33px;
+            border: 1px solid var(--krista-surface-grey);
+            border-radius: var(--radius-md);
+            background-color: var(--krista-surface-white);
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .logs-theme-btn:hover { border-color: var(--krista-primary); }
+
+        .btn-outline-primary {
+            padding: 7px 14px;
+            border: 1px solid var(--krista-primary);
+            border-radius: var(--radius-md);
+            color: var(--krista-primary);
+            background-color: var(--krista-surface-white);
+            font-size: 14px; font-weight: 400; line-height: 1.429;
+            transition: background-color 0.15s;
+        }
+        .btn-outline-primary:hover { background-color: var(--krista-primary-light); }
+
+        .logs-viewport { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+        .logs-container {
+            flex: 1; overflow-y: auto; padding: 16px;
+            background-color: var(--krista-surface-primary);
+            font-family: 'Roboto Mono', 'Courier New', monospace;
+            font-size: 12px; line-height: 1.6;
+        }
+
+        /* Dark theme */
+        .logs-viewport.dark .logs-container { background-color: var(--krista-dark-bg); }
+        .logs-viewport.dark .log-entry__time { color: #6b7280; }
+        .logs-viewport.dark .log-entry:hover { background-color: rgba(255,255,255,.04); }
+        .logs-viewport.dark .log-entry.log-info .log-entry__level { color: #60a5fa; }
+        .logs-viewport.dark .log-entry.log-info .log-entry__message { color: #c9d7e8; }
+        .logs-viewport.dark .log-entry.log-warn .log-entry__level { color: #fbbf24; }
+        .logs-viewport.dark .log-entry.log-warn .log-entry__message { color: #fde68a; }
+        .logs-viewport.dark .log-entry.log-error .log-entry__level { color: #f87171; }
+        .logs-viewport.dark .log-entry.log-error .log-entry__message { color: #fca5a5; }
+        .logs-viewport.dark .log-entry.log-debug .log-entry__level { color: #9ca3af; }
+        .logs-viewport.dark .log-entry.log-debug .log-entry__message { color: #d1d5db; }
+
+        .log-entry {
+            display: flex; align-items: baseline; gap: 10px;
+            padding: 4px 0; transition: background-color 0.1s;
+        }
+        .log-entry:hover { background-color: rgba(0,0,0,.04); }
+        .log-entry__time { color: #666666; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+        .log-entry__level { font-size: 11px; font-weight: 600; width: 50px; flex-shrink: 0; text-transform: uppercase; }
+        .log-entry__message { font-size: 12.5px; word-break: break-word; color: #1a1a1a; }
+
+        .log-entry.log-info .log-entry__level  { color: #1d4ed8; }
+        .log-entry.log-info .log-entry__message { color: #1a1a1a; }
+        .log-entry.log-warn .log-entry__level   { color: #b45309; }
+        .log-entry.log-warn .log-entry__message  { color: #4a2600; }
+        .log-entry.log-error .log-entry__level  { color: #b91c1c; }
+        .log-entry.log-error .log-entry__message { color: #5c0e0e; }
+        .log-entry.log-debug .log-entry__level  { color: #555555; }
+        .log-entry.log-debug .log-entry__message { color: #2d2d2d; }
+
+        .logs-empty { padding: 24px; text-align: center; color: var(--krista-text-light); font-size: 14px; }
+
+        /* =============================================================
+           TOAST
+           ============================================================= */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background-color: var(--krista-text-darker); color: #fff;
+            font-size: 13px; padding: 10px 20px; border-radius: 8px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s; z-index: 9999;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* =============================================================
+           LOADING SPINNER
+           ============================================================= */
+        .loading-text { color: var(--krista-text-light); font-size: 12px; text-align: left; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* =============================================================
+           ERROR
+           ============================================================= */
+        .error-msg {
+            background: var(--color-error-bg); color: var(--color-error);
+            padding: 8px 12px; border-radius: 6px; font-size: 12px; margin: 8px 0;
+        }
+
+        /* =============================================================
+           SCROLLBAR
+           ============================================================= */
+        .logs-container::-webkit-scrollbar { width: 6px; }
+        .logs-container::-webkit-scrollbar-track { background: transparent; }
+        .logs-container::-webkit-scrollbar-thumb { background: var(--krista-surface-grey); border-radius: 3px; }
+        .logs-viewport.dark .logs-container::-webkit-scrollbar-thumb { background: var(--krista-dark-border); }
+
+        /* =============================================================
+           RESPONSIVE
+           ============================================================= */
+        @media (max-width: 1015px) {
+            .view { padding: 16px; }
+            .layout { flex-direction: column; align-items: stretch; gap: 24px; }
+            .sidebar { width: 100%; }
+            .main-panel { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================
+     VIEW: OVERVIEW (Ask Agent + View Logs)
+     ============================================================ -->
+<div id="view-overview" class="view active">
+    <div class="layout">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar">
+            <button class="sidebar-overview-btn" id="btnGoToOverview">
+                <span class="m3-title-small">Overview</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" fill="#434343"/>
+                </svg>
+            </button>
+
+            <!-- Extension identity card -->
+            <div class="sidebar-card sidebar-card--release">
+                <p class="card-section-title m3-title-small">Extension</p>
+                <div class="card-divider"></div>
+                <div class="info-rows" style="padding-top: 4px;">
+                    <div class="info-row">
+                        <span class="info-label">Name</span>
+                        <span class="info-value m3-body-small" id="extensionName">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Version</span>
+                        <span class="info-value m3-body-small" id="extensionVersion">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information card -->
+            <div class="sidebar-card sidebar-card--info">
+                <p class="card-section-title m3-title-small">Information</p>
+                <div class="card-divider"></div>
+                <div class="info-rows">
+                    <div class="info-row">
+                        <span class="info-label">Invoker ID</span>
+                        <span class="info-value m3-body-small" id="infoInvokerId">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Routing ID</span>
+                        <span class="info-value m3-body-small" id="infoRoutingId">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Node</span>
+                        <span class="info-value m3-body-small" id="infoNode">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Started At</span>
+                        <span class="info-value m3-body-small" id="infoStartedAt">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health metrics card -->
+            <div class="sidebar-card sidebar-card--health">
+                <p class="card-section-title m3-title-small">Health metrics</p>
+                <div class="card-divider"></div>
+                <div class="info-rows">
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="healthStatus">
+                            <span class="health-badge health-badge--unknown">Loading...</span>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Uptime</span>
+                        <span class="info-value m3-body-small" id="healthUptime">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Heartbeat</span>
+                        <span class="info-value m3-body-small" id="healthHeartbeat">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Memory allocated</span>
+                        <span class="info-value m3-body-small" id="healthMemory">—</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT PANEL -->
+        <main class="main-panel">
+            <!-- Toolbar: tab toggle -->
+            <div class="panel-toolbar">
+                <div class="tab-toggle" role="tablist">
+                    <button class="tab-toggle__btn tab-toggle__btn--active" id="tabDocumentation" role="tab" aria-selected="true" data-tab="documentation">Documentation</button>
+                    <button class="tab-toggle__btn" id="tabViewLogs" role="tab" aria-selected="false" data-tab="view-logs">View Logs</button>
+                </div>
+            </div>
+
+            <!-- PANE: Documentation -->
+            <div id="pane-documentation" class="tab-pane active" role="tabpanel">
+                <iframe id="docs-frame-inline" src="" title="Extension Documentation" style="flex:1; width:100%; border:none;"></iframe>
+            </div>
+
+            <!-- PANE: View Logs -->
+            <div id="pane-view-logs" class="tab-pane" role="tabpanel">
+                <div class="logs-toolbar">
+                    <span class="logs-toolbar__label m3-body-small">Log Type</span>
+                    <div class="log-type-dropdown">
+                        <button class="log-type-dropdown__btn" id="btnLogType" aria-haspopup="listbox" aria-expanded="false">
+                            <span class="m3-body-medium" id="logTypeLabel">Framework Log</span>
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.4425 6.22125L9 9.65625L5.5575 6.22125L4.5 7.27875L9 11.7788L13.5 7.27875L12.4425 6.22125Z" fill="#434343"/></svg>
+                        </button>
+                        <ul class="log-type-dropdown__menu" id="logTypeMenu" role="listbox">
+                            <li role="option" aria-selected="true" data-value="TRANSACTION_LOG">Framework Log</li>
+                            <li role="option" aria-selected="false" data-value="DEBUG_LOG">Extension Log</li>
+                        </ul>
+                    </div>
+                    <span class="logs-toolbar__label m3-body-small" style="margin-left: 8px;">Level</span>
+                    <div class="log-type-dropdown">
+                        <button class="log-type-dropdown__btn" id="btnLogLevel" aria-haspopup="listbox" aria-expanded="false">
+                            <span class="m3-body-medium" id="logLevelLabel">All</span>
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.4425 6.22125L9 9.65625L5.5575 6.22125L4.5 7.27875L9 11.7788L13.5 7.27875L12.4425 6.22125Z" fill="#434343"/></svg>
+                        </button>
+                        <ul class="log-type-dropdown__menu" id="logLevelMenu" role="listbox">
+                            <li role="option" aria-selected="true" data-value="ALL">All</li>
+                            <li role="option" aria-selected="false" data-value="INFO">Info</li>
+                            <li role="option" aria-selected="false" data-value="DEBUG">Debug</li>
+                            <li role="option" aria-selected="false" data-value="WARN">Warning</li>
+                        </ul>
+                    </div>
+                    <button class="btn-outline-primary m3-body-medium" id="btnRefreshLogs">Refresh logs</button>
+                    <span style="flex: 1;"></span>
+                    <button class="logs-theme-btn" id="btnToggleLogsTheme" title="Toggle dark/light theme">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#434343" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+                <div class="logs-viewport" id="logsViewport">
+                    <div class="logs-container" id="logsContainer" aria-live="polite">
+                        <div class="logs-empty">Click "Refresh logs" to load logs...</div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+
+<!-- TOAST -->
+<div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+<script>
+    /**
+     * Custom Agent Dashboard — Application Logic
+     * Connects to real Krista platform APIs.
+     */
+
+    // -- API configuration (populated on init) --
+    const config = { baseUrl: '', workspaceId: '', invokerId: '' };
+
+    // -- State --
+    const state = {
+        activeView: 'overview',
+        activeTab: 'documentation',
+        logsDark: false,
+        logType: 'TRANSACTION_LOG',
+        logLevel: 'ALL',
+        logs: [],
+    };
+
+    // -- DOM refs --
+    const $ = id => document.getElementById(id);
+
+    // =============================================
+    //  INIT
+    // =============================================
+
+    async function init() {
+
+        bindEvents();
+
+        try {
+            // Discover base URL from /hostUrl
+            const currentPath = window.location.pathname;
+            let basePath;
+            if (currentPath.includes('/rest/')) {
+                basePath = currentPath.substring(0, currentPath.indexOf('/rest/') + 6);
+            } else {
+                const parts = currentPath.split('/').filter(Boolean);
+                parts.pop();
+                basePath = '/' + parts.join('/') + '/';
+            }
+
+            const hostUrlResp = await fetch(basePath + 'hostUrl');
+            if (!hostUrlResp.ok) throw new Error('hostUrl: ' + hostUrlResp.status);
+            const hostUrlData = await hostUrlResp.json();
+            config.baseUrl = hostUrlData.payload.hostingUrl;
+
+            // Load data in parallel
+            await Promise.all([loadMetadata(), loadHealth()]);
+
+            // Auto-refresh health every 30 s
+            setInterval(loadHealth, 30000);
+        } catch (err) {
+            console.error('Dashboard init failed:', err);
+            showToast('Failed to initialize: ' + err.message);
+        }
+    }
+
+
+    // =============================================
+    //  METADATA
+    // =============================================
+
+    async function loadMetadata() {
+
+        try {
+            const resp = await fetch(config.baseUrl + 'api/metadata');
+            if (!resp.ok) throw new Error('metadata: ' + resp.status);
+            const data = await resp.json();
+            const m = data.payload;
+            if (!m) throw new Error('No payload');
+
+            config.workspaceId = m.workspaceId;
+            config.invokerId   = m.invokerId;
+
+            // Populate sidebar — extension identity
+            $('extensionName').textContent    = m.invokerName || m.extensionName || '—';
+            $('extensionVersion').textContent = m.extensionVersion || '—';
+
+            // Populate sidebar — information
+            $('infoInvokerId').textContent = m.invokerId  || '—';
+            $('infoRoutingId').textContent = m.routingId   || '—';
+            $('infoNode').textContent      = m.nodeName    || '—';
+            $('infoStartedAt').textContent = formatTimestamp(m.startedAt);
+
+            // Set docs iframe URL
+            const docsUrl = config.baseUrl.replace('/rest/', '/draft/static/docs/#/');
+            $('docs-frame-inline').src = docsUrl;
+
+        } catch (err) {
+            console.error('Metadata load failed:', err);
+        }
+    }
+
+
+
+    // =============================================
+    //  HEALTH
+    // =============================================
+
+    async function loadHealth() {
+
+        try {
+            const resp = await fetch(config.baseUrl + 'api/health');
+            if (!resp.ok) throw new Error('health: ' + resp.status);
+            const data = await resp.json();
+            const h = data.payload;
+            if (!h) throw new Error('No payload');
+
+            // Status badge
+            const statusMap = {
+                HEALTHY:   { cls: 'health-badge--healthy',   label: 'Healthy' },
+                DEGRADED:  { cls: 'health-badge--degraded',  label: 'Degraded' },
+                UNHEALTHY: { cls: 'health-badge--unhealthy', label: 'Unhealthy' },
+            };
+            const s = statusMap[h.status] || { cls: 'health-badge--unknown', label: h.status || 'Unknown' };
+            $('healthStatus').innerHTML = '<span class="health-badge ' + s.cls + '">' + escapeHtml(s.label) + '</span>';
+
+            // Uptime
+            $('healthUptime').textContent = formatUptime(h.uptime);
+
+            // Last heartbeat
+            $('healthHeartbeat').textContent = formatTimestamp(h.lastHeartbeat);
+
+            // Memory
+            if (h.processHealth) {
+                const used = formatBytes(h.processHealth.memoryUsed || 0);
+                const max  = formatBytes(h.processHealth.memoryMax  || 0);
+                $('healthMemory').textContent = max + ' (' + used + ' used)';
+            }
+        } catch (err) {
+            console.error('Health load failed:', err);
+            $('healthStatus').innerHTML = '<span class="health-badge health-badge--unknown">Unknown</span>';
+        }
+    }
+
+
+    // =============================================
+    //  LOGS
+    // =============================================
+
+    async function loadLogs() {
+
+        const container = $('logsContainer');
+        container.innerHTML = '<div class="logs-empty">Loading logs...</div>';
+
+        try {
+            const resp = await fetch(config.baseUrl + 'api/logs?type=' + encodeURIComponent(state.logType) + '&tail=500');
+            if (!resp.ok) throw new Error('logs: ' + resp.status);
+
+            const data = await resp.json();
+            const logs = data.payload?.logs || '';
+
+            if (typeof logs === 'string' && logs.trim()) {
+
+                state.logs = logs.split('\n').filter(line => line.trim());
+                renderFilteredLogs();
+            } else {
+
+                container.innerHTML = '<div class="logs-empty">No logs available for this type.</div>';
+                state.logs = [];
+            }
+        } catch (err) {
+            console.error('Logs load failed:', err);
+            container.innerHTML = '<div class="logs-empty">Failed to load logs: ' + escapeHtml(err.message) + '</div>';
+            state.logs = [];
+        }
+    }
+
+    function renderFilteredLogs() {
+
+        const container = $('logsContainer');
+        // Reverse so latest logs appear at top (like tail -f)
+        var lines = state.logs.slice().reverse();
+
+        // Apply level filter
+        if (state.logLevel !== 'ALL') {
+            var filterLevel = state.logLevel.toLowerCase();
+            lines = lines.filter(function(line) {
+                return detectLogLevel(line) === filterLevel;
+            });
+        }
+
+        if (lines.length === 0) {
+            container.innerHTML = '<div class="logs-empty">No logs matching the selected level.</div>';
+            return;
+        }
+
+        container.innerHTML = lines.map(function(line) {
+            var level = detectLogLevel(line);
+            return '<div class="log-entry log-' + level + '">' +
+                '<span class="log-entry__level">' + level.toUpperCase() + '</span>' +
+                '<span class="log-entry__message">' + escapeHtml(line) + '</span>' +
+                '</div>';
+        }).join('');
+    }
+
+    function detectLogLevel(line) {
+
+        const l = (typeof line === 'string') ? line.toLowerCase() : '';
+        if (l.includes('[error]') || l.includes('error') || l.includes('exception')) return 'error';
+        if (l.includes('[warn]') || l.includes('warn'))   return 'warn';
+        if (l.includes('[debug]') || l.includes('debug')) return 'debug';
+        return 'info';
+    }
+
+
+
+
+    // =============================================
+    //  EVENT BINDING
+    // =============================================
+
+    function bindEvents() {
+
+        // Tab toggle
+        $('tabDocumentation').addEventListener('click', () => switchTab('documentation'));
+        $('tabViewLogs').addEventListener('click', () => switchTab('view-logs'));
+
+        // Log type dropdown
+        $('btnLogType').addEventListener('click', e => { e.stopPropagation(); toggleDropdown('logTypeMenu', 'btnLogType'); });
+        $('logTypeMenu').addEventListener('click', e => {
+            const li = e.target.closest('li');
+            if (li) selectLogType(li.dataset.value, li.textContent);
+        });
+
+        // Log level dropdown
+        $('btnLogLevel').addEventListener('click', e => { e.stopPropagation(); toggleDropdown('logLevelMenu', 'btnLogLevel'); });
+        $('logLevelMenu').addEventListener('click', e => {
+            const li = e.target.closest('li');
+            if (li) selectLogLevel(li.dataset.value, li.textContent);
+        });
+
+        document.addEventListener('click', () => { closeAllDropdowns(); });
+
+        // Theme toggle
+        $('btnToggleLogsTheme').addEventListener('click', () => {
+            state.logsDark = !state.logsDark;
+            $('logsViewport').classList.toggle('dark', state.logsDark);
+        });
+
+        // Refresh logs
+        $('btnRefreshLogs').addEventListener('click', loadLogs);
+    }
+
+    function switchTab(tab) {
+
+        state.activeTab = tab;
+        [$('tabDocumentation'), $('tabViewLogs')].forEach(btn => {
+            const active = btn.dataset.tab === tab;
+            btn.classList.toggle('tab-toggle__btn--active', active);
+            btn.setAttribute('aria-selected', String(active));
+        });
+        const docsPane = $('pane-documentation');
+        docsPane.classList.toggle('active', tab === 'documentation');
+        docsPane.style.display = tab === 'documentation' ? 'flex' : 'none';
+        $('pane-view-logs').classList.toggle('active', tab === 'view-logs');
+    }
+
+    function toggleDropdown(menuId, btnId) {
+
+        // Close other dropdowns first
+        ['logTypeMenu', 'logLevelMenu'].forEach(id => {
+            if (id !== menuId) {
+                $(id).classList.remove('open');
+            }
+        });
+        const isOpen = $(menuId).classList.toggle('open');
+        $(btnId).setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function closeAllDropdowns() {
+
+        ['logTypeMenu', 'logLevelMenu'].forEach(id => $(id).classList.remove('open'));
+        $('btnLogType').setAttribute('aria-expanded', 'false');
+        $('btnLogLevel').setAttribute('aria-expanded', 'false');
+    }
+
+    function selectLogType(value, label) {
+
+        state.logType = value;
+        $('logTypeLabel').textContent = label;
+        $('logTypeMenu').querySelectorAll('li').forEach(li => {
+            li.setAttribute('aria-selected', String(li.dataset.value === value));
+        });
+        closeAllDropdowns();
+        loadLogs();
+    }
+
+    function selectLogLevel(value, label) {
+
+        state.logLevel = value;
+        $('logLevelLabel').textContent = label;
+        $('logLevelMenu').querySelectorAll('li').forEach(li => {
+            li.setAttribute('aria-selected', String(li.dataset.value === value));
+        });
+        closeAllDropdowns();
+        // Re-render with new filter if logs already loaded
+        if (state.logs.length > 0) {
+            renderFilteredLogs();
+        }
+    }
+
+
+    // =============================================
+    //  TOAST
+    // =============================================
+
+    let toastTimer;
+    function showToast(msg, ms) {
+
+        ms = ms || 3000;
+        const t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+    }
+
+
+    // =============================================
+    //  UTILITIES
+    // =============================================
+
+    function formatTimestamp(ts) {
+
+        if (!ts) return '—';
+        try { return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+        catch (_) { return ts; }
+    }
+
+    function formatUptime(ms) {
+
+        if (!ms) return '—';
+        const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+        if (d > 0) return d + 'd ' + (h % 24) + 'h ' + (m % 60) + 'm';
+        if (h > 0) return h + 'h ' + (m % 60) + 'm ' + (s % 60) + 's';
+        if (m > 0) return m + 'm ' + (s % 60) + 's';
+        return s + 's';
+    }
+
+    function formatBytes(b) {
+
+        if (!b || b === 0) return '0 B';
+        const k = 1024, sizes = ['B','KB','MB','GB','TB'];
+        const i = Math.floor(Math.log(b) / Math.log(k));
+        return Math.round((b / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    function escapeHtml(s) {
+
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+
+    // =============================================
+    //  BOOTSTRAP
+    // =============================================
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

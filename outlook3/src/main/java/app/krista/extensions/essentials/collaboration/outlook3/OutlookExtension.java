@@ -2,6 +2,7 @@ package app.krista.extensions.essentials.collaboration.outlook3;
 
 import app.krista.extension.authorization.RequestAuthenticator;
 import app.krista.extension.executor.Invoker;
+import app.krista.extension.impl.anno.CustomAgent;
 import app.krista.extension.impl.anno.Extension;
 import app.krista.extension.impl.anno.InvokerRequest;
 import app.krista.extension.impl.anno.Java;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Java(version = Java.Version.JAVA_21)
 @Extension(version = "3.0.29", name = "Outlook")
 @StaticResource(path = "docs", file = "docs")
+@CustomAgent
 public class OutlookExtension {
 
     private final OutlookRequestAuthenticator requestAuthenticator;
