@@ -1427,7 +1427,7 @@ public class MessagingArea {
 
                     return ExtensionResponseFactory.create(Map.of("Mail Details", mailDetails));
                 } else {
-                    LOGGER.error("Mail details not available for message id: {}", messageId);
+                    LOGGER.warn("Mail details not available for message id: {} (email may have been deleted, moved, or notification contained an invalid ID)", messageId);
                     telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, new IllegalStateException("Mail details null"), safeTagMap(
                             "message_id", messageId));
                     throw new IllegalStateException("Mail details not available");
@@ -1445,6 +1445,10 @@ public class MessagingArea {
                     "event_name", eventName
             ));
             return handleAuthorizationException(cause, requestContext.invokeAsUser());
+        } catch (IllegalStateException cause) {
+            LOGGER.warn("Mail Received Alert could not process event: {}", cause.getMessage());
+            telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, cause, safeTagMap("event_name", eventName));
+            throw cause;
         } catch (Exception cause) {
             LOGGER.error("Error occurred while Mail Received Alert:{}", cause.getMessage());
             telemetryHelper.recordError("outlook3.mailReceivedAlert", startTime, cause, safeTagMap("event_name", eventName));
