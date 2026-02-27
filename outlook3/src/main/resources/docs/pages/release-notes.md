@@ -6,30 +6,38 @@
 
 ### Version Information
 
-| Component                  | Version     |
-|----------------------------|-------------|
-| Extension Version          | 3.0.30      |
-| Developer                  | Krista Team |
-| Krista Service APIs (Java) | 1.0.120     |
-| Global Catalog Version     | GC-2026.2.1 |
+| Component                  | Version        |
+|----------------------------|----------------|
+| Extension Version          | 3.0.30         |
+| Developer                  | Deepak Shingan |
+| Krista Service APIs (Java) | 1.0.121        |
+| Global Catalog Version     | GC-2026.2.4    |
 
-### What's New
+### Bug Fixes [KE-2869]
 
-#### Bug Fixes
+#### Fixed Mail Received Alert Not Firing Consistently
+
+- **Problem**: The "Mail Received Alert" was not triggering consistently for incoming emails. Microsoft Graph webhook notifications were intermittently missed or duplicated.
+- **Root Cause**: The duplicate message detection used a non-thread-safe `LinkedHashSet` for tracking recently processed mail IDs. When multiple webhook notifications arrived concurrently on different HTTP threads, race conditions in the `contains()` / `add()` / `remove()` sequence caused:
+  - Missed inserts (message processed but not recorded, leading to duplicate processing)
+  - `ConcurrentModificationException` during iteration for oldest ID eviction
+  - Inconsistent state where messages were neither tracked nor triggered
+- **Fix**: Replaced the `LinkedHashSet` with a self-evicting `LinkedHashMap`-backed set using `Collections.newSetFromMap()`. The `LinkedHashMap.removeEldestEntry()` automatically evicts the oldest entries when capacity is exceeded, eliminating the manual iterator-based eviction. Added `synchronized` to the `isDuplicateMessageID()` method to guarantee thread-safe compound check-and-add operations.
+- **Impact**: Eliminates race conditions in duplicate detection, ensuring every unique email notification is reliably triggered exactly once.
 
 1. **[WATCH-620] Graceful Handling of Expected Graph API Errors in Mail Alert Flow**
-   - **Problem**: Webhook notifications for `mailReceivedAlert` sometimes deliver conversation IDs, deleted email IDs, or truncated/malformed IDs instead of valid message IDs. These caused `GraphServiceException` errors that were logged as `ERROR`, triggering false alerts in monitoring systems.
-   - **Fix in `AccountImpl.getEmail()`**: Added a dedicated `GraphServiceException` catch block that classifies errors before falling through to the generic handler:
-     - `ErrorItemNotFound` — email was deleted or moved before retrieval → logged as `WARN`
-     - `ErrorInvalidOperation` — a conversation ID was used where a message ID is expected → logged as `WARN`
-     - `ErrorInvalidIdMalformed` — truncated or malformed message ID from notification → logged as `WARN`
-     - All other unexpected `GraphServiceException` errors → still logged as `ERROR`
-   - **Fix in `AccountImpl.getEmailWithRetry()`**: Downgraded "could not be retrieved after N attempts" log from `ERROR` to `WARN` since the specific error was already logged by `getEmail()`
-   - **Fix in `MessagingArea.mailReceivedAlert()`**:
-     - Downgraded "Mail details not available" log from `ERROR` to `WARN` with an improved message describing the expected causes
-     - Added a dedicated `catch (IllegalStateException)` block before the generic `catch (Exception)` block to prevent the same error from being double-logged at `ERROR` level
-   - **Result**: Expected transient scenarios (deleted emails, conversation IDs, malformed IDs) no longer generate `ERROR` logs or trigger false monitoring alerts. Unexpected Graph API errors continue to log at `ERROR` for proper alerting.
-   - **Files Changed**: `AccountImpl.java`, `MessagingArea.java`
+    - **Problem**: Webhook notifications for `mailReceivedAlert` sometimes deliver conversation IDs, deleted email IDs, or truncated/malformed IDs instead of valid message IDs. These caused `GraphServiceException` errors that were logged as `ERROR`, triggering false alerts in monitoring systems.
+    - **Fix in `AccountImpl.getEmail()`**: Added a dedicated `GraphServiceException` catch block that classifies errors before falling through to the generic handler:
+        - `ErrorItemNotFound` — email was deleted or moved before retrieval → logged as `WARN`
+        - `ErrorInvalidOperation` — a conversation ID was used where a message ID is expected → logged as `WARN`
+        - `ErrorInvalidIdMalformed` — truncated or malformed message ID from notification → logged as `WARN`
+        - All other unexpected `GraphServiceException` errors → still logged as `ERROR`
+    - **Fix in `AccountImpl.getEmailWithRetry()`**: Downgraded "could not be retrieved after N attempts" log from `ERROR` to `WARN` since the specific error was already logged by `getEmail()`
+    - **Fix in `MessagingArea.mailReceivedAlert()`**:
+        - Downgraded "Mail details not available" log from `ERROR` to `WARN` with an improved message describing the expected causes
+        - Added a dedicated `catch (IllegalStateException)` block before the generic `catch (Exception)` block to prevent the same error from being double-logged at `ERROR` level
+    - **Result**: Expected transient scenarios (deleted emails, conversation IDs, malformed IDs) no longer generate `ERROR` logs or trigger false monitoring alerts. Unexpected Graph API errors continue to log at `ERROR` for proper alerting.
+    - **Files Changed**: `AccountImpl.java`, `MessagingArea.java`
 
 ### Backward Compatibility
 
