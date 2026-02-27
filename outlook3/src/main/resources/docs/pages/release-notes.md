@@ -6,12 +6,12 @@
 
 ### Version Information
 
-| Component                  | Version     |
-|----------------------------|-------------|
-| Extension Version          | 3.0.30      |
+| Component                  | Version        |
+|----------------------------|----------------|
+| Extension Version          | 3.0.30         |
 | Developer                  | Deepak Shingan |
-| Krista Service APIs (Java) | 1.0.120     |
-| Global Catalog Version     | GC-2026.2.2 |
+| Krista Service APIs (Java) | 1.0.121        |
+| Global Catalog Version     | GC-2026.2.4    |
 
 ### Bug Fixes [KE-2869]
 
