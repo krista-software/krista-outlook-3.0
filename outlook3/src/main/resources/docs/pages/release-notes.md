@@ -1,6 +1,47 @@
 # Release Notes
 
-## Version 3.0.29 - Current Release
+## Version 3.0.30 - Current Release
+
+**Release Date**: February 2026
+
+### Version Information
+
+| Component                  | Version     |
+|----------------------------|-------------|
+| Extension Version          | 3.0.30      |
+| Developer                  | Krista Team |
+| Krista Service APIs (Java) | 1.0.120     |
+| Global Catalog Version     | GC-2026.2.1 |
+
+### What's New
+
+#### Bug Fixes
+
+1. **[WATCH-620] Graceful Handling of Expected Graph API Errors in Mail Alert Flow**
+   - **Problem**: Webhook notifications for `mailReceivedAlert` sometimes deliver conversation IDs, deleted email IDs, or truncated/malformed IDs instead of valid message IDs. These caused `GraphServiceException` errors that were logged as `ERROR`, triggering false alerts in monitoring systems.
+   - **Fix in `AccountImpl.getEmail()`**: Added a dedicated `GraphServiceException` catch block that classifies errors before falling through to the generic handler:
+     - `ErrorItemNotFound` — email was deleted or moved before retrieval → logged as `WARN`
+     - `ErrorInvalidOperation` — a conversation ID was used where a message ID is expected → logged as `WARN`
+     - `ErrorInvalidIdMalformed` — truncated or malformed message ID from notification → logged as `WARN`
+     - All other unexpected `GraphServiceException` errors → still logged as `ERROR`
+   - **Fix in `AccountImpl.getEmailWithRetry()`**: Downgraded "could not be retrieved after N attempts" log from `ERROR` to `WARN` since the specific error was already logged by `getEmail()`
+   - **Fix in `MessagingArea.mailReceivedAlert()`**:
+     - Downgraded "Mail details not available" log from `ERROR` to `WARN` with an improved message describing the expected causes
+     - Added a dedicated `catch (IllegalStateException)` block before the generic `catch (Exception)` block to prevent the same error from being double-logged at `ERROR` level
+   - **Result**: Expected transient scenarios (deleted emails, conversation IDs, malformed IDs) no longer generate `ERROR` logs or trigger false monitoring alerts. Unexpected Graph API errors continue to log at `ERROR` for proper alerting.
+   - **Files Changed**: `AccountImpl.java`, `MessagingArea.java`
+
+### Backward Compatibility
+
+**100% Backward Compatible** - All exception types are still thrown and propagated identically. Return values are unchanged. Only logging levels for known transient scenarios have been adjusted.
+
+### Breaking Changes
+
+**None**
+
+---
+
+## Version 3.0.29
 
 **Release Date**: January 2026
 
@@ -584,6 +625,7 @@ Move Message(messageId, folderName, allowRetry: false)
 
 | Version    | Release Date     | Key Features                                                                                                                   |
 |------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **3.0.30** | February 2026    | WATCH-620: Graceful handling of expected Graph API errors (ErrorItemNotFound, ErrorInvalidOperation, ErrorInvalidIdMalformed) to eliminate false monitoring alerts in mail alert flow |
 | **3.0.29** | January 2026     | Fixed NullPointerException in Delta Token Storage + Enhanced Delta Sync Error Handling and Logging (100% test coverage) + Parallel Email Processing (10x performance with Java 21 Virtual Threads) + Delta Query Token Auto-Recovery |
 | **3.0.28** | January 2026     | Parallel Email Processing (10x performance with Java 21 Virtual Threads, 33% memory reduction) + Delta Query Token Auto-Recovery (HTTP 410 error handling, self-healing) |
 | **3.0.27** | December 2026    | Subscription Cleanup Service - Automatic deletion of orphaned Microsoft Graph subscriptions on credential changes, production-ready logging |
