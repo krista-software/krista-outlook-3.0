@@ -1,17 +1,18 @@
 # Release Notes
 
-## Version 3.0.31 - Current Release
+## Version 3.0.30 - Current Release
 
 **Release Date**: March 2026
 
 ### Version Information
 
-| Component                  | Version      |
-|----------------------------|--------------|
-| Extension Version          | 3.0.31       |
-| Developer                  | Simran Sethi |
-| Krista Service APIs (Java) | 1.0.121      |
-| Global Catalog Version     | GC-2026.4.1  |
+| Component                  | Version                      |
+|----------------------------|------------------------------|
+| Extension Version          | 3.0.30                       |
+| Developer                  | Deepak Shingan, Simran Sethi |
+| Krista Service APIs (Java) | 1.0.121                      |
+| Global Catalog Version     | GC-2026.4.1                  |
+
 
 ### Performance Improvements
 
@@ -39,19 +40,6 @@
 **None**
 
 ---
-
-## Version 3.0.30 - Current Release
-
-**Release Date**: February 2026
-
-### Version Information
-
-| Component                  | Version        |
-|----------------------------|----------------|
-| Extension Version          | 3.0.30         |
-| Developer                  | Deepak Shingan |
-| Krista Service APIs (Java) | 1.0.121        |
-| Global Catalog Version     | GC-2026.2.4    |
 
 ### Bug Fixes [KE-2869]
 
