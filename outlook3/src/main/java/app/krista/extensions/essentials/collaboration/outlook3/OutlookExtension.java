@@ -33,7 +33,7 @@ import javax.inject.Inject;
 import java.util.Map;
 
 @Java(version = Java.Version.JAVA_21)
-@Extension(version = "3.0.30", name = "Outlook")
+@Extension(version = "3.0.31", name = "Outlook")
 @StaticResource(path = "docs", file = "docs")
 @ChangeLog(file = "resources/docs/pages/release-notes.md")
 public class OutlookExtension {

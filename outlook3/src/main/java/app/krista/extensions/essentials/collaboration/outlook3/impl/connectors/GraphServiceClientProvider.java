@@ -43,6 +43,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,31 @@ import static app.krista.extensions.essentials.collaboration.outlook3.impl.util.
 public class GraphServiceClientProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphServiceClientProvider.class);
+
+    /** Buffer before token expiry to trigger a fresh token acquisition (5 minutes). */
+    private static final long TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000L;
+
+    /**
+     * Cached GraphServiceClient entries keyed by refreshTokenStoreKey.
+     * Access tokens typically last 1 hour — this avoids calling Azure AD on every request.
+     * With the 5-minute buffer, tokens are refreshed approximately every 55 minutes.
+     */
+    private static final ConcurrentHashMap<String, CachedGraphClient> GRAPH_CLIENT_CACHE = new ConcurrentHashMap<>();
+
+    private static class CachedGraphClient {
+        final GraphServiceClient<Request> client;
+        final long expiresAtMillis;
+
+        CachedGraphClient(GraphServiceClient<Request> client, long expiresAtMillis) {
+            this.client = client;
+            this.expiresAtMillis = expiresAtMillis;
+        }
+
+        boolean isValid() {
+            return System.currentTimeMillis() < (expiresAtMillis - TOKEN_EXPIRY_BUFFER_MS);
+        }
+    }
+
     private final RefreshTokenStore refreshTokenStore;
     private final OutlookAttributes attributes;
     private final RequestContext requestContext;
@@ -143,6 +169,16 @@ public class GraphServiceClientProvider {
         try {
             String userId = getUserId(useSetupEmail, accountID);
             String refreshTokenStoreKey = getRefTokenStoreKey(userId);
+
+            // Check cache first — avoid KeyValueStore REST call if token is still valid
+            CachedGraphClient cached = GRAPH_CLIENT_CACHE.get(refreshTokenStoreKey);
+            if (cached != null && cached.isValid()) {
+                LOGGER.info("Using cached GraphServiceClient for key: {} (expires in {}s)",
+                        refreshTokenStoreKey, (cached.expiresAtMillis - System.currentTimeMillis()) / 1000);
+                return cached.client;
+            }
+
+            // Cache miss or expired — fetch refresh token from KeyValueStore
             String refreshToken = refreshTokenStore.get(refreshTokenStoreKey);
             if (refreshToken == null) {
                 throw createMustAuthorizationException(refreshTokenStoreKey, false);
@@ -173,6 +209,8 @@ public class GraphServiceClientProvider {
      * @throws IllegalArgumentException if authentication type is not recognized
      */
     private GraphServiceClient<Request> getGraphServiceClient(String refreshTokenStoreKey, String refreshToken) {
+        LOGGER.debug("Creating GraphServiceClient for key: {} (cache miss or expired)", refreshTokenStoreKey);
+
         try {
             String[] scopes = Constants.REQUIRED_SCOPE.split(Constants.SCOPE_SEPARATOR);
             Set<String> scopeSet = Arrays.stream(scopes).collect(Collectors.toSet());
@@ -191,11 +229,22 @@ public class GraphServiceClientProvider {
             IAuthenticationResult authenticationResult = confidentialClientApplication.acquireToken(refreshTokenParameters).get();
             final String cachedTokenContent = confidentialClientApplication.tokenCache().serialize();
             updateRefreshToken(refreshTokenStoreKey, Constants.GSON.fromJson(cachedTokenContent, JsonObject.class));
-            return GraphServiceClient.builder()
+
+            GraphServiceClient<Request> graphClient = GraphServiceClient.builder()
                     .authenticationProvider(new GraphServiceClientAuthenticationProvider(authenticationResult.accessToken()))
                     .buildClient();
+
+            // Cache the GraphServiceClient with token expiry
+            long expiresAtMillis = authenticationResult.expiresOnDate().getTime();
+            GRAPH_CLIENT_CACHE.put(refreshTokenStoreKey, new CachedGraphClient(graphClient, expiresAtMillis));
+            LOGGER.info("Successfully acquired and cached access token for key: {} (expires in {}s)",
+                    refreshTokenStoreKey, (expiresAtMillis - System.currentTimeMillis()) / 1000);
+
+            return graphClient;
         } catch (ClientException | ExecutionException | MalformedURLException cause) {
             LOGGER.error("getGraphServiceClient() -> Exception occurred: {}", cause.getMessage(), cause);
+            // Remove stale cache entry on auth failure
+            GRAPH_CLIENT_CACHE.remove(refreshTokenStoreKey);
             handleAuthenticationError(cause, refreshTokenStoreKey);
             // This line will never be reached as handleAuthenticationError always throws an exception
             return null;
