@@ -68,7 +68,10 @@ public class AccountImpl implements Account {
     }
 
     public GraphServiceClientProvider getProvider() {
-        return providerFactory.create();
+        if (provider == null) {
+            this.provider = providerFactory.create();
+        }
+        return provider;
     }
 
     public AccountImpl(GraphServiceClientProvider provider) {
@@ -401,8 +404,8 @@ public class AccountImpl implements Account {
         UserRequestBuilder requestBuilder = getUserRequestBuilder(null, null);
 
         return StringUtils.isNotEmpty(deltaLink)
-            ? fetchWithDeltaToken(deltaLink, requestBuilder)
-            : fetchFreshDelta(requestBuilder);
+                ? fetchWithDeltaToken(deltaLink, requestBuilder)
+                : fetchFreshDelta(requestBuilder);
     }
 
     /**
@@ -463,7 +466,7 @@ public class AccountImpl implements Account {
      */
     private boolean isExpiredTokenError(GraphServiceException gse) {
         return gse.getResponseCode() == 410 ||
-               (gse.getMessage() != null && gse.getMessage().contains("SyncStateNotFound"));
+                (gse.getMessage() != null && gse.getMessage().contains("SyncStateNotFound"));
     }
 
     /**

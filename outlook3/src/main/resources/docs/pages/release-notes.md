@@ -2,16 +2,44 @@
 
 ## Version 3.0.30 - Current Release
 
-**Release Date**: February 2026
+**Release Date**: March 2026
 
 ### Version Information
 
-| Component                  | Version        |
-|----------------------------|----------------|
-| Extension Version          | 3.0.30         |
-| Developer                  | Deepak Shingan |
-| Krista Service APIs (Java) | 1.0.121        |
-| Global Catalog Version     | GC-2026.2.4    |
+| Component                  | Version                      |
+|----------------------------|------------------------------|
+| Extension Version          | 3.0.30                       |
+| Developer                  | Deepak Shingan, Simran Sethi |
+| Krista Service APIs (Java) | 1.0.121                      |
+| Global Catalog Version     | GC-2026.4.1                  |
+
+
+### Performance Improvements
+
+#### Access Token Caching in GraphServiceClientProvider
+
+- **Problem**: Every Graph API request was making redundant KeyValueStore REST calls to fetch the refresh token and then calling Azure AD to acquire a new access token. During "Mail Received Alert" flow, this resulted in 6-24 KeyValueStore calls per request, causing performance degradation and 504 gateway timeouts.
+- **Solution**: Implemented in-memory `ConcurrentHashMap`-based caching for `GraphServiceClient` instances with access token expiry tracking. Cache check is performed before the KeyValueStore call, avoiding both the refresh token fetch and Azure AD call when cache is valid.
+- **Token Refresh Strategy**: Access tokens (valid for ~1 hour) are cached with a 5-minute buffer before expiry, meaning tokens refresh approximately every 55 minutes.
+- **Cache Invalidation**: Stale cache entries are automatically removed on authentication errors to ensure re-authentication flows work correctly.
+- **Impact**: Reduced KeyValueStore calls from 6-24 per request to 0 (cache hit) or 2 (cache miss, once per ~55 min). Eliminated redundant Azure AD calls.
+- **Files Changed**: `GraphServiceClientProvider.java`
+
+#### Provider Caching in AccountImpl
+
+- **Problem**: `AccountImpl.getProvider()` was creating a new `GraphServiceClientProvider` on every call via `providerFactory.create()`, which loaded `OutlookAttributes` from KeyValueStore each time. This caused repeated REST calls for every Graph API operation.
+- **Solution**: Added lazy initialization caching, matching the pattern already used in `MessagingAreaImpl`, `EmailImpl`, `EmailBuilderImpl`, and `FolderImpl`.
+- **Files Changed**: `AccountImpl.java`
+
+### Backward Compatibility
+
+**100% Backward Compatible** - Access token caching is transparent to all existing workflows. Cache properly invalidates on authentication errors and token expiry. Same pattern already proven in MS Dynamics 365 extension.
+
+### Breaking Changes
+
+**None**
+
+---
 
 ### Bug Fixes [KE-2869]
 
