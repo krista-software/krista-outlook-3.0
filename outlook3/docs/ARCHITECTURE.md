@@ -75,9 +75,9 @@ graph TB
     
     subgraph "Layer 5: External API"
         E[Microsoft Graph API]
-        E1[/me/messages]
-        E2[/me/mailFolders]
-        E3[/me/subscriptions]
+        E1[messages]
+        E2[mailFolders]
+        E3[subscriptions]
     end
     
     A --> B
